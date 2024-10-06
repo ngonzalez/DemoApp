@@ -6,18 +6,40 @@
 //
 
 import SwiftUI
-import UniformTypeIdentifiers
+
+class NetworkDelegateClass: NSObject, URLSessionDelegate, URLSessionDataDelegate {
+
+    // URLSessionDataDelegate method to handle response data
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
+        // Process the received data
+        print("Received data: \(data)")
+    }
+
+    // URLSessionDataDelegate method to handle completion
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        if let error = error {
+            // Handle error
+            print("Task completed with error: \(error)")
+        } else {
+            // Task completed successfully
+            print("Task completed successfully")
+        }
+    }
+}
 
 @MainActor
 struct ContentView: View {
+    @State var folders: Array<URL> = Array<URL>()
+
+    @State private var backendURL = "http://127.0.0.1:3002/upload"
+
     @State private var mimeTypes = [
         "md": "text/markdown",
         "txt": "text/plain"
     ]
 
-    @State var folders: Array<URL> = Array<URL>()
-
     @State private var isImporting = false
+
     func clearFolders() {
         folders = []
     }
@@ -28,35 +50,26 @@ struct ContentView: View {
         var mimeType: String
         var itemData: Data
     }
+    
+    func newRequest(url: URL, data: Data) -> URLRequest {
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.httpBody = data
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-//    func mimeType(path: String) -> String {
-//        if let mimeType = UTType(filenameExtension: path)?.preferredMIMEType {
-//            return mimeType
-//        }
-//        else {
-//            return "application/octet-stream"
-//        }
-//    }
+        return request
+    }
 
     func uploadItem(path: String, mimeType: String, uploadData: Data) {
         do {
             let item = UploadItem(filePath: path, mimeType: mimeType, itemData: uploadData)
             let data = try JSONEncoder().encode(item)
-            let url = URL(string: "http://127.0.0.1:3002/upload")!
+            let url = URL(string: backendURL)!
+            let delegateClass = NetworkDelegateClass()
+            let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
+            let request = newRequest(url: url, data: data)
+            let task = delegateSession.dataTask(with: request)
 
-            var request = URLRequest(url: url)
-            request.httpMethod = "POST"
-            request.httpBody = data
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-//            print(request)
-
-            let task = URLSession.shared.dataTask(with: request) { data, response, error in
-//                print(response as Any)
-            }
-//            let observation = task.progress.observe(\.fractionCompleted) { progress, _ in
-//              print(progress)
-//            }
-//            print(observation)
             task.resume()
         } catch {
             //
@@ -81,7 +94,7 @@ struct ContentView: View {
                     do {
                         let fileData = try Data(contentsOf: URL(fileURLWithPath: itemPath))
                         let fileExt = URL(fileURLWithPath: itemPath).pathExtension
-                        let mimeType = String(mimeTypes[fileExt] ?? "application/octet-stream")
+                        let mimeType = String(mimeTypes[fileExt]!)
 
                         uploadItem(
                             path: itemPath,
@@ -108,7 +121,7 @@ struct ContentView: View {
                             do {
                                 let subfolderFileData = try Data(contentsOf: URL(fileURLWithPath: subfolderItemPath))
                                 let subfolderFileExt = URL(fileURLWithPath: subfolderItemPath).pathExtension
-                                let subfolderMimeType = String(mimeTypes[subfolderFileExt] ?? "application/octet-stream")
+                                let subfolderMimeType = String(mimeTypes[subfolderFileExt]!)
 
                                 uploadItem(
                                     path: subfolderItemPath,

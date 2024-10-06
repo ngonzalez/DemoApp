@@ -6,21 +6,6 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXBuildFile section */
-		191317CC2CB1D4A400C53C24 /* NetworkExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 191317CB2CB1D4A400C53C24 /* NetworkExtension.framework */; };
-		191317D42CB1D4A400C53C24 /* DemoAppNetwork.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 191317C92CB1D4A400C53C24 /* DemoAppNetwork.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-/* End PBXBuildFile section */
-
-/* Begin PBXContainerItemProxy section */
-		191317D22CB1D4A400C53C24 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 19BF450B2CB15B8600D0C9DD /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 191317C82CB1D4A400C53C24;
-			remoteInfo = DemoAppNetwork;
-		};
-/* End PBXContainerItemProxy section */
-
 /* Begin PBXCopyFilesBuildPhase section */
 		191317D52CB1D4A400C53C24 /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
@@ -28,7 +13,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				191317D42CB1D4A400C53C24 /* DemoAppNetwork.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -36,27 +20,13 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		191317C92CB1D4A400C53C24 /* DemoAppNetwork.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = DemoAppNetwork.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		191317CB2CB1D4A400C53C24 /* NetworkExtension.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = NetworkExtension.framework; path = System/Library/Frameworks/NetworkExtension.framework; sourceTree = SDKROOT; };
 		19BF45132CB15B8600D0C9DD /* DemoApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DemoApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		191317D82CB1D4A400C53C24 /* Exceptions for "DemoAppNetwork" folder in "DemoAppNetwork" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = 191317C82CB1D4A400C53C24 /* DemoAppNetwork */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		191317CD2CB1D4A400C53C24 /* DemoAppNetwork */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				191317D82CB1D4A400C53C24 /* Exceptions for "DemoAppNetwork" folder in "DemoAppNetwork" target */,
-			);
 			path = DemoAppNetwork;
 			sourceTree = "<group>";
 		};
@@ -68,14 +38,6 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		191317C62CB1D4A400C53C24 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				191317CC2CB1D4A400C53C24 /* NetworkExtension.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		19BF45102CB15B8600D0C9DD /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -108,7 +70,6 @@
 			isa = PBXGroup;
 			children = (
 				19BF45132CB15B8600D0C9DD /* DemoApp.app */,
-				191317C92CB1D4A400C53C24 /* DemoAppNetwork.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -116,28 +77,6 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		191317C82CB1D4A400C53C24 /* DemoAppNetwork */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 191317D92CB1D4A400C53C24 /* Build configuration list for PBXNativeTarget "DemoAppNetwork" */;
-			buildPhases = (
-				191317C52CB1D4A400C53C24 /* Sources */,
-				191317C62CB1D4A400C53C24 /* Frameworks */,
-				191317C72CB1D4A400C53C24 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				191317CD2CB1D4A400C53C24 /* DemoAppNetwork */,
-			);
-			name = DemoAppNetwork;
-			packageProductDependencies = (
-			);
-			productName = DemoAppNetwork;
-			productReference = 191317C92CB1D4A400C53C24 /* DemoAppNetwork.appex */;
-			productType = "com.apple.product-type.app-extension";
-		};
 		19BF45122CB15B8600D0C9DD /* DemoApp */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 19BF45222CB15B8700D0C9DD /* Build configuration list for PBXNativeTarget "DemoApp" */;
@@ -150,7 +89,6 @@
 			buildRules = (
 			);
 			dependencies = (
-				191317D32CB1D4A400C53C24 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				19BF45152CB15B8600D0C9DD /* DemoApp */,
@@ -172,9 +110,6 @@
 				LastSwiftUpdateCheck = 1600;
 				LastUpgradeCheck = 1600;
 				TargetAttributes = {
-					191317C82CB1D4A400C53C24 = {
-						CreatedOnToolsVersion = 16.0;
-					};
 					19BF45122CB15B8600D0C9DD = {
 						CreatedOnToolsVersion = 16.0;
 					};
@@ -195,19 +130,11 @@
 			projectRoot = "";
 			targets = (
 				19BF45122CB15B8600D0C9DD /* DemoApp */,
-				191317C82CB1D4A400C53C24 /* DemoAppNetwork */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		191317C72CB1D4A400C53C24 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		19BF45112CB15B8600D0C9DD /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -218,13 +145,6 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		191317C52CB1D4A400C53C24 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		19BF450F2CB15B8600D0C9DD /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -234,67 +154,7 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
-/* Begin PBXTargetDependency section */
-		191317D32CB1D4A400C53C24 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 191317C82CB1D4A400C53C24 /* DemoAppNetwork */;
-			targetProxy = 191317D22CB1D4A400C53C24 /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
-
 /* Begin XCBuildConfiguration section */
-		191317D62CB1D4A400C53C24 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = DemoAppNetwork/DemoAppNetwork.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 2ADDFZ2RLB;
-				ENABLE_HARDENED_RUNTIME = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = DemoAppNetwork/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = DemoAppNetwork;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-					"@executable_path/../../../../Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.NGonzalez.DemoApp.DemoAppNetwork;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-			};
-			name = Debug;
-		};
-		191317D72CB1D4A400C53C24 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = DemoAppNetwork/DemoAppNetwork.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 2ADDFZ2RLB;
-				ENABLE_HARDENED_RUNTIME = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = DemoAppNetwork/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = DemoAppNetwork;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-					"@executable_path/../../../../Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.NGonzalez.DemoApp.DemoAppNetwork;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-			};
-			name = Release;
-		};
 		19BF45202CB15B8700D0C9DD /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -472,15 +332,6 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		191317D92CB1D4A400C53C24 /* Build configuration list for PBXNativeTarget "DemoAppNetwork" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				191317D62CB1D4A400C53C24 /* Debug */,
-				191317D72CB1D4A400C53C24 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		19BF450E2CB15B8600D0C9DD /* Build configuration list for PBXProject "DemoApp" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

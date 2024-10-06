@@ -34,8 +34,33 @@ struct ContentView: View {
     @State private var backendURL = "http://127.0.0.1:3002/upload"
 
     @State private var mimeTypes = [
+        /* DOCUMENTS */
+        "pdf": "application/pdf",
         "md": "text/markdown",
-        "txt": "text/plain"
+        "txt": "text/plain",
+
+        /* JPEG */
+        "jpg": "image/jpeg",
+        "jpeg": "image/jpeg",
+
+        /* FLAC */
+        "flac": "audio/flac",
+
+        /* MP3 */
+        "mp3": "audio/mpeg",
+
+        /* AAC MP4 ALAC  **/
+        "aac": "audio/m4a",
+        "m4a": "audio/x-m4a",
+        "mp4": "audio/mp4",
+
+        /* AIFF */
+        "aff": "audio/x-aiff",
+        "aif": "audio/x-aiff",
+        "aiff": "audio/x-aiff",
+
+        /* WAV */
+        "wav": "audio/wav"
     ]
 
     @State private var isImporting = false
@@ -82,7 +107,7 @@ struct ContentView: View {
         do {
             // Folder
             let items = try fm.contentsOfDirectory(atPath: folder.path).filter { $0 != ".DS_Store" }
-
+            
             for item in items {
 
                 // File
@@ -94,13 +119,15 @@ struct ContentView: View {
                     do {
                         let fileData = try Data(contentsOf: URL(fileURLWithPath: itemPath))
                         let fileExt = URL(fileURLWithPath: itemPath).pathExtension
-                        let mimeType = String(mimeTypes[fileExt]!)
+                        if ["jpeg", "mp3"].contains(fileExt) {
+                            let mimeType = String(mimeTypes[fileExt]!).lowercased()
 
-                        uploadItem(
-                            path: itemPath,
-                            mimeType: mimeType,
-                            uploadData: fileData
-                        )
+                            uploadItem(
+                                path: itemPath,
+                                mimeType: mimeType,
+                                uploadData: fileData
+                            )
+                        }
                     } catch {
                         print ("loading file error")
                     }
@@ -121,13 +148,15 @@ struct ContentView: View {
                             do {
                                 let subfolderFileData = try Data(contentsOf: URL(fileURLWithPath: subfolderItemPath))
                                 let subfolderFileExt = URL(fileURLWithPath: subfolderItemPath).pathExtension
-                                let subfolderMimeType = String(mimeTypes[subfolderFileExt]!)
+                                if ["jpeg", "mp3"].contains(subfolderFileExt) {
+                                    let subfolderMimeType = String(mimeTypes[subfolderFileExt]!).lowercased()
 
-                                uploadItem(
-                                    path: subfolderItemPath,
-                                    mimeType: subfolderMimeType,
-                                    uploadData: subfolderFileData
-                                )
+                                    uploadItem(
+                                        path: subfolderItemPath,
+                                        mimeType: subfolderMimeType,
+                                        uploadData: subfolderFileData
+                                    )
+                                }
                             } catch {
                                 print ("loading file error")
                             }
@@ -141,13 +170,10 @@ struct ContentView: View {
     }
     func syncFolders() {
         for folder in folders {
-            let fm = FileManager.default
-
             do {
-                let attributes = try fm.attributesOfItem(
-                    atPath: folder.path
-                )
+                let attributes = try FileManager.default.attributesOfItem(atPath: folder.path)
                 let fsItemType:String = attributes[FileAttributeKey.type] as! String
+
                 if (fsItemType == "NSFileTypeDirectory") {
                     browseFolder(folder: folder)
                     do {

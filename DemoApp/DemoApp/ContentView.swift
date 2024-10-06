@@ -9,10 +9,19 @@ import SwiftUI
 
 class NetworkDelegateClass: NSObject, URLSessionDelegate, URLSessionDataDelegate {
 
+    struct Response: Decodable {
+        let id: UUID
+        let url: String
+    }
+
     // URLSessionDataDelegate method to handle response data
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
         // Process the received data
-        print("Received data: \(data)")
+        do {
+            let _response = try JSONDecoder().decode(Response.self, from: data)
+        } catch {
+            print("Failed to parse response")
+        }
     }
 
     // URLSessionDataDelegate method to handle completion
@@ -187,45 +196,51 @@ struct ContentView: View {
     }
 
     var body: some View {
-        VStack {
-            Button(action: syncFolders) {
-                Text("Import \(folders)")
-            }
+        NavigationSplitView {
+            //
+            } content : {
+            VStack {
+                Button(action: syncFolders) {
+                    Text("Import \(folders.map { String($0.path().split(separator: "/").last!) })")
+                }
 
-            Button(action: clearFolders) {
-                Text("clear")
-            }
+                Button(action: clearFolders) {
+                    Text("clear")
+                }
 
-            Button(action: {
-                isImporting = true
-            }) {
-                Image(systemName: "waveform.circle.fill")
-                    .font(.system(size: 40))
-            }
-            .fileImporter(
-                isPresented: $isImporting,
-                allowedContentTypes: [.folder],
-                allowsMultipleSelection: true
-            ) { result in
-                if case .success = result {
-                    do {
-                        let items = try result.get()
+                Button(action: {
+                    isImporting = true
+                }) {
+                    Image(systemName: "waveform.circle.fill")
+                        .font(.system(size: 40))
+                }
+                .fileImporter(
+                    isPresented: $isImporting,
+                    allowedContentTypes: [.folder],
+                    allowsMultipleSelection: true
+                ) { result in
+                    if case .success = result {
+                        do {
+                            let items = try result.get()
 
-                        for url in items {
-                            if url.startAccessingSecurityScopedResource() {
-                                folders.append(url)
+                            for url in items {
+                                if url.startAccessingSecurityScopedResource() {
+                                    folders.append(url)
+                                }
                             }
+                        } catch {
+                            let nsError = error as NSError
+                            fatalError("File Import Error \(nsError), \(nsError.userInfo)")
                         }
-                    } catch {
-                        let nsError = error as NSError
-                        fatalError("File Import Error \(nsError), \(nsError.userInfo)")
+                    } else {
+                        print("File Import Failed")
                     }
-                } else {
-                    print("File Import Failed")
                 }
             }
+            .padding()
+        } detail: {
+            //
         }
-        .padding()
     }
 }
 

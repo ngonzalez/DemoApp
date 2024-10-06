@@ -6,9 +6,15 @@
 //
 
 import SwiftUI
+import UniformTypeIdentifiers
 
 @MainActor
 struct ContentView: View {
+    @State private var mimeTypes = [
+        "md": "text/markdown",
+        "txt": "text/plain"
+    ]
+
     @State var folders: Array<URL> = Array<URL>()
 
     @State private var isImporting = false
@@ -16,76 +22,99 @@ struct ContentView: View {
         folders = []
     }
     
-    func uploadItem(uploadData: Data) {
-        let url = URL(string: "http://127.0.0.1:3002/")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    struct UploadItem: Codable {
+        var id = UUID()
+        var filePath: String
+        var mimeType: String
+        var itemData: Data
+    }
 
-        let task = URLSession.shared.uploadTask(with: request, from: uploadData) { data, response, error in
-            print(response as Any)
-////            if let error = error {
-////                print ("error: \(error)")
-////                return
-////            }
-////            guard let response = response as? HTTPURLResponse,
-////                (200...299).contains(response.statusCode) else {
-////                print ("server error")
-////                return
-////            }
-////            if let mimeType = response.mimeType,
-////                mimeType == "application/json",
-////                let data = data,
-////                let dataString = String(data: data, encoding: .utf8) {
-////                print ("got data: \(dataString)")
-////            }
+//    func mimeType(path: String) -> String {
+//        if let mimeType = UTType(filenameExtension: path)?.preferredMIMEType {
+//            return mimeType
+//        }
+//        else {
+//            return "application/octet-stream"
+//        }
+//    }
+
+    func uploadItem(path: String, mimeType: String, uploadData: Data) {
+        do {
+            let item = UploadItem(filePath: path, mimeType: mimeType, itemData: uploadData)
+            let data = try JSONEncoder().encode(item)
+            let url = URL(string: "http://127.0.0.1:3002/upload")!
+
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.httpBody = data
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+//            print(request)
+
+            let task = URLSession.shared.dataTask(with: request) { data, response, error in
+//                print(response as Any)
+            }
+//            let observation = task.progress.observe(\.fractionCompleted) { progress, _ in
+//              print(progress)
+//            }
+//            print(observation)
+            task.resume()
+        } catch {
+            //
         }
-        task.resume()
     }
     
     func browseFolder(folder: URL) {
         let fm = FileManager.default
 
         do {
-            let items = try fm.contentsOfDirectory(atPath: folder.path)
+            // Folder
+            let items = try fm.contentsOfDirectory(atPath: folder.path).filter { $0 != ".DS_Store" }
 
             for item in items {
-                print("--")
+
+                // File
                 let itemPath = folder.path + "/" + item
-                print(itemPath)
-                let attributes = try fm.attributesOfItem(
-                    atPath: itemPath
-                )
-//                let fsattributes = try fm.attributesOfFileSystem(
-//                    forPath: itemPath
-//                )
+                let attributes = try fm.attributesOfItem(atPath: itemPath)
                 let fsFileType:String = attributes[FileAttributeKey.type] as! String
-                print("fsFileType: \(fsFileType)")
+
                 if (fsFileType == "NSFileTypeRegular") {
-                    print(item)
                     do {
                         let fileData = try Data(contentsOf: URL(fileURLWithPath: itemPath))
-                        print(fileData)
-                        uploadItem(uploadData: fileData)
+                        let fileExt = URL(fileURLWithPath: itemPath).pathExtension
+                        let mimeType = String(mimeTypes[fileExt] ?? "application/octet-stream")
+
+                        uploadItem(
+                            path: itemPath,
+                            mimeType: mimeType,
+                            uploadData: fileData
+                        )
                     } catch {
                         print ("loading file error")
                     }
+
                 } else if (fsFileType == "NSFileTypeDirectory") {
-                    print("--")
-                    let itemsSubfolder = try fm.contentsOfDirectory(atPath: itemPath)
-                    for itemSubfolder in itemsSubfolder {
-                        let itemSubfolderPath = itemPath + "/" + itemSubfolder
-                        print(itemSubfolderPath)
-                        let attributesItemSubfolder = try fm.attributesOfItem(
-                            atPath: itemSubfolderPath
-                        )
-                        let fsFileTypeSubfolder:String = attributesItemSubfolder[FileAttributeKey.type] as! String
-                        print("fsFileTypeSubfolder: \(fsFileTypeSubfolder)")
-                        if (fsFileTypeSubfolder == "NSFileTypeRegular") {
+                    
+                    // Subfolder
+                    let subfolderItems = try fm.contentsOfDirectory(atPath: itemPath).filter { $0 != ".DS_Store" }
+
+                    for subfolderItem in subfolderItems {
+                        
+                        // File
+                        let subfolderItemPath = itemPath + "/" + subfolderItem
+                        let subfolderItemAttributes = try fm.attributesOfItem(atPath: subfolderItemPath)
+                        let subfolderFsFileType:String = subfolderItemAttributes[FileAttributeKey.type] as! String
+
+                        if (subfolderFsFileType == "NSFileTypeRegular") {
                             do {
-                                let fileDataSubfolder = try Data(contentsOf: URL(fileURLWithPath: itemSubfolderPath))
-                                print(fileDataSubfolder)
-                                uploadItem(uploadData: fileDataSubfolder)
+                                let subfolderFileData = try Data(contentsOf: URL(fileURLWithPath: subfolderItemPath))
+                                let subfolderFileExt = URL(fileURLWithPath: subfolderItemPath).pathExtension
+                                let subfolderMimeType = String(mimeTypes[subfolderFileExt] ?? "application/octet-stream")
+
+                                uploadItem(
+                                    path: subfolderItemPath,
+                                    mimeType: subfolderMimeType,
+                                    uploadData: subfolderFileData
+                                )
                             } catch {
                                 print ("loading file error")
                             }
@@ -94,7 +123,7 @@ struct ContentView: View {
                 }
             }
         } catch {
-            // failed to read directory – bad permissions, perhaps?
+            //
         }
     }
     func syncFolders() {
@@ -105,22 +134,15 @@ struct ContentView: View {
                 let attributes = try fm.attributesOfItem(
                     atPath: folder.path
                 )
-//                let fsattributes = try fm.attributesOfFileSystem(
-//                    forPath: folder.path
-//                )
-                print("----")
-                print(folder.path)
                 let fsItemType:String = attributes[FileAttributeKey.type] as! String
-                print("fsItemType: \(fsItemType)")
-                print("\n")
-//                print(attributes)
-//                print(fsattributes)
-//                print("\n")
                 if (fsItemType == "NSFileTypeDirectory") {
                     browseFolder(folder: folder)
+                    do {
+                        folder.stopAccessingSecurityScopedResource()
+                    }
                 }
             } catch {
-                // failed to read directory – bad permissions, perhaps?
+                //
             }
         }
     }

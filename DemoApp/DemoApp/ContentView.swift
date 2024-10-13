@@ -48,7 +48,7 @@ struct ContentView: View {
 
     @State private var backendURL:String = "http://127.0.0.1:3002/upload"
 
-    @State private var progress:Float = 0.0
+    @State private var progress:Float = Float(0)
 
     @State private var mimeTypes:[String:String] = [
         /* DOCUMENTS */
@@ -154,7 +154,6 @@ struct ContentView: View {
         let itemPath = folder.path + "/" + item
 
         do {
-
             // File
             let attributes = try fm.attributesOfItem(atPath: itemPath)
             let fsFileType:String = attributes[FileAttributeKey.type] as! String
@@ -172,21 +171,17 @@ struct ContentView: View {
 
                     let folderItemPath = itemPath + "/" + folderItem
 
-                    do {
-                        // File
-                        let folderItemAttributes = try fm.attributesOfItem(atPath: folderItemPath)
-                        let folderFsFileType:String = folderItemAttributes[FileAttributeKey.type] as! String
+                    // File
+                    let folderItemAttributes = try fm.attributesOfItem(atPath: folderItemPath)
+                    let folderFsFileType:String = folderItemAttributes[FileAttributeKey.type] as! String
 
-                        if (folderFsFileType == "NSFileTypeRegular") {
+                    if (folderFsFileType == "NSFileTypeRegular") {
 
-                            importItem(itemPath: folderItemPath, source: "folder")
+                        importItem(itemPath: folderItemPath, source: "folder")
 
-                        }
-                    } catch {
-                        //
                     }
-                    
-                    if (fsFileType == "NSFileTypeDirectory") {
+
+                    if (folderFsFileType == "NSFileTypeDirectory") {
 
                         // SubFolder
                         let subfolderItems = try fm.contentsOfDirectory(atPath: folderItemPath).filter { $0 != ".DS_Store" }
@@ -195,19 +190,15 @@ struct ContentView: View {
 
                             let subfolderItemPath = folderItemPath + "/" + subfolderItem
 
-                            do {
-                                // File
-                                let subfolderItemAttributes = try fm.attributesOfItem(atPath: subfolderItemPath)
-                                let subfolderFsFileType:String = subfolderItemAttributes[FileAttributeKey.type] as! String
-                                if (subfolderFsFileType == "NSFileTypeRegular") {
+                            // File
+                            let subfolderItemAttributes = try fm.attributesOfItem(atPath: subfolderItemPath)
+                            let subfolderFsFileType:String = subfolderItemAttributes[FileAttributeKey.type] as! String
 
-                                    importItem(itemPath: subfolderItemPath, source: "subfolder")
+                            if (subfolderFsFileType == "NSFileTypeRegular") {
 
-                                }
-                            } catch {
-                                //
+                                importItem(itemPath: subfolderItemPath, source: "subfolder")
+
                             }
-
                         }
 
                     }
@@ -226,9 +217,7 @@ struct ContentView: View {
             // Folder
             let items = try fm.contentsOfDirectory(atPath: folder.path).filter { $0 != ".DS_Store" }
             for item in items {
-
                 importFolder(folder: folder, item: item)
-
             }
         } catch {
             //

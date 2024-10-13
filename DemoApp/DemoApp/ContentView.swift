@@ -91,6 +91,7 @@ struct ContentView: View {
         var id = UUID()
         var filePath: String
         var mimeType: String
+        var source: String
         var itemData: Data
     }
 
@@ -106,9 +107,9 @@ struct ContentView: View {
         return request
     }
 
-    func uploadItem(path: String, mimeType: String, uploadData: Data) {
+    func uploadItem(source: String, path: String, mimeType: String, uploadData: Data) {
         do {
-            let item = UploadItem(filePath: path, mimeType: mimeType, itemData: uploadData)
+            let item = UploadItem(filePath: path, mimeType: mimeType, source: source, itemData: uploadData)
             let data = try JSONEncoder().encode(item)
             let url = URL(string: backendURL)!
             let delegateClass = NetworkDelegateClass()
@@ -124,7 +125,7 @@ struct ContentView: View {
         }
     }
 
-    func importItem(itemPath: String) {
+    func importItem(itemPath: String, source: String) {
         do {
             let fileData = try Data(contentsOf: URL(fileURLWithPath: itemPath))
             let fileExt = URL(fileURLWithPath: itemPath).pathExtension
@@ -135,6 +136,7 @@ struct ContentView: View {
 
                 DispatchQueue.main.async {
                     uploadItem(
+                        source: source,
                         path: itemPath,
                         mimeType: mimeType,
                         uploadData: fileData
@@ -159,7 +161,7 @@ struct ContentView: View {
 
             if (fsFileType == "NSFileTypeRegular") {
 
-                importItem(itemPath: itemPath)
+                importItem(itemPath: itemPath, source: "root")
 
             } else if (fsFileType == "NSFileTypeDirectory") {
 
@@ -177,7 +179,7 @@ struct ContentView: View {
 
                         if (folderFsFileType == "NSFileTypeRegular") {
 
-                            importItem(itemPath: folderItemPath)
+                            importItem(itemPath: folderItemPath, source: "folder")
 
                         }
                     } catch {
@@ -199,7 +201,7 @@ struct ContentView: View {
                                 let subfolderFsFileType:String = subfolderItemAttributes[FileAttributeKey.type] as! String
                                 if (subfolderFsFileType == "NSFileTypeRegular") {
 
-                                    importItem(itemPath: subfolderItemPath)
+                                    importItem(itemPath: subfolderItemPath, source: "subfolder")
 
                                 }
                             } catch {

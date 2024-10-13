@@ -93,10 +93,6 @@ struct ContentView: View {
         var mimeType: String
         var itemData: Data
     }
-    
-    enum InvalidOperationException: Error {
-        case uploadError
-    }
 
     func newRequest(url: URL, data: Data, postLength: String) -> URLRequest {
         var request = URLRequest(url: url)
@@ -105,7 +101,7 @@ struct ContentView: View {
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.addValue(postLength, forHTTPHeaderField: "Content-Length")
-        request.addValue("deflate", forHTTPHeaderField: "Content-Encoding")
+        request.addValue("gzip, deflate", forHTTPHeaderField: "Content-Encoding")
 
         return request
     }

@@ -1,24 +1,30 @@
-//
-//  ContentView.swift
-//  DemoApp
-//
-//  Created by Nicolas GONZALEZ on 10/5/24.
-//
+/*
+    Copyright 2024 Nicolas GONZALEZ
+ 
+    MIT License
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
 
 import SwiftUI
+import Gzip
 
 class NetworkDelegateClass: NSObject, URLSessionDelegate, URLSessionDataDelegate {
 
     struct Response: Decodable {
         let id: UUID
-        let url: String
     }
 
     // URLSessionDataDelegate method to handle response data
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
         // Process the received data
         do {
-            let _response = try JSONDecoder().decode(Response.self, from: data)
+            let response = try JSONDecoder().decode(Response.self, from: data)
+            print(response)
         } catch {
             print("Failed to parse response")
         }
@@ -40,9 +46,11 @@ class NetworkDelegateClass: NSObject, URLSessionDelegate, URLSessionDataDelegate
 struct ContentView: View {
     @State var folders: Array<URL> = Array<URL>()
 
-    @State private var backendURL = "http://127.0.0.1:3002/upload"
+    @State private var backendURL:String = "http://127.0.0.1:3002/upload"
 
-    @State private var mimeTypes = [
+    @State private var progress:Float = 0.0
+
+    @State private var mimeTypes:[String:String] = [
         /* DOCUMENTS */
         "pdf": "application/pdf",
         "md": "text/markdown",
@@ -76,8 +84,9 @@ struct ContentView: View {
 
     func clearFolders() {
         folders = []
+        progress = Float(0)
     }
-    
+
     struct UploadItem: Codable {
         var id = UUID()
         var filePath: String
@@ -85,11 +94,18 @@ struct ContentView: View {
         var itemData: Data
     }
     
-    func newRequest(url: URL, data: Data) -> URLRequest {
+    enum InvalidOperationException: Error {
+        case uploadError
+    }
+
+    func newRequest(url: URL, data: Data, postLength: String) -> URLRequest {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.httpBody = data
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.addValue(postLength, forHTTPHeaderField: "Content-Length")
+        request.addValue("deflate", forHTTPHeaderField: "Content-Encoding")
 
         return request
     }
@@ -101,7 +117,9 @@ struct ContentView: View {
             let url = URL(string: backendURL)!
             let delegateClass = NetworkDelegateClass()
             let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
-            let request = newRequest(url: url, data: data)
+            let optimizedData: Data = try! data.gzipped(level: .bestCompression)
+            let postLength = String(format: "%lu", UInt(optimizedData.count))
+            let request = newRequest(url: url, data: optimizedData, postLength: postLength)
             let task = delegateSession.dataTask(with: request)
 
             task.resume()
@@ -109,82 +127,131 @@ struct ContentView: View {
             //
         }
     }
-    
+
+    func importItem(itemPath: String) {
+        do {
+            let fileData = try Data(contentsOf: URL(fileURLWithPath: itemPath))
+            let fileExt = URL(fileURLWithPath: itemPath).pathExtension
+            let allowedMimeTypes = mimeTypes.map { (key, value) in return key }
+
+            if allowedMimeTypes.contains(fileExt) {
+                let mimeType = String(mimeTypes[fileExt]!).lowercased()
+
+                DispatchQueue.main.async {
+                    uploadItem(
+                        path: itemPath,
+                        mimeType: mimeType,
+                        uploadData: fileData
+                    )
+                }
+            }
+        } catch {
+            print ("loading file error")
+        }
+    }
+
+    func importFolder(folder: URL, item: String) {
+        let fm = FileManager.default
+
+        let itemPath = folder.path + "/" + item
+
+        do {
+
+            // File
+            let attributes = try fm.attributesOfItem(atPath: itemPath)
+            let fsFileType:String = attributes[FileAttributeKey.type] as! String
+
+            if (fsFileType == "NSFileTypeRegular") {
+
+                importItem(itemPath: itemPath)
+
+            } else if (fsFileType == "NSFileTypeDirectory") {
+
+                // Folder
+                let folderItems = try fm.contentsOfDirectory(atPath: itemPath).filter { $0 != ".DS_Store" }
+
+                for folderItem in folderItems {
+
+                    let folderItemPath = itemPath + "/" + folderItem
+
+                    do {
+                        // File
+                        let folderItemAttributes = try fm.attributesOfItem(atPath: folderItemPath)
+                        let folderFsFileType:String = folderItemAttributes[FileAttributeKey.type] as! String
+
+                        if (folderFsFileType == "NSFileTypeRegular") {
+
+                            importItem(itemPath: folderItemPath)
+
+                        }
+                    } catch {
+                        //
+                    }
+                    
+                    if (fsFileType == "NSFileTypeDirectory") {
+
+                        // SubFolder
+                        let subfolderItems = try fm.contentsOfDirectory(atPath: folderItemPath).filter { $0 != ".DS_Store" }
+
+                        for subfolderItem in subfolderItems {
+
+                            let subfolderItemPath = folderItemPath + "/" + subfolderItem
+
+                            do {
+                                // File
+                                let subfolderItemAttributes = try fm.attributesOfItem(atPath: subfolderItemPath)
+                                let subfolderFsFileType:String = subfolderItemAttributes[FileAttributeKey.type] as! String
+                                if (subfolderFsFileType == "NSFileTypeRegular") {
+
+                                    importItem(itemPath: subfolderItemPath)
+
+                                }
+                            } catch {
+                                //
+                            }
+
+                        }
+
+                    }
+                }
+            }
+
+        } catch {
+            //
+        }
+    }
+
     func browseFolder(folder: URL) {
         let fm = FileManager.default
 
         do {
             // Folder
             let items = try fm.contentsOfDirectory(atPath: folder.path).filter { $0 != ".DS_Store" }
-            
             for item in items {
 
-                // File
-                let itemPath = folder.path + "/" + item
-                let attributes = try fm.attributesOfItem(atPath: itemPath)
-                let fsFileType:String = attributes[FileAttributeKey.type] as! String
+                importFolder(folder: folder, item: item)
 
-                if (fsFileType == "NSFileTypeRegular") {
-                    do {
-                        let fileData = try Data(contentsOf: URL(fileURLWithPath: itemPath))
-                        let fileExt = URL(fileURLWithPath: itemPath).pathExtension
-                        if ["jpeg", "mp3"].contains(fileExt) {
-                            let mimeType = String(mimeTypes[fileExt]!).lowercased()
-
-                            uploadItem(
-                                path: itemPath,
-                                mimeType: mimeType,
-                                uploadData: fileData
-                            )
-                        }
-                    } catch {
-                        print ("loading file error")
-                    }
-
-                } else if (fsFileType == "NSFileTypeDirectory") {
-                    
-                    // Subfolder
-                    let subfolderItems = try fm.contentsOfDirectory(atPath: itemPath).filter { $0 != ".DS_Store" }
-
-                    for subfolderItem in subfolderItems {
-                        
-                        // File
-                        let subfolderItemPath = itemPath + "/" + subfolderItem
-                        let subfolderItemAttributes = try fm.attributesOfItem(atPath: subfolderItemPath)
-                        let subfolderFsFileType:String = subfolderItemAttributes[FileAttributeKey.type] as! String
-
-                        if (subfolderFsFileType == "NSFileTypeRegular") {
-                            do {
-                                let subfolderFileData = try Data(contentsOf: URL(fileURLWithPath: subfolderItemPath))
-                                let subfolderFileExt = URL(fileURLWithPath: subfolderItemPath).pathExtension
-                                if ["jpeg", "mp3"].contains(subfolderFileExt) {
-                                    let subfolderMimeType = String(mimeTypes[subfolderFileExt]!).lowercased()
-
-                                    uploadItem(
-                                        path: subfolderItemPath,
-                                        mimeType: subfolderMimeType,
-                                        uploadData: subfolderFileData
-                                    )
-                                }
-                            } catch {
-                                print ("loading file error")
-                            }
-                        }
-                    }
-                }
             }
         } catch {
             //
         }
     }
+
     func syncFolders() {
+        var index = 0
         for folder in folders {
+
+            // Set progress
+            index += 1
+            progress = Float(index / folders.count * 100)
+
             do {
                 let attributes = try FileManager.default.attributesOfItem(atPath: folder.path)
                 let fsItemType:String = attributes[FileAttributeKey.type] as! String
-
                 if (fsItemType == "NSFileTypeDirectory") {
+
                     browseFolder(folder: folder)
+
                     do {
                         folder.stopAccessingSecurityScopedResource()
                     }
@@ -194,6 +261,7 @@ struct ContentView: View {
             }
         }
     }
+    
 
     var body: some View {
         NavigationSplitView {
@@ -201,18 +269,21 @@ struct ContentView: View {
             } content : {
             VStack {
                 Button(action: syncFolders) {
-                    Text("Import \(folders.map { String($0.path().split(separator: "/").last!) })")
+                    let folderNames = folders.map { String($0.path().split(separator: "/").last!) }
+                    Text("Import \(folderNames.joined(separator: ", "))")
+                    ProgressView(value: progress)
                 }
 
                 Button(action: clearFolders) {
-                    Text("clear")
+                    Text("Clear folders")
                 }
 
                 Button(action: {
                     isImporting = true
                 }) {
+                    Text("Browse folders")
                     Image(systemName: "waveform.circle.fill")
-                        .font(.system(size: 40))
+                        .font(.system(size: 20))
                 }
                 .fileImporter(
                     isPresented: $isImporting,
@@ -229,11 +300,8 @@ struct ContentView: View {
                                 }
                             }
                         } catch {
-                            let nsError = error as NSError
-                            fatalError("File Import Error \(nsError), \(nsError.userInfo)")
+                            //
                         }
-                    } else {
-                        print("File Import Failed")
                     }
                 }
             }

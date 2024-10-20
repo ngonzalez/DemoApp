@@ -93,6 +93,8 @@ struct ContentView: View {
         var mimeType: String
         var source: String
         var itemData: Data
+        var createdAt: String
+        var updatedAt: String
     }
 
     func newRequest(url: URL, data: Data, postLength: String) -> URLRequest {
@@ -107,9 +109,14 @@ struct ContentView: View {
         return request
     }
 
-    func uploadItem(source: String, path: String, mimeType: String, uploadData: Data) {
+    func uploadItem(source: String, path: String, mimeType: String, uploadData: Data, createdAt: Date, updatedAt: Date) {
         do {
-            let item = UploadItem(filePath: path, mimeType: mimeType, source: source, itemData: uploadData)
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZZZZZ"
+            let createdAtFormatted = dateFormatter.string(from: createdAt)
+            let updatedAtFormatted = dateFormatter.string(from: updatedAt)
+            let item = UploadItem(filePath: path, mimeType: mimeType, source: source, itemData: uploadData,
+                                  createdAt: createdAtFormatted, updatedAt: updatedAtFormatted)
             let data = try JSONEncoder().encode(item)
             let url = URL(string: backendURL)!
             let delegateClass = NetworkDelegateClass()
@@ -125,7 +132,7 @@ struct ContentView: View {
         }
     }
 
-    func importItem(itemPath: String, source: String) {
+    func importItem(itemPath: String, createdAt: Date, updatedAt: Date, source: String) {
         do {
             let fileData = try Data(contentsOf: URL(fileURLWithPath: itemPath))
             let fileExt = URL(fileURLWithPath: itemPath).pathExtension
@@ -139,7 +146,9 @@ struct ContentView: View {
                         source: source,
                         path: itemPath,
                         mimeType: mimeType,
-                        uploadData: fileData
+                        uploadData: fileData,
+                        createdAt: createdAt,
+                        updatedAt: updatedAt
                     )
                 }
             }
@@ -157,10 +166,12 @@ struct ContentView: View {
             // File
             let attributes = try fm.attributesOfItem(atPath: itemPath)
             let fsFileType:String = attributes[FileAttributeKey.type] as! String
+            let itemCreatedAt:Date = attributes[FileAttributeKey.creationDate] as! Date
+            let itemUpdatedAt:Date = attributes[FileAttributeKey.modificationDate] as! Date
 
             if (fsFileType == "NSFileTypeRegular") {
 
-                importItem(itemPath: itemPath, source: "root")
+                importItem(itemPath: itemPath, createdAt: itemCreatedAt, updatedAt: itemUpdatedAt, source: "root")
 
             } else if (fsFileType == "NSFileTypeDirectory") {
 
@@ -174,10 +185,12 @@ struct ContentView: View {
                     // File
                     let folderItemAttributes = try fm.attributesOfItem(atPath: folderItemPath)
                     let folderFsFileType:String = folderItemAttributes[FileAttributeKey.type] as! String
+                    let folderItemCreatedAt:Date = folderItemAttributes[FileAttributeKey.creationDate] as! Date
+                    let folderItemUpdatedAt:Date = folderItemAttributes[FileAttributeKey.modificationDate] as! Date
 
                     if (folderFsFileType == "NSFileTypeRegular") {
 
-                        importItem(itemPath: folderItemPath, source: "folder")
+                        importItem(itemPath: folderItemPath, createdAt: folderItemCreatedAt, updatedAt: folderItemUpdatedAt, source: "folder")
 
                     }
 
@@ -193,10 +206,12 @@ struct ContentView: View {
                             // File
                             let subfolderItemAttributes = try fm.attributesOfItem(atPath: subfolderItemPath)
                             let subfolderFsFileType:String = subfolderItemAttributes[FileAttributeKey.type] as! String
+                            let subfolderItemCreatedAt:Date = subfolderItemAttributes[FileAttributeKey.creationDate] as! Date
+                            let subfolderItemUpdatedAt:Date = subfolderItemAttributes[FileAttributeKey.modificationDate] as! Date
 
                             if (subfolderFsFileType == "NSFileTypeRegular") {
 
-                                importItem(itemPath: subfolderItemPath, source: "subfolder")
+                                importItem(itemPath: subfolderItemPath, createdAt: subfolderItemCreatedAt, updatedAt: subfolderItemUpdatedAt, source: "subfolder")
 
                             }
                         }

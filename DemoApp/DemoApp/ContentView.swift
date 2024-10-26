@@ -46,6 +46,7 @@ class NetworkDelegateClass: NSObject, URLSessionDelegate, URLSessionDataDelegate
 struct ContentView: View {
     @State var folders: Array<URL> = Array<URL>()
 
+//    @State private var backendURL:String = "https://link12.ddns.net:4040/upload"
     @State private var backendURL:String = "http://127.0.0.1:3002/upload"
 
     @State private var progress:Float = Float(0)
@@ -156,69 +157,72 @@ struct ContentView: View {
             print ("loading file error")
         }
     }
-
     func importFolder(folder: URL, item: String) {
-        let fm = FileManager.default
-
-        let itemPath = folder.path + "/" + item
 
         do {
-            // File
-            let attributes = try fm.attributesOfItem(atPath: itemPath)
-            let fsFileType:String = attributes[FileAttributeKey.type] as! String
-            let itemCreatedAt:Date = attributes[FileAttributeKey.creationDate] as! Date
-            let itemUpdatedAt:Date = attributes[FileAttributeKey.modificationDate] as! Date
 
-            if (fsFileType == "NSFileTypeRegular") {
+          let fm = FileManager.default
+          let folderAttributes = try fm.attributesOfItem(atPath: folder.path)
+          let folderFsItemType:String = folderAttributes[FileAttributeKey.type] as! String
 
-                importItem(itemPath: itemPath, createdAt: itemCreatedAt, updatedAt: itemUpdatedAt, source: "root")
+          if (folderFsItemType == "NSFileTypeDirectory") {
 
-            } else if (fsFileType == "NSFileTypeDirectory") {
+              // File
+              let itemPath = folder.path + "/" + item
+              let attributes = try fm.attributesOfItem(atPath: itemPath)
+              let fsFileType:String = attributes[FileAttributeKey.type] as! String
+              let itemCreatedAt:Date = attributes[FileAttributeKey.creationDate] as! Date
+              let itemUpdatedAt:Date = attributes[FileAttributeKey.modificationDate] as! Date
 
-                // Folder
-                let folderItems = try fm.contentsOfDirectory(atPath: itemPath).filter { $0 != ".DS_Store" }
+              if (fsFileType == "NSFileTypeRegular") {
 
-                for folderItem in folderItems {
+                  importItem(itemPath: itemPath, createdAt: itemCreatedAt, updatedAt: itemUpdatedAt, source: "root")
 
-                    let folderItemPath = itemPath + "/" + folderItem
+              } else if (fsFileType == "NSFileTypeDirectory") {
 
-                    // File
-                    let folderItemAttributes = try fm.attributesOfItem(atPath: folderItemPath)
-                    let folderFsFileType:String = folderItemAttributes[FileAttributeKey.type] as! String
-                    let folderItemCreatedAt:Date = folderItemAttributes[FileAttributeKey.creationDate] as! Date
-                    let folderItemUpdatedAt:Date = folderItemAttributes[FileAttributeKey.modificationDate] as! Date
+                  // Folder
+                  let folderItems = try fm.contentsOfDirectory(atPath: itemPath).filter { $0 != ".DS_Store" }
 
-                    if (folderFsFileType == "NSFileTypeRegular") {
+                  for folderItem in folderItems {
 
-                        importItem(itemPath: folderItemPath, createdAt: folderItemCreatedAt, updatedAt: folderItemUpdatedAt, source: "folder")
+                      let folderItemPath = itemPath + "/" + folderItem
 
-                    }
+                      // File
+                      let folderItemAttributes = try fm.attributesOfItem(atPath: folderItemPath)
+                      let folderFsFileType:String = folderItemAttributes[FileAttributeKey.type] as! String
+                      let folderItemCreatedAt:Date = folderItemAttributes[FileAttributeKey.creationDate] as! Date
+                      let folderItemUpdatedAt:Date = folderItemAttributes[FileAttributeKey.modificationDate] as! Date
 
-                    if (folderFsFileType == "NSFileTypeDirectory") {
+                      if (folderFsFileType == "NSFileTypeRegular") {
 
-                        // SubFolder
-                        let subfolderItems = try fm.contentsOfDirectory(atPath: folderItemPath).filter { $0 != ".DS_Store" }
+                          importItem(itemPath: folderItemPath, createdAt: folderItemCreatedAt, updatedAt: folderItemUpdatedAt, source: "folder")
 
-                        for subfolderItem in subfolderItems {
+                      }
 
-                            let subfolderItemPath = folderItemPath + "/" + subfolderItem
+                      if (folderFsFileType == "NSFileTypeDirectory") {
 
-                            // File
-                            let subfolderItemAttributes = try fm.attributesOfItem(atPath: subfolderItemPath)
-                            let subfolderFsFileType:String = subfolderItemAttributes[FileAttributeKey.type] as! String
-                            let subfolderItemCreatedAt:Date = subfolderItemAttributes[FileAttributeKey.creationDate] as! Date
-                            let subfolderItemUpdatedAt:Date = subfolderItemAttributes[FileAttributeKey.modificationDate] as! Date
+                          // SubFolder
+                          let subfolderItems = try fm.contentsOfDirectory(atPath: folderItemPath).filter { $0 != ".DS_Store" }
 
-                            if (subfolderFsFileType == "NSFileTypeRegular") {
+                          for subfolderItem in subfolderItems {
 
-                                importItem(itemPath: subfolderItemPath, createdAt: subfolderItemCreatedAt, updatedAt: subfolderItemUpdatedAt, source: "subfolder")
+                              // File
+                              let subfolderItemPath = folderItemPath + "/" + subfolderItem
+                              let subfolderItemAttributes = try fm.attributesOfItem(atPath: subfolderItemPath)
+                              let subfolderFsFileType:String = subfolderItemAttributes[FileAttributeKey.type] as! String
+                              let subfolderItemCreatedAt:Date = subfolderItemAttributes[FileAttributeKey.creationDate] as! Date
+                              let subfolderItemUpdatedAt:Date = subfolderItemAttributes[FileAttributeKey.modificationDate] as! Date
 
-                            }
-                        }
+                              if (subfolderFsFileType == "NSFileTypeRegular") {
 
-                    }
-                }
-            }
+                                  importItem(itemPath: subfolderItemPath, createdAt: subfolderItemCreatedAt, updatedAt: subfolderItemUpdatedAt, source: "subfolder")
+
+                              }
+                          }
+                      }
+                  }
+              }
+          }
 
         } catch {
             //

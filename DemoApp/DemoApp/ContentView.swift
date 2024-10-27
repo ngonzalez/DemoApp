@@ -14,17 +14,11 @@ import SwiftUI
 import Gzip
 
 class NetworkDelegateClass: NSObject, URLSessionDelegate, URLSessionDataDelegate {
-
-    struct Response: Decodable {
-        let id: UUID
-    }
-
     // URLSessionDataDelegate method to handle response data
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
         // Process the received data
         do {
-            let response = try JSONDecoder().decode(Response.self, from: data)
-            print(response)
+            print("Successfully completed request")
         } catch {
             print("Failed to parse response")
         }
@@ -44,13 +38,16 @@ class NetworkDelegateClass: NSObject, URLSessionDelegate, URLSessionDataDelegate
 
 @MainActor
 struct ContentView: View {
+
+    @State var uploadUuids: Array<UUID> = Array<UUID>()
+
     @State var folders: Array<URL> = Array<URL>()
 
-//    @State private var backendURL:String = "https://link12.ddns.net:4040/upload"
-    @State private var backendURL:String = "http://127.0.0.1:3002/upload"
+//    @State private var backendURL:String = "https://link12.ddns.net:4040/uploads"
+    @State private var backendURL:String = "http://127.0.0.1:3002/uploads"
 
     @State private var progress:Float = Float(0)
-
+    
     @State private var mimeTypes:[String:String] = [
         /* DOCUMENTS */
         "pdf": "application/pdf",
@@ -83,11 +80,6 @@ struct ContentView: View {
 
     @State private var isImporting = false
 
-    func clearFolders() {
-        folders = []
-        progress = Float(0)
-    }
-
     struct UploadItem: Codable {
         var id = UUID()
         var filePath: String
@@ -111,6 +103,11 @@ struct ContentView: View {
     }
 
     func uploadItem(source: String, path: String, mimeType: String, uploadData: Data, createdAt: Date, updatedAt: Date) {
+
+        struct Response: Decodable {
+            let uuid: UUID
+        }
+
         do {
             let dateFormatter = DateFormatter()
             dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZZZZZ"
@@ -125,9 +122,17 @@ struct ContentView: View {
             let optimizedData: Data = try! data.gzipped(level: .bestCompression)
             let postLength = String(format: "%lu", UInt(optimizedData.count))
             let request = newRequest(url: url, data: optimizedData, postLength: postLength)
-            let task = delegateSession.dataTask(with: request)
+            let task = delegateSession.dataTask(with: request) { data, response, error in
+                do {
+                    let res = try JSONDecoder().decode(Response.self, from: data!)
+                    uploadUuids.append(res.uuid)
+                } catch let error {
+                    print(error)
+                }
+            }
 
             task.resume()
+            
         } catch {
             //
         }
@@ -185,9 +190,8 @@ struct ContentView: View {
 
                   for folderItem in folderItems {
 
-                      let folderItemPath = itemPath + "/" + folderItem
-
                       // File
+                      let folderItemPath = itemPath + "/" + folderItem
                       let folderItemAttributes = try fm.attributesOfItem(atPath: folderItemPath)
                       let folderFsFileType:String = folderItemAttributes[FileAttributeKey.type] as! String
                       let folderItemCreatedAt:Date = folderItemAttributes[FileAttributeKey.creationDate] as! Date
@@ -267,13 +271,23 @@ struct ContentView: View {
             }
         }
     }
+
+    func clearFolders() {
+        folders = []
+        progress = Float(0)
+    }
     
+    func showUploads() {
+        //
+    }
 
     var body: some View {
         NavigationSplitView {
             //
             } content : {
             VStack {
+                Text("uuids \(uploadUuids)")
+
                 Button(action: syncFolders) {
                     let folderNames = folders.map { String($0.path().split(separator: "/").last!) }
                     Text("Import \(folderNames.joined(separator: ", "))")

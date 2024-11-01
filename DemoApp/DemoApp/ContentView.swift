@@ -310,28 +310,40 @@ struct ContentView: View {
         let audioFiles: Array<String>
     }
 
-    func getUpload(uuid: UUID) {
-        let url = URL(string: "\(backendURL)/\(uuid)")!
-        let request = newGetRequest(url: url)
-        let delegateClass = NetworkDelegateClass()
-        let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
-        let task = delegateSession.dataTask(with: request) { data, response, error in
-            do {
-                let response = try JSONDecoder().decode(UploadWithFiles.self, from: data!)
-                uploadsWithFiles.append(response)
-            } catch let error {
-                print(error)
-            }
-        }
+    struct UploadUuids: Codable {
+        var uuids:Array<UUID> = Array<UUID>()
+    }
 
-        task.resume()
+    func getUploads() {
+        do {
+            let item = UploadUuids(uuids: uploadsResponses.map{ $0.uuid })
+            let data = try JSONEncoder().encode(item)
+            let url = URL(string: "\(backendURL)/list")!
+            let delegateClass = NetworkDelegateClass()
+            let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
+            let optimizedData: Data = try! data.gzipped(level: .bestCompression)
+            let postLength = String(format: "%lu", UInt(optimizedData.count))
+            let request = newPostRequest(url: url, data: optimizedData, postLength: postLength)
+            let task = delegateSession.dataTask(with: request) { data, response, error in
+                do {
+                    let results = try JSONDecoder().decode([UploadWithFiles].self, from: data!)
+                    uploadsWithFiles.append(contentsOf: results)
+                } catch let error {
+                    print(error)
+                }
+            }
+
+            task.resume()
+
+        } catch {
+            
+        }
     }
 
     func refreshUploads() {
         uploadsWithFiles = []
-        for upload in uploadsResponses {
-            getUpload(uuid: upload.uuid)
-        }
+        getUploads()
+        refreshing = false
     }
 
     @State var refreshing:Bool = Bool(false)
@@ -397,6 +409,7 @@ struct ContentView: View {
         } detail: {
             //
             Text("Uploads \(refreshing) \(uploadsWithFiles.count)")
+            Text("\(uploadsWithFiles)")
         }
     }
 }

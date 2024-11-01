@@ -292,13 +292,42 @@ struct ContentView: View {
         progress = Float(0)
     }
 
+    struct ImageFile: Decodable {
+        let id: Int
+        let dataUrl: String
+        let fileName: String
+        let fileUrl: String
+        let thumbUrl: String
+    }
+
+    struct PdfFile: Decodable {
+        let id: Int
+        let dataUrl: String
+        let fileName: String
+        let fileUrl: String
+    }
+
+    struct TextFile: Decodable {
+        let id: Int
+        let dataUrl: String
+        let fileName: String
+        let fileUrl: String
+    }
+
+    struct AudioFile: Decodable {
+        let id: Int
+        let dataUrl: String
+        let fileName: String
+        let fileUrl: String
+    }
+
     struct UploadWithFiles: Decodable {
         let id: Int
         let uuid: UUID
-        let images: Array<String>
-        let pdfs: Array<String>
-        let texts: Array<String>
-        let audioFiles: Array<String>
+        let images: Array<ImageFile>
+        let pdfs: Array<PdfFile>
+        let texts: Array<TextFile>
+        let audioFiles: Array<AudioFile>
     }
 
     struct UploadUuids: Codable {
@@ -326,6 +355,8 @@ struct ContentView: View {
 
             task.resume()
 
+            refreshing = false
+
         } catch {
             
         }
@@ -334,7 +365,6 @@ struct ContentView: View {
     func refreshUploads() {
         uploadsWithFiles = []
         getUploads()
-        refreshing = false
     }
 
     @State var refreshing:Bool = Bool(false)
@@ -399,8 +429,7 @@ struct ContentView: View {
             .padding()
         } detail: {
             //
-            Text("Uploads \(refreshing) \(uploadsWithFiles.count)")
-            Text("\(uploadsWithFiles)")
+            Text("Uploads \(uploadsWithFiles)")
         }
     }
 }

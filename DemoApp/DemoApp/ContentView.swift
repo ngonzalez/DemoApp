@@ -292,15 +292,6 @@ struct ContentView: View {
         progress = Float(0)
     }
 
-    func newGetRequest(url: URL) -> URLRequest {
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        return request
-    }
-
     struct UploadWithFiles: Decodable {
         let id: Int
         let uuid: UUID

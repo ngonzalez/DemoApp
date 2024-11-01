@@ -39,12 +39,13 @@ class NetworkDelegateClass: NSObject, URLSessionDelegate, URLSessionDataDelegate
 @MainActor
 struct ContentView: View {
 
-    @State var uploadUuids: Array<UUID> = Array<UUID>()
+    @State var uploadsWithFiles: Array<UploadResponse> = Array<UploadResponse>()
+
+    @State var uploads: Array<Response> = Array<Response>()
 
     @State var folders: Array<URL> = Array<URL>()
 
-//    @State private var backendURL:String = "https://link12.ddns.net:4040/uploads"
-    @State private var backendURL:String = "http://127.0.0.1:3002/uploads"
+    @State private var backendURL:String = "https://link12.ddns.net:4040/uploads"
 
     @State private var progress:Float = Float(0)
 
@@ -90,7 +91,7 @@ struct ContentView: View {
         var updatedAt: String
     }
 
-    func newRequest(url: URL, data: Data, postLength: String) -> URLRequest {
+    func newPostRequest(url: URL, data: Data, postLength: String) -> URLRequest {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.httpBody = data
@@ -102,11 +103,12 @@ struct ContentView: View {
         return request
     }
 
-    func uploadItem(source: String, path: String, mimeType: String, uploadData: Data, createdAt: Date, updatedAt: Date) {
+    struct Response: Decodable {
+        let id: Int
+        let uuid: UUID
+    }
 
-        struct Response: Decodable {
-            let uuid: UUID
-        }
+    func uploadItem(source: String, path: String, mimeType: String, uploadData: Data, createdAt: Date, updatedAt: Date) {
 
         do {
             let dateFormatter = DateFormatter()
@@ -121,11 +123,11 @@ struct ContentView: View {
             let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
             let optimizedData: Data = try! data.gzipped(level: .bestCompression)
             let postLength = String(format: "%lu", UInt(optimizedData.count))
-            let request = newRequest(url: url, data: optimizedData, postLength: postLength)
+            let request = newPostRequest(url: url, data: optimizedData, postLength: postLength)
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 do {
-                    let res = try JSONDecoder().decode(Response.self, from: data!)
-                    uploadUuids.append(res.uuid)
+                    let upload = try JSONDecoder().decode(Response.self, from: data!)
+                    uploads.append(upload)
                 } catch let error {
                     print(error)
                 }
@@ -162,6 +164,7 @@ struct ContentView: View {
             print ("loading file error")
         }
     }
+
     func importFolder(folder: URL, item: String) {
 
         do {
@@ -275,10 +278,49 @@ struct ContentView: View {
     func clearFolders() {
         folders = []
         progress = Float(0)
+        uploadsWithFiles = []
     }
 
-    func showUploads() {
-        //
+    func newGetRequest(url: URL) -> URLRequest {
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        return request
+    }
+
+    struct UploadWithFiles: Decodable {
+        let id: Int
+        let uuid: UUID
+        let images: Array<String>
+        let pdfs: Array<String>
+        let texts: Array<String>
+        let audioFiles: Array<String>
+    }
+
+    func getUpload(uuid: UUID) {
+        let url = URL(string: "\(backendURL)/\(uuid)")!
+        let request = newGetRequest(url: url)
+        let delegateClass = NetworkDelegateClass()
+        let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
+        let task = delegateSession.dataTask(with: request) { data, response, error in
+            do {
+                let response = try JSONDecoder().decode(UploadWithFiles.self, from: data!)
+                uploadsWithFiles.append(response)
+            } catch let error {
+                print(error)
+            }
+        }
+
+        task.resume()
+    }
+
+    func refreshUploads() {
+        uploadsWithFiles = []
+        for upload in uploads {
+            getUpload(uuid: upload.uuid)
+        }
     }
 
     var body: some View {
@@ -286,7 +328,11 @@ struct ContentView: View {
             //
             } content : {
             VStack {
-                Text("uuids \(uploadUuids)")
+                Button(action: refreshUploads) {
+                    Text("Refresh uploads")
+                    Image(systemName: "arrow.clockwise.square.fill")
+                        .font(.system(size: 20))
+                }
 
                 Button(action: syncFolders) {
                     let folderNames = folders.map { String($0.path().split(separator: "/").last!) }
@@ -319,6 +365,7 @@ struct ContentView: View {
                                     folders.append(url)
                                 }
                             }
+
                         } catch {
                             //
                         }
@@ -328,6 +375,7 @@ struct ContentView: View {
             .padding()
         } detail: {
             //
+            Text("Uploads \(uploadsWithFiles)")
         }
     }
 }

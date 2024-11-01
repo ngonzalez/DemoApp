@@ -45,13 +45,13 @@ class NetworkDelegateClass: NSObject, URLSessionDelegate, URLSessionDataDelegate
 @MainActor
 struct ContentView: View {
 
-    @State var uploadsWithFiles: Array<UploadResponse> = Array<UploadResponse>()
+    @State var uploadsResponses: Array<UploadResponse> = Array<UploadResponse>()
 
-    @State var uploads: Array<Response> = Array<Response>()
+    @State var uploadsWithFiles: Array<UploadWithFiles> = Array<UploadWithFiles>()
 
     @State var folders: Array<URL> = Array<URL>()
 
-    @State private var backendURL:String = "https://link12.ddns.net:4040/uploads"
+    @State private var backendURL:String = "http://127.0.0.1:3002/uploads"
 
     @State private var progress:Float = Float(0)
 
@@ -109,7 +109,7 @@ struct ContentView: View {
         return request
     }
 
-    struct Response: Decodable {
+    struct UploadResponse: Decodable {
         let id: Int
         let uuid: UUID
     }
@@ -121,8 +121,14 @@ struct ContentView: View {
             dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZZZZZ"
             let createdAtFormatted = dateFormatter.string(from: createdAt)
             let updatedAtFormatted = dateFormatter.string(from: updatedAt)
-            let item = UploadItem(filePath: path, mimeType: mimeType, source: source, itemData: uploadData,
-                                  createdAt: createdAtFormatted, updatedAt: updatedAtFormatted)
+            let item = UploadItem(
+                           filePath: path,
+                           mimeType: mimeType,
+                           source: source,
+                           itemData: uploadData,
+                           createdAt: createdAtFormatted,
+                           updatedAt: updatedAtFormatted
+                       )
             let data = try JSONEncoder().encode(item)
             let url = URL(string: backendURL)!
             let delegateClass = NetworkDelegateClass()
@@ -132,8 +138,8 @@ struct ContentView: View {
             let request = newPostRequest(url: url, data: optimizedData, postLength: postLength)
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 do {
-                    let upload = try JSONDecoder().decode(Response.self, from: data!)
-                    uploads.append(upload)
+                    let upload = try JSONDecoder().decode(UploadResponse.self, from: data!)
+                    uploadsResponses.append(upload)
                 } catch let error {
                     print(error)
                 }
@@ -284,7 +290,6 @@ struct ContentView: View {
     func clearFolders() {
         folders = []
         progress = Float(0)
-        uploadsWithFiles = []
     }
 
     func newGetRequest(url: URL) -> URLRequest {
@@ -324,26 +329,35 @@ struct ContentView: View {
 
     func refreshUploads() {
         uploadsWithFiles = []
-        for upload in uploads {
+        for upload in uploadsResponses {
             getUpload(uuid: upload.uuid)
         }
     }
+
+    @State var refreshing:Bool = Bool(false)
+    let timer = Timer.publish(every: 2, on: .main, in: .common).autoconnect()
 
     var body: some View {
         NavigationSplitView {
             //
             } content : {
             VStack {
-                Button(action: refreshUploads) {
-                    Text("Refresh uploads")
-                    Image(systemName: "arrow.clockwise.square.fill")
-                        .font(.system(size: 20))
-                }
+                 Button(action: refreshUploads) {
+                     Text("Refresh uploads")
+                     Image(systemName: "arrow.clockwise.square")
+                         .font(.system(size: 20))
+                 }
 
                 Button(action: syncFolders) {
                     let folderNames = folders.map { String($0.path().split(separator: "/").last!) }
                     Text("Import \(folderNames.joined(separator: ", "))")
                     ProgressView(value: progress)
+                        .onReceive(timer) { _ in
+                            if !refreshing && (uploadsResponses.count != uploadsWithFiles.count) {
+                                refreshing = true
+                                refreshUploads()
+                            }
+                        }
                 }
 
                 Button(action: clearFolders) {
@@ -354,8 +368,9 @@ struct ContentView: View {
                     isImporting = true
                 }) {
                     Text("Browse folders")
-                    Image(systemName: "waveform.circle.fill")
+                    Image(systemName: "square.grid.3x1.folder.badge.plus")
                         .font(.system(size: 20))
+                        .symbolEffect(.bounce, options: .repeat(1))
                 }
                 .fileImporter(
                     isPresented: $isImporting,
@@ -381,7 +396,7 @@ struct ContentView: View {
             .padding()
         } detail: {
             //
-            Text("Uploads \(uploadsWithFiles)")
+            Text("Uploads \(refreshing) \(uploadsWithFiles.count)")
         }
     }
 }

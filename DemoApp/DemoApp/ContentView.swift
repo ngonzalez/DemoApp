@@ -285,14 +285,13 @@ struct ContentView: View {
                 //
             }
         }
+
+        if (uploadsResponses.count != uploadsWithFiles.count) {
+            refreshUploads()
+        }
     }
 
-    func clearFolders() {
-        folders = []
-        progress = Float(0)
-    }
-
-    struct ImageFile: Decodable {
+    struct ImageFile: Decodable, Identifiable {
         let id: Int
         let dataUrl: String
         let fileName: String
@@ -300,28 +299,28 @@ struct ContentView: View {
         let thumbUrl: String
     }
 
-    struct PdfFile: Decodable {
+    struct PdfFile: Decodable, Identifiable {
         let id: Int
         let dataUrl: String
         let fileName: String
         let fileUrl: String
     }
 
-    struct TextFile: Decodable {
+    struct TextFile: Decodable, Identifiable {
         let id: Int
         let dataUrl: String
         let fileName: String
         let fileUrl: String
     }
 
-    struct AudioFile: Decodable {
+    struct AudioFile: Decodable, Identifiable {
         let id: Int
         let dataUrl: String
         let fileName: String
         let fileUrl: String
     }
 
-    struct UploadWithFiles: Decodable {
+    struct UploadWithFiles: Decodable, Identifiable {
         let id: Int
         let uuid: UUID
         let images: Array<ImageFile>
@@ -347,7 +346,8 @@ struct ContentView: View {
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 do {
                     let results = try JSONDecoder().decode([UploadWithFiles].self, from: data!)
-                    uploadsWithFiles.append(contentsOf: results)
+                    self.uploadsWithFiles = results
+                    
                 } catch let error {
                     print(error)
                 }
@@ -355,20 +355,19 @@ struct ContentView: View {
 
             task.resume()
 
-            refreshing = false
-
         } catch {
             
         }
     }
 
     func refreshUploads() {
-        uploadsWithFiles = []
         getUploads()
     }
 
-    @State var refreshing:Bool = Bool(false)
-    let timer = Timer.publish(every: 2, on: .main, in: .common).autoconnect()
+    func clearFolders() {
+        folders = []
+        progress = Float(0)
+    }
 
     var body: some View {
         NavigationSplitView {
@@ -385,12 +384,6 @@ struct ContentView: View {
                     let folderNames = folders.map { String($0.path().split(separator: "/").last!) }
                     Text("Import \(folderNames.joined(separator: ", "))")
                     ProgressView(value: progress)
-                        .onReceive(timer) { _ in
-                            if !refreshing && (uploadsResponses.count != uploadsWithFiles.count) {
-                                refreshing = true
-                                refreshUploads()
-                            }
-                        }
                 }
 
                 Button(action: clearFolders) {
@@ -426,10 +419,23 @@ struct ContentView: View {
                     }
                 }
             }
-            .padding()
+
         } detail: {
             //
-            Text("Uploads \(uploadsWithFiles)")
+            ScrollView {
+                VStack {
+                    Text("uploadsWithFiles \(uploadsWithFiles.count)")
+                    ForEach(uploadsWithFiles) { upload in
+                        Text("id \(upload.id)")
+                        Text("id \(upload.uuid)")
+                        Text("images \(upload.images.count)")
+                        Text("pdfs \(upload.pdfs.count)")
+                        Text("audioFiles \(upload.audioFiles.count)")
+                        Text("texts \(upload.texts.count)")
+                        Divider()
+                    }
+                }
+            }
         }
     }
 }

@@ -85,7 +85,7 @@ struct ContentView: View {
         "wav": "audio/wav"
     ]
 
-    @State private var isImporting = false
+    @State private var isImporting:Bool = false
 
     struct UploadItem: Codable {
         var id = UUID()

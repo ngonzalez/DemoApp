@@ -49,6 +49,14 @@ struct ContentView: View {
 
     @State var uploadsWithFiles: Array<UploadWithFiles> = Array<UploadWithFiles>()
 
+    @State var uploadImageFiles:Array<ImageFile> = Array<ImageFile>()
+
+    @State var uploadPdfFiles:Array<PdfFile> = Array<PdfFile>()
+
+    @State var uploadAudioFiles:Array<AudioFile> = Array<AudioFile>()
+
+    @State var uploadTextFiles:Array<TextFile> = Array<TextFile>()
+
     @State var folders: Array<URL> = Array<URL>()
 
     @State private var backendURL:String = "http://127.0.0.1:3002/uploads"
@@ -323,14 +331,28 @@ struct ContentView: View {
     struct UploadWithFiles: Decodable, Identifiable {
         let id: Int
         let uuid: UUID
-        let images: Array<ImageFile>
-        let pdfs: Array<PdfFile>
-        let texts: Array<TextFile>
+        let imageFiles: Array<ImageFile>
+        let pdfFiles: Array<PdfFile>
+        let textFiles: Array<TextFile>
         let audioFiles: Array<AudioFile>
     }
 
     struct UploadUuids: Codable {
         var uuids:Array<UUID> = Array<UUID>()
+    }
+
+    func setAttachments() {
+        self.uploadImageFiles = []
+        self.uploadPdfFiles = []
+        self.uploadAudioFiles = []
+        self.uploadTextFiles = []
+
+        for upload in self.uploadsWithFiles {
+            self.uploadImageFiles += upload.imageFiles
+            self.uploadPdfFiles += upload.pdfFiles
+            self.uploadAudioFiles += upload.audioFiles
+            self.uploadTextFiles += upload.textFiles
+        }
     }
 
     func getUploads() {
@@ -347,7 +369,7 @@ struct ContentView: View {
                 do {
                     let results = try JSONDecoder().decode([UploadWithFiles].self, from: data!)
                     self.uploadsWithFiles = results
-                    
+                    setAttachments()
                 } catch let error {
                     print(error)
                 }
@@ -418,22 +440,87 @@ struct ContentView: View {
                         }
                     }
                 }
+
+                /* ImageFiles */
+                Table(of: ImageFile.self) {
+                    TableColumn("id") { imageFile in
+                        Text("\(imageFile.id)")
+                    }
+                    TableColumn("fileName", value: \.fileName)
+                    TableColumn("fileUrl") { imageFile in
+                        Link(destination: URL(string: imageFile.fileUrl)!, label: {
+                            Image(systemName: "bubble.left")
+                            Text("Web")
+                        })
+                    }
+                    } rows: {
+                    ForEach(uploadImageFiles) { imageFile in
+                       TableRow(imageFile)
+                    }
+                }
+
+                /* PdfFiles */
+                Table(of: PdfFile.self) {
+                    TableColumn("id") { pdfFile in
+                        Text("\(pdfFile.id)")
+                    }
+                    TableColumn("fileName", value: \.fileName)
+                    TableColumn("fileUrl") { pdfFile in
+                        Link(destination: URL(string: pdfFile.fileUrl)!, label: {
+                            Image(systemName: "bubble.left")
+                            Text("Web")
+                        })
+                    }
+                    } rows: {
+                    ForEach(uploadPdfFiles) { pdfFile in
+                       TableRow(pdfFile)
+                    }
+                }
+
+                /* AudioFiles */
+                Table(of: AudioFile.self) {
+                    TableColumn("id") { audioFile in
+                        Text("\(audioFile.id)")
+                    }
+                    TableColumn("fileName", value: \.fileName)
+                    TableColumn("fileUrl") { audioFile in
+                        Link(destination: URL(string: audioFile.fileUrl)!, label: {
+                            Image(systemName: "bubble.left")
+                            Text("Web")
+                        })
+                    }
+                    } rows: {
+                    ForEach(uploadAudioFiles) { audioFile in
+                       TableRow(audioFile)
+                    }
+                }
+
+                /* TextFiles */
+                Table(of: TextFile.self) {
+                    TableColumn("id") { textFile in
+                        Text("\(textFile.id)")
+                    }
+                    TableColumn("fileName", value: \.fileName)
+                    TableColumn("fileUrl") { textFile in
+                        Link(destination: URL(string: textFile.fileUrl)!, label: {
+                            Image(systemName: "bubble.left")
+                            Text("Web")
+                        })
+                    }
+                    } rows: {
+                    ForEach(uploadTextFiles) { textFile in
+                       TableRow(textFile)
+                    }
+                }
+
             }
 
         } detail: {
-            //
             ScrollView {
                 VStack {
+                    /* Details */
+                    Text("uploadsResponses \(uploadsResponses.count)")
                     Text("uploadsWithFiles \(uploadsWithFiles.count)")
-                    ForEach(uploadsWithFiles) { upload in
-                        Text("id \(upload.id)")
-                        Text("id \(upload.uuid)")
-                        Text("images \(upload.images.count)")
-                        Text("pdfs \(upload.pdfs.count)")
-                        Text("audioFiles \(upload.audioFiles.count)")
-                        Text("texts \(upload.texts.count)")
-                        Divider()
-                    }
                 }
             }
         }

@@ -394,180 +394,186 @@ struct ContentView: View {
     }
 
     var body: some View {
-        HStack {
-            VStack {
-                Button(action: getUploads) {
-                    Image(systemName: "arrow.clockwise.square")
-                        .font(.system(size: 20))
-                }
-            }
-            VStack {
-                Text("Uploads: \(uploadsWithFiles.count)")
-            }
-        }.padding(10)
+        NavigationSplitView {
 
-        TabView {
-            /* ImageFiles */
-            VStack {
-                Table(of: ImageFile.self) {
-                    TableColumn("id") { imageFile in
-                        Text("\(imageFile.id)")
-                    }
-                    TableColumn("fileName", value: \.fileName)
-                    TableColumn("fileUrl") { imageFile in
-                        Link(destination: URL(string: imageFile.fileUrl)!, label: {
-                            Image(systemName: "bubble.left")
-                            Text("Web")
-                        })
-                    }
-                    TableColumn("mimeType") { imageFile in
-                        if imageFile.mimeType != nil {
-                            Text(imageFile.mimeType!)
-                        }
-                    }
-                } rows: {
-                    ForEach(uploadImageFiles) { imageFile in
-                        TableRow(imageFile)
-                    }
-                }
-            }
-            .tabItem {
-                Text("Images (\(uploadImageFiles.count))")
-            }
+            } content : {
 
-            VStack {
-                /* PdfFiles */
-                Table(of: PdfFile.self) {
-                    TableColumn("id") { pdfFile in
-                        Text("\(pdfFile.id)")
-                    }
-                    TableColumn("fileName", value: \.fileName)
-                    TableColumn("fileUrl") { pdfFile in
-                        Link(destination: URL(string: pdfFile.fileUrl)!, label: {
-                            Image(systemName: "bubble.left")
-                            Text("Web")
-                        })
-                    }
-                    TableColumn("mimeType") { pdfFile in
-                        if pdfFile.mimeType != nil {
-                            Text(pdfFile.mimeType!)
-                        }
-                    }
-                } rows: {
-                    ForEach(uploadPdfFiles) { pdfFile in
-                        TableRow(pdfFile)
-                    }
-                }
-            }
-            .tabItem {
-                Text("Pdfs (\(uploadPdfFiles.count))")
-            }
-
-            VStack {
-                /* AudioFiles */
-                Table(of: AudioFile.self) {
-                    TableColumn("id") { audioFile in
-                        Text("\(audioFile.id)")
-                    }
-                    TableColumn("fileName", value: \.fileName)
-                    TableColumn("fileUrl") { audioFile in
-                        Link(destination: URL(string: audioFile.fileUrl)!, label: {
-                            Image(systemName: "bubble.left")
-                            Text("Web")
-                        })
-                    }
-                    TableColumn("mimeType") { audioFile in
-                        if audioFile.mimeType != nil {
-                            Text(audioFile.mimeType!)
-                        }
-                    }
-                } rows: {
-                    ForEach(uploadAudioFiles) { audioFile in
-                        TableRow(audioFile)
-                    }
-                }
-            }
-            .tabItem {
-                Text("Media (\(uploadAudioFiles.count))")
-            }
-
-            VStack {
-                /* TextFiles */
-                Table(of: TextFile.self) {
-                    TableColumn("id") { textFile in
-                        Text("\(textFile.id)")
-                    }
-                    TableColumn("fileName", value: \.fileName)
-                    TableColumn("fileUrl") { textFile in
-                        Link(destination: URL(string: textFile.fileUrl)!, label: {
-                            Image(systemName: "bubble.left")
-                            Text("Web")
-                        })
-                    }
-                    TableColumn("mimeType") { textFile in
-                        if textFile.mimeType != nil {
-                            Text(textFile.mimeType!)
-                        }
-                    }
-                } rows: {
-                    ForEach(uploadTextFiles) { textFile in
-                        TableRow(textFile)
-                    }
-                }
-            }.tabItem {
-                Text("Documents (\(uploadTextFiles.count))")
-            }
-
-        }
-        HStack {
-            VStack {
-                Button(action: syncFolders) {
-                    let folderNames = folders.map { String($0.path().split(separator: "/").last!) }
-                    Image(systemName: "arrow.down.square")
-                    Text("Import \(folderNames.joined(separator: ", "))")
-                    ProgressView(value: progress)
-                }
-            }
-            VStack {
-                Button(action: clearFolders) {
-                    Text("Clear folders")
-                }.buttonStyle(PlainButtonStyle())
-            }
-            VStack {
-                Button(action: {
-                    isImporting = true
-                }) {
-                    Image(systemName: "square.grid.3x1.folder.badge.plus")
-                        .font(.system(size: 20))
-                        .symbolEffect(.bounce, options: .repeat(1))
-                }
-                .fileImporter(
-                    isPresented: $isImporting,
-                    allowedContentTypes: [.folder],
-                    allowsMultipleSelection: true
-                ) { result in
-                    if case .success = result {
-                        do {
-                            let items = try result.get()
-
-                            for url in items {
-                                if url.startAccessingSecurityScopedResource() {
-                                    folders.append(url)
+                TabView {
+                    VStack {
+                        /* ImageFiles */
+                        Table(of: ImageFile.self) {
+                            TableColumn("id") { imageFile in
+                                Text("\(imageFile.id)")
+                            }
+                            TableColumn("fileName", value: \.fileName)
+                            TableColumn("fileUrl") { imageFile in
+                                Link(destination: URL(string: imageFile.fileUrl)!, label: {
+                                    Image(systemName: "bubble.left")
+                                    Text("Web")
+                                })
+                            }
+                            TableColumn("mimeType") { imageFile in
+                                if imageFile.mimeType != nil {
+                                    Text(imageFile.mimeType!)
                                 }
                             }
-                        } catch let error {
-                            logger.error("[fileImporter] Error: \(error)")
+                        } rows: {
+                            ForEach(uploadImageFiles) { imageFile in
+                                TableRow(imageFile)
+                            }
                         }
                     }
+                    .tabItem {
+                        Text("Images (\(uploadImageFiles.count))")
+                    }
+
+                    VStack {
+                        /* PdfFiles */
+                        Table(of: PdfFile.self) {
+                            TableColumn("id") { pdfFile in
+                                Text("\(pdfFile.id)")
+                            }
+                            TableColumn("fileName", value: \.fileName)
+                            TableColumn("fileUrl") { pdfFile in
+                                Link(destination: URL(string: pdfFile.fileUrl)!, label: {
+                                    Image(systemName: "bubble.left")
+                                    Text("Web")
+                                })
+                            }
+                            TableColumn("mimeType") { pdfFile in
+                                if pdfFile.mimeType != nil {
+                                    Text(pdfFile.mimeType!)
+                                }
+                            }
+                        } rows: {
+                            ForEach(uploadPdfFiles) { pdfFile in
+                                TableRow(pdfFile)
+                            }
+                        }
+                    }
+                    .tabItem {
+                        Text("Pdfs (\(uploadPdfFiles.count))")
+                    }
+
+                    VStack {
+                        /* AudioFiles */
+                        Table(of: AudioFile.self) {
+                            TableColumn("id") { audioFile in
+                                Text("\(audioFile.id)")
+                            }
+                            TableColumn("fileName", value: \.fileName)
+                            TableColumn("fileUrl") { audioFile in
+                                Link(destination: URL(string: audioFile.fileUrl)!, label: {
+                                    Image(systemName: "bubble.left")
+                                    Text("Web")
+                                })
+                            }
+                            TableColumn("mimeType") { audioFile in
+                                if audioFile.mimeType != nil {
+                                    Text(audioFile.mimeType!)
+                                }
+                            }
+                        } rows: {
+                            ForEach(uploadAudioFiles) { audioFile in
+                                TableRow(audioFile)
+                            }
+                        }
+                    }
+                    .tabItem {
+                        Text("Media (\(uploadAudioFiles.count))")
+                    }
+
+                    VStack {
+                        /* TextFiles */
+                        Table(of: TextFile.self) {
+                            TableColumn("id") { textFile in
+                                Text("\(textFile.id)")
+                            }
+                            TableColumn("fileName", value: \.fileName)
+                            TableColumn("fileUrl") { textFile in
+                                Link(destination: URL(string: textFile.fileUrl)!, label: {
+                                    Image(systemName: "bubble.left")
+                                    Text("Web")
+                                })
+                            }
+                            TableColumn("mimeType") { textFile in
+                                if textFile.mimeType != nil {
+                                    Text(textFile.mimeType!)
+                                }
+                            }
+                        } rows: {
+                            ForEach(uploadTextFiles) { textFile in
+                                TableRow(textFile)
+                            }
+                        }
+                    }.tabItem {
+                        Text("Documents (\(uploadTextFiles.count))")
+                    }
+
                 }
-            }
-        }.padding(20)
-//        NavigationSplitView {
-//            //
-//            } content : {
-//
-//        } detail: {
-//        }
+                HStack {
+                    VStack {
+                        /* Browse Button */
+                        Button(action: syncFolders) {
+                            let folderNames = folders.map { String($0.path().split(separator: "/").last!) }
+                            Image(systemName: "arrow.down.square")
+                            Text("Import \(folderNames.joined(separator: ", "))")
+                            ProgressView(value: progress)
+                        }
+                    }
+                    VStack {
+                        /* Reset Button */
+                        Button(action: clearFolders) {
+                            Text("Reset Folders")
+                        }.buttonStyle(PlainButtonStyle())
+                    }
+                    VStack {
+                        /* Import Button */
+                        Button(action: {
+                            isImporting = true
+                        }) {
+                            Image(systemName: "square.grid.3x1.folder.badge.plus")
+                                .font(.system(size: 20))
+                                .symbolEffect(.bounce, options: .repeat(1))
+                        }
+                        .fileImporter(
+                            isPresented: $isImporting,
+                            allowedContentTypes: [.folder],
+                            allowsMultipleSelection: true
+                        ) { result in
+                            if case .success = result {
+                                do {
+                                    let items = try result.get()
+
+                                    for url in items {
+                                        if url.startAccessingSecurityScopedResource() {
+                                            folders.append(url)
+                                        }
+                                    }
+                                } catch let error {
+                                    logger.error("[fileImporter] Error: \(error)")
+                                }
+                            }
+                        }
+                    }
+                }.padding(20)
+
+
+        } detail: {
+
+            HStack {
+                VStack {
+                    Button(action: getUploads) {
+                        Image(systemName: "arrow.clockwise.square")
+                            .font(.system(size: 20))
+                    }
+                }
+                VStack {
+                    Text("Uploads: \(uploadsWithFiles.count)")
+                }
+            }.padding(10)
+
+        }
     }
 }
 

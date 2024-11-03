@@ -300,35 +300,35 @@ struct ContentView: View {
 
     struct ImageFile: Decodable, Identifiable {
         let id: Int
-        let dataUrl: String
+        let dataUrl: String?
         let fileName: String
         let fileUrl: String
         let thumbUrl: String
-        let mimeType: String
+        let mimeType: String?
     }
 
     struct PdfFile: Decodable, Identifiable {
         let id: Int
-        let dataUrl: String
+        let dataUrl: String?
         let fileName: String
         let fileUrl: String
-        let mimeType: String
+        let mimeType: String?
     }
 
     struct TextFile: Decodable, Identifiable {
         let id: Int
-        let dataUrl: String
+        let dataUrl: String?
         let fileName: String
         let fileUrl: String
-        let mimeType: String
+        let mimeType: String?
     }
 
     struct AudioFile: Decodable, Identifiable {
         let id: Int
-        let dataUrl: String
+        let dataUrl: String?
         let fileName: String
         let fileUrl: String
-        let mimeType: String
+        let mimeType: String?
     }
 
     struct UploadWithFiles: Decodable, Identifiable {
@@ -370,13 +370,12 @@ struct ContentView: View {
             let request = newPostRequest(url: url, data: optimizedData, postLength: postLength)
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 do {
-                    var results = try JSONDecoder().decode([UploadWithFiles].self, from: data!)
+                    let decoder = JSONDecoder()
+                    var results = try decoder.decode([UploadWithFiles].self, from: data!)
                     print(results)
-
                     logger.log("[getUploads] Results count=\(results.count)")
                     self.uploadsWithFiles = results
                     setAttachments()
-
                 } catch let error {
                     logger.error("[getUploads] Request: \(error)")
                 }
@@ -422,7 +421,9 @@ struct ContentView: View {
                         })
                     }
                     TableColumn("mimeType") { imageFile in
-                        Text(imageFile.mimeType)
+                        if imageFile.mimeType != nil {
+                            Text(imageFile.mimeType!)
+                        }
                     }
                 } rows: {
                     ForEach(uploadImageFiles) { imageFile in
@@ -448,7 +449,9 @@ struct ContentView: View {
                         })
                     }
                     TableColumn("mimeType") { pdfFile in
-                        Text(pdfFile.mimeType)
+                        if pdfFile.mimeType != nil {
+                            Text(pdfFile.mimeType!)
+                        }
                     }
                 } rows: {
                     ForEach(uploadPdfFiles) { pdfFile in
@@ -473,8 +476,10 @@ struct ContentView: View {
                             Text("Web")
                         })
                     }
-                    TableColumn("mimeType") { pdfFile in
-                        Text(pdfFile.mimeType)
+                    TableColumn("mimeType") { audioFile in
+                        if audioFile.mimeType != nil {
+                            Text(audioFile.mimeType!)
+                        }
                     }
                 } rows: {
                     ForEach(uploadAudioFiles) { audioFile in
@@ -499,8 +504,10 @@ struct ContentView: View {
                             Text("Web")
                         })
                     }
-                    TableColumn("mimeType") { pdfFile in
-                        Text(pdfFile.mimeType)
+                    TableColumn("mimeType") { textFile in
+                        if textFile.mimeType != nil {
+                            Text(textFile.mimeType!)
+                        }
                     }
                 } rows: {
                     ForEach(uploadTextFiles) { textFile in

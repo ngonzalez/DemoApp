@@ -19,6 +19,10 @@
 import SwiftUI
 import Gzip
 
+import OSLog
+
+var logger = Logger()
+
 class NetworkDelegateClass: NSObject, URLSessionDelegate, URLSessionDataDelegate {
     // URLSessionDataDelegate method to handle response data
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
@@ -130,13 +134,14 @@ struct ContentView: View {
             let createdAtFormatted = dateFormatter.string(from: createdAt)
             let updatedAtFormatted = dateFormatter.string(from: updatedAt)
             let item = UploadItem(
-                           filePath: path,
-                           mimeType: mimeType,
-                           source: source,
-                           itemData: uploadData,
-                           createdAt: createdAtFormatted,
-                           updatedAt: updatedAtFormatted
-                       )
+                filePath: path,
+                mimeType: mimeType,
+                source: source,
+                itemData: uploadData,
+                createdAt: createdAtFormatted,
+                updatedAt: updatedAtFormatted
+            )
+
             let data = try JSONEncoder().encode(item)
             let url = URL(string: backendURL)!
             let delegateClass = NetworkDelegateClass()
@@ -147,7 +152,8 @@ struct ContentView: View {
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 do {
                     let upload = try JSONDecoder().decode(UploadResponse.self, from: data!)
-                    uploadsResponses.append(upload)
+                    logger.log("[uploadItem] Upload id=\(upload.id) uuid=\(upload.uuid)")
+                    self.uploadsResponses.append(upload)
                 } catch let error {
                     print(error)
                 }
@@ -155,9 +161,10 @@ struct ContentView: View {
 
             task.resume()
 
-        } catch {
-            //
+        } catch let error {
+            print("[uploadItem] Error: \(error)")
         }
+
     }
 
     func importItem(itemPath: String, createdAt: Date, updatedAt: Date, source: String) {
@@ -180,8 +187,8 @@ struct ContentView: View {
                     )
                 }
             }
-        } catch {
-            print ("loading file error")
+        } catch let error {
+            print ("[importItem] Error \(error)")
         }
     }
 
@@ -251,8 +258,8 @@ struct ContentView: View {
               }
           }
 
-        } catch {
-            //
+        } catch let error {
+            print("[importFolder] Error: \(error)")
         }
     }
 
@@ -260,13 +267,13 @@ struct ContentView: View {
         let fm = FileManager.default
 
         do {
-            // Folder
             let items = try fm.contentsOfDirectory(atPath: folder.path).filter { $0 != ".DS_Store" }
+
             for item in items {
                 importFolder(folder: folder, item: item)
             }
-        } catch {
-            //
+        } catch let error {
+            print("[browseFolder] Error: \(error)")
         }
     }
 
@@ -290,12 +297,8 @@ struct ContentView: View {
                     }
                 }
             } catch {
-                //
+                print("[syncFolders] Error: \(error)")
             }
-        }
-
-        if (uploadsResponses.count != uploadsWithFiles.count) {
-            refreshUploads()
         }
     }
 
@@ -305,6 +308,7 @@ struct ContentView: View {
         let fileName: String
         let fileUrl: String
         let thumbUrl: String
+        let mimeType: String
     }
 
     struct PdfFile: Decodable, Identifiable {
@@ -312,6 +316,7 @@ struct ContentView: View {
         let dataUrl: String
         let fileName: String
         let fileUrl: String
+        let mimeType: String
     }
 
     struct TextFile: Decodable, Identifiable {
@@ -319,6 +324,7 @@ struct ContentView: View {
         let dataUrl: String
         let fileName: String
         let fileUrl: String
+        let mimeType: String
     }
 
     struct AudioFile: Decodable, Identifiable {
@@ -326,6 +332,7 @@ struct ContentView: View {
         let dataUrl: String
         let fileName: String
         let fileUrl: String
+        let mimeType: String
     }
 
     struct UploadWithFiles: Decodable, Identifiable {
@@ -368,17 +375,18 @@ struct ContentView: View {
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 do {
                     let results = try JSONDecoder().decode([UploadWithFiles].self, from: data!)
+                    logger.log("[getUploads] Results count=\(results.count)")
                     self.uploadsWithFiles = results
                     setAttachments()
                 } catch let error {
-                    print(error)
+                    print("[getUploads] Error: \(error)")
                 }
             }
 
             task.resume()
 
-        } catch {
-            
+        } catch let error {
+            print("[getUploads] Error: \(error)")
         }
     }
 
@@ -387,17 +395,19 @@ struct ContentView: View {
     }
 
     func clearFolders() {
-        folders = []
+        self.folders = []
         progress = Float(0)
     }
+
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         NavigationSplitView {
             //
             } content : {
             VStack {
-                 Button(action: refreshUploads) {
-                     Text("Refresh uploads")
+
+                Button(action: refreshUploads) {
                      Image(systemName: "arrow.clockwise.square")
                          .font(.system(size: 20))
                  }
@@ -415,7 +425,6 @@ struct ContentView: View {
                 Button(action: {
                     isImporting = true
                 }) {
-                    Text("Browse folders")
                     Image(systemName: "square.grid.3x1.folder.badge.plus")
                         .font(.system(size: 20))
                         .symbolEffect(.bounce, options: .repeat(1))
@@ -434,9 +443,8 @@ struct ContentView: View {
                                     folders.append(url)
                                 }
                             }
-
-                        } catch {
-                            //
+                        } catch let error {
+                            print("[fileImporter] Error: \(error)")
                         }
                     }
                 }
@@ -452,6 +460,9 @@ struct ContentView: View {
                             Image(systemName: "bubble.left")
                             Text("Web")
                         })
+                    }
+                    TableColumn("mimeType") { imageFile in
+                        Text(imageFile.mimeType)
                     }
                     } rows: {
                     ForEach(uploadImageFiles) { imageFile in
@@ -471,6 +482,9 @@ struct ContentView: View {
                             Text("Web")
                         })
                     }
+                    TableColumn("mimeType") { pdfFile in
+                        Text(pdfFile.mimeType)
+                    }
                     } rows: {
                     ForEach(uploadPdfFiles) { pdfFile in
                        TableRow(pdfFile)
@@ -488,6 +502,9 @@ struct ContentView: View {
                             Image(systemName: "bubble.left")
                             Text("Web")
                         })
+                    }
+                    TableColumn("mimeType") { pdfFile in
+                        Text(pdfFile.mimeType)
                     }
                     } rows: {
                     ForEach(uploadAudioFiles) { audioFile in
@@ -507,6 +524,9 @@ struct ContentView: View {
                             Text("Web")
                         })
                     }
+                    TableColumn("mimeType") { pdfFile in
+                        Text(pdfFile.mimeType)
+                    }
                     } rows: {
                     ForEach(uploadTextFiles) { textFile in
                        TableRow(textFile)
@@ -521,6 +541,10 @@ struct ContentView: View {
                     /* Details */
                     Text("uploadsResponses \(uploadsResponses.count)")
                     Text("uploadsWithFiles \(uploadsWithFiles.count)")
+                    Text("uploadImageFiles \(uploadImageFiles.count)")
+                    Text("uploadPdfFiles \(uploadPdfFiles.count)")
+                    Text("uploadAudioFiles \(uploadAudioFiles.count)")
+                    Text("uploadTextFiles \(uploadTextFiles.count)")
                 }
             }
         }

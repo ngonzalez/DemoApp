@@ -27,21 +27,17 @@ class NetworkDelegateClass: NSObject, URLSessionDelegate, URLSessionDataDelegate
     // URLSessionDataDelegate method to handle response data
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
         // Process the received data
-        do {
-            print("Successfully completed request")
-        } catch {
-            print("Failed to parse response")
-        }
+        logger.info("Successfully completed request")
     }
 
     // URLSessionDataDelegate method to handle completion
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
         if let error = error {
             // Handle error
-            print("Task completed with error: \(error)")
+            logger.info("Task completed with error: \(error)")
         } else {
             // Task completed successfully
-            print("Task completed successfully")
+            logger.error("Task completed successfully")
         }
     }
 }
@@ -62,8 +58,6 @@ struct ContentView: View {
     @State var uploadTextFiles:Array<TextFile> = Array<TextFile>()
 
     @State var folders: Array<URL> = Array<URL>()
-
-    @State private var backendURL:String = "http://127.0.0.1:3002/uploads"
 
     @State private var progress:Float = Float(0)
 
@@ -96,6 +90,8 @@ struct ContentView: View {
         /* WAV */
         "wav": "audio/wav"
     ]
+
+    @State private var backendURL:String = "http://127.0.0.1:3002/uploads"
 
     @State private var isImporting:Bool = false
 
@@ -155,14 +151,14 @@ struct ContentView: View {
                     logger.log("[uploadItem] Upload id=\(upload.id) uuid=\(upload.uuid)")
                     self.uploadsResponses.append(upload)
                 } catch let error {
-                    print(error)
+                    logger.error("[uploadItem] Error \(error)")
                 }
             }
 
             task.resume()
 
         } catch let error {
-            print("[uploadItem] Error: \(error)")
+            logger.error("[uploadItem] Error: \(error)")
         }
 
     }
@@ -188,7 +184,7 @@ struct ContentView: View {
                 }
             }
         } catch let error {
-            print ("[importItem] Error \(error)")
+            logger.error("[importItem] Error \(error)")
         }
     }
 
@@ -259,7 +255,7 @@ struct ContentView: View {
           }
 
         } catch let error {
-            print("[importFolder] Error: \(error)")
+            logger.error("[importFolder] Error: \(error)")
         }
     }
 
@@ -273,7 +269,7 @@ struct ContentView: View {
                 importFolder(folder: folder, item: item)
             }
         } catch let error {
-            print("[browseFolder] Error: \(error)")
+            logger.error("[browseFolder] Error: \(error)")
         }
     }
 
@@ -297,7 +293,7 @@ struct ContentView: View {
                     }
                 }
             } catch {
-                print("[syncFolders] Error: \(error)")
+                logger.error("[syncFolders] Error: \(error)")
             }
         }
     }
@@ -374,24 +370,23 @@ struct ContentView: View {
             let request = newPostRequest(url: url, data: optimizedData, postLength: postLength)
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 do {
-                    let results = try JSONDecoder().decode([UploadWithFiles].self, from: data!)
+                    var results = try JSONDecoder().decode([UploadWithFiles].self, from: data!)
+                    print(results)
+
                     logger.log("[getUploads] Results count=\(results.count)")
                     self.uploadsWithFiles = results
                     setAttachments()
+
                 } catch let error {
-                    print("[getUploads] Error: \(error)")
+                    logger.error("[getUploads] Request: \(error)")
                 }
             }
 
             task.resume()
 
         } catch let error {
-            print("[getUploads] Error: \(error)")
+            logger.error("[getUploads] Error: \(error)")
         }
-    }
-
-    func refreshUploads() {
-        getUploads()
     }
 
     func clearFolders() {
@@ -399,29 +394,139 @@ struct ContentView: View {
         progress = Float(0)
     }
 
-    @Environment(\.openWindow) private var openWindow
-
     var body: some View {
-        NavigationSplitView {
-            //
-            } content : {
+        HStack {
             VStack {
+                Button(action: getUploads) {
+                    Image(systemName: "arrow.clockwise.square")
+                        .font(.system(size: 20))
+                }
+            }
+            VStack {
+                Text("Uploads: \(uploadsWithFiles.count)")
+            }
+        }.padding(10)
 
-                Button(action: refreshUploads) {
-                     Image(systemName: "arrow.clockwise.square")
-                         .font(.system(size: 20))
-                 }
+        TabView {
+            /* ImageFiles */
+            VStack {
+                Table(of: ImageFile.self) {
+                    TableColumn("id") { imageFile in
+                        Text("\(imageFile.id)")
+                    }
+                    TableColumn("fileName", value: \.fileName)
+                    TableColumn("fileUrl") { imageFile in
+                        Link(destination: URL(string: imageFile.fileUrl)!, label: {
+                            Image(systemName: "bubble.left")
+                            Text("Web")
+                        })
+                    }
+                    TableColumn("mimeType") { imageFile in
+                        Text(imageFile.mimeType)
+                    }
+                } rows: {
+                    ForEach(uploadImageFiles) { imageFile in
+                        TableRow(imageFile)
+                    }
+                }
+            }
+            .tabItem {
+                Text("Images (\(uploadImageFiles.count))")
+            }
 
+            VStack {
+                /* PdfFiles */
+                Table(of: PdfFile.self) {
+                    TableColumn("id") { pdfFile in
+                        Text("\(pdfFile.id)")
+                    }
+                    TableColumn("fileName", value: \.fileName)
+                    TableColumn("fileUrl") { pdfFile in
+                        Link(destination: URL(string: pdfFile.fileUrl)!, label: {
+                            Image(systemName: "bubble.left")
+                            Text("Web")
+                        })
+                    }
+                    TableColumn("mimeType") { pdfFile in
+                        Text(pdfFile.mimeType)
+                    }
+                } rows: {
+                    ForEach(uploadPdfFiles) { pdfFile in
+                        TableRow(pdfFile)
+                    }
+                }
+            }
+            .tabItem {
+                Text("Pdfs (\(uploadPdfFiles.count))")
+            }
+
+            VStack {
+                /* AudioFiles */
+                Table(of: AudioFile.self) {
+                    TableColumn("id") { audioFile in
+                        Text("\(audioFile.id)")
+                    }
+                    TableColumn("fileName", value: \.fileName)
+                    TableColumn("fileUrl") { audioFile in
+                        Link(destination: URL(string: audioFile.fileUrl)!, label: {
+                            Image(systemName: "bubble.left")
+                            Text("Web")
+                        })
+                    }
+                    TableColumn("mimeType") { pdfFile in
+                        Text(pdfFile.mimeType)
+                    }
+                } rows: {
+                    ForEach(uploadAudioFiles) { audioFile in
+                        TableRow(audioFile)
+                    }
+                }
+            }
+            .tabItem {
+                Text("Media (\(uploadAudioFiles.count))")
+            }
+
+            VStack {
+                /* TextFiles */
+                Table(of: TextFile.self) {
+                    TableColumn("id") { textFile in
+                        Text("\(textFile.id)")
+                    }
+                    TableColumn("fileName", value: \.fileName)
+                    TableColumn("fileUrl") { textFile in
+                        Link(destination: URL(string: textFile.fileUrl)!, label: {
+                            Image(systemName: "bubble.left")
+                            Text("Web")
+                        })
+                    }
+                    TableColumn("mimeType") { pdfFile in
+                        Text(pdfFile.mimeType)
+                    }
+                } rows: {
+                    ForEach(uploadTextFiles) { textFile in
+                        TableRow(textFile)
+                    }
+                }
+            }.tabItem {
+                Text("Documents (\(uploadTextFiles.count))")
+            }
+
+        }
+        HStack {
+            VStack {
                 Button(action: syncFolders) {
                     let folderNames = folders.map { String($0.path().split(separator: "/").last!) }
+                    Image(systemName: "arrow.down.square")
                     Text("Import \(folderNames.joined(separator: ", "))")
                     ProgressView(value: progress)
                 }
-
+            }
+            VStack {
                 Button(action: clearFolders) {
                     Text("Clear folders")
-                }
-
+                }.buttonStyle(PlainButtonStyle())
+            }
+            VStack {
                 Button(action: {
                     isImporting = true
                 }) {
@@ -444,110 +549,18 @@ struct ContentView: View {
                                 }
                             }
                         } catch let error {
-                            print("[fileImporter] Error: \(error)")
+                            logger.error("[fileImporter] Error: \(error)")
                         }
                     }
                 }
-
-                /* ImageFiles */
-                Table(of: ImageFile.self) {
-                    TableColumn("id") { imageFile in
-                        Text("\(imageFile.id)")
-                    }
-                    TableColumn("fileName", value: \.fileName)
-                    TableColumn("fileUrl") { imageFile in
-                        Link(destination: URL(string: imageFile.fileUrl)!, label: {
-                            Image(systemName: "bubble.left")
-                            Text("Web")
-                        })
-                    }
-                    TableColumn("mimeType") { imageFile in
-                        Text(imageFile.mimeType)
-                    }
-                    } rows: {
-                    ForEach(uploadImageFiles) { imageFile in
-                       TableRow(imageFile)
-                    }
-                }
-
-                /* PdfFiles */
-                Table(of: PdfFile.self) {
-                    TableColumn("id") { pdfFile in
-                        Text("\(pdfFile.id)")
-                    }
-                    TableColumn("fileName", value: \.fileName)
-                    TableColumn("fileUrl") { pdfFile in
-                        Link(destination: URL(string: pdfFile.fileUrl)!, label: {
-                            Image(systemName: "bubble.left")
-                            Text("Web")
-                        })
-                    }
-                    TableColumn("mimeType") { pdfFile in
-                        Text(pdfFile.mimeType)
-                    }
-                    } rows: {
-                    ForEach(uploadPdfFiles) { pdfFile in
-                       TableRow(pdfFile)
-                    }
-                }
-
-                /* AudioFiles */
-                Table(of: AudioFile.self) {
-                    TableColumn("id") { audioFile in
-                        Text("\(audioFile.id)")
-                    }
-                    TableColumn("fileName", value: \.fileName)
-                    TableColumn("fileUrl") { audioFile in
-                        Link(destination: URL(string: audioFile.fileUrl)!, label: {
-                            Image(systemName: "bubble.left")
-                            Text("Web")
-                        })
-                    }
-                    TableColumn("mimeType") { pdfFile in
-                        Text(pdfFile.mimeType)
-                    }
-                    } rows: {
-                    ForEach(uploadAudioFiles) { audioFile in
-                       TableRow(audioFile)
-                    }
-                }
-
-                /* TextFiles */
-                Table(of: TextFile.self) {
-                    TableColumn("id") { textFile in
-                        Text("\(textFile.id)")
-                    }
-                    TableColumn("fileName", value: \.fileName)
-                    TableColumn("fileUrl") { textFile in
-                        Link(destination: URL(string: textFile.fileUrl)!, label: {
-                            Image(systemName: "bubble.left")
-                            Text("Web")
-                        })
-                    }
-                    TableColumn("mimeType") { pdfFile in
-                        Text(pdfFile.mimeType)
-                    }
-                    } rows: {
-                    ForEach(uploadTextFiles) { textFile in
-                       TableRow(textFile)
-                    }
-                }
-
             }
-
-        } detail: {
-            ScrollView {
-                VStack {
-                    /* Details */
-                    Text("uploadsResponses \(uploadsResponses.count)")
-                    Text("uploadsWithFiles \(uploadsWithFiles.count)")
-                    Text("uploadImageFiles \(uploadImageFiles.count)")
-                    Text("uploadPdfFiles \(uploadPdfFiles.count)")
-                    Text("uploadAudioFiles \(uploadAudioFiles.count)")
-                    Text("uploadTextFiles \(uploadTextFiles.count)")
-                }
-            }
-        }
+        }.padding(20)
+//        NavigationSplitView {
+//            //
+//            } content : {
+//
+//        } detail: {
+//        }
     }
 }
 

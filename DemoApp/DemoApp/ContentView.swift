@@ -17,9 +17,13 @@
 */
 
 import SwiftUI
+
+/* GzipSwift */
 import Gzip
 
+/* Logger */
 import OSLog
+
 
 var logger = Logger()
 
@@ -58,6 +62,22 @@ struct ContentView: View {
     @State var uploadTextFiles:Array<TextFile> = Array<TextFile>()
 
     @State var folders: Array<URL> = Array<URL>()
+
+    @State private var imageFileSortOrder = [KeyPathComparator(\ImageFile.fileName)]
+
+    @State private var imageFileSelection: ImageFile.ID? = nil
+
+    @State private var pdfFileSortOrder = [KeyPathComparator(\PdfFile.fileName)]
+
+    @State private var pdfFileSelection: PdfFile.ID? = nil
+
+    @State private var audioFileSortOrder = [KeyPathComparator(\AudioFile.fileName)]
+
+    @State private var audioFileSelection: AudioFile.ID? = nil
+
+    @State private var textFileSortOrder = [KeyPathComparator(\TextFile.fileName)]
+
+    @State private var textFileSelection: TextFile.ID? = nil
 
     @State private var progress:Float = Float(0)
 
@@ -298,8 +318,16 @@ struct ContentView: View {
         }
     }
 
+    struct Folder: Decodable, Identifiable {
+        let id: Int
+        let name: String
+        let folder: String?
+        let subfolder: String?
+    }
+
     struct ImageFile: Decodable, Identifiable {
         let id: Int
+        let folder: Folder
         let fileName: String
         let fileUrl: String
         let thumbUrl: String
@@ -311,6 +339,7 @@ struct ContentView: View {
 
     struct PdfFile: Decodable, Identifiable {
         let id: Int
+        let folder: Folder
         let fileName: String
         let fileUrl: String
         let dataUrl: String?
@@ -319,6 +348,7 @@ struct ContentView: View {
 
     struct TextFile: Decodable, Identifiable {
         let id: Int
+        let folder: Folder
         let fileName: String
         let fileUrl: String
         let dataUrl: String?
@@ -327,6 +357,7 @@ struct ContentView: View {
 
     struct AudioFile: Decodable, Identifiable {
         let id: Int
+        let folder: Folder
         let fileName: String
         let fileUrl: String
         let dataUrl: String?
@@ -346,7 +377,12 @@ struct ContentView: View {
         var uuids:Array<UUID> = Array<UUID>()
     }
 
-    func setAttachments() {
+    func setUploads(results: Array<UploadWithFiles>) {
+
+        self.uploadsWithFiles = results
+        logger.log("[setUpload] Results count=\(results.count)")
+
+        /* Attachments */
         self.uploadImageFiles = []
         self.uploadPdfFiles = []
         self.uploadAudioFiles = []
@@ -372,13 +408,10 @@ struct ContentView: View {
             let request = newPostRequest(url: url, data: optimizedData, postLength: postLength)
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 do {
-                    let decoder = JSONDecoder()
-                    var results = try decoder.decode([UploadWithFiles].self, from: data!)
-                    logger.log("[getUploads] Results count=\(results.count)")
-                    self.uploadsWithFiles = results
-                    setAttachments()
+                    let response = try JSONDecoder().decode([UploadWithFiles].self, from: data!)
+                    setUploads(results: response)
                 } catch let error {
-                    logger.error("[getUploads] Request: \(error)")
+                    logger.error("[getUpload] Request: \(error)")
                 }
             }
 
@@ -398,40 +431,47 @@ struct ContentView: View {
         NavigationSplitView {
 
         } content : {
-
             TabView {
                 VStack {
-                    /* ImageFiles */
-                    Table(of: ImageFile.self) {
-                        TableColumn("id") { imageFile in
-                            Text("\(imageFile.id)")
-                        }
-                        TableColumn("fileName", value: \.fileName)
-                        TableColumn("fileUrl") { imageFile in
-                            Link(destination: URL(string: imageFile.fileUrl)!, label: {
-                                Image(systemName: "bubble.left")
-                                Text("Web")
-                            })
-                        }
-                        TableColumn("mimeType") { imageFile in
-                            if imageFile.mimeType != nil {
-                                Text(imageFile.mimeType!)
+                    Section {
+                        /* ImageFiles */
+                        Table(of: ImageFile.self,
+                              selection: $imageFileSelection,
+                              sortOrder: $imageFileSortOrder) {
+                            TableColumn("id") { imageFile in
+                                Text("\(imageFile.id)")
+                            }
+                            TableColumn("fileName", value: \.fileName)
+                            TableColumn("fileUrl") { imageFile in
+                                Link(destination: URL(string: imageFile.fileUrl)!, label: {
+                                    Image(systemName: "bubble.left")
+                                    Text("Web")
+                                })
+                            }
+                            TableColumn("mimeType") { imageFile in
+                                if imageFile.mimeType != nil {
+                                    Text(imageFile.mimeType!)
+                                }
+                            }
+                        } rows: {
+                            ForEach(uploadImageFiles) { imageFile in
+                                TableRow(imageFile)
                             }
                         }
-                        TableColumn("width") { imageFile in
-                            if imageFile.width != nil {
-                                Text("\(imageFile.width!)")
-                            }
+                    } header: {
+                        Text("Images")
+                    }
+                }
+                .onChange(of: imageFileSelection) { id in
+                    uploadImageFiles.map { imageFile in
+                        if imageFile.id == id {
+                            print(imageFile)
                         }
-                        TableColumn("height") { imageFile in
-                            if imageFile.height != nil {
-                                Text("\(imageFile.height!)")
-                            }
-                        }
-                    } rows: {
-                        ForEach(uploadImageFiles) { imageFile in
-                            TableRow(imageFile)
-                        }
+                    }
+                }
+                .onChange(of: imageFileSortOrder) { order in
+                    withAnimation {
+                        uploadImageFiles.sort(using: order)
                     }
                 }
                 .tabItem {
@@ -439,88 +479,116 @@ struct ContentView: View {
                 }
 
                 VStack {
-                    /* PdfFiles */
-                    Table(of: PdfFile.self) {
-                        TableColumn("id") { pdfFile in
-                            Text("\(pdfFile.id)")
-                        }
-                        TableColumn("fileName", value: \.fileName)
-                        TableColumn("fileUrl") { pdfFile in
-                            Link(destination: URL(string: pdfFile.fileUrl)!, label: {
-                                Image(systemName: "bubble.left")
-                                Text("Web")
-                            })
-                        }
-                        TableColumn("mimeType") { pdfFile in
-                            if pdfFile.mimeType != nil {
-                                Text(pdfFile.mimeType!)
+                    Section {
+                        /* PdfFiles */
+                        Table(of: PdfFile.self,
+                              selection: $pdfFileSelection,
+                              sortOrder: $pdfFileSortOrder) {
+                            TableColumn("id") { pdfFile in
+                                Text("\(pdfFile.id)")
+                            }
+                            TableColumn("fileName", value: \.fileName)
+                            TableColumn("fileUrl") { pdfFile in
+                                Link(destination: URL(string: pdfFile.fileUrl)!, label: {
+                                    Image(systemName: "bubble.left")
+                                    Text("Web")
+                                })
+                            }
+                            TableColumn("mimeType") { pdfFile in
+                                if pdfFile.mimeType != nil {
+                                    Text(pdfFile.mimeType!)
+                                }
+                            }
+                        } rows: {
+                            ForEach(uploadPdfFiles) { pdfFile in
+                                TableRow(pdfFile)
                             }
                         }
-                    } rows: {
-                        ForEach(uploadPdfFiles) { pdfFile in
-                            TableRow(pdfFile)
-                        }
+                    } header: {
+                        Text("Pdfs")
                     }
+                }
+                .onChange(of: pdfFileSortOrder) { order in
+                    uploadPdfFiles.sort(using: order)
                 }
                 .tabItem {
                     Text("Pdfs (\(uploadPdfFiles.count))")
                 }
 
                 VStack {
-                    /* AudioFiles */
-                    Table(of: AudioFile.self) {
-                        TableColumn("id") { audioFile in
-                            Text("\(audioFile.id)")
-                        }
-                        TableColumn("fileName", value: \.fileName)
-                        TableColumn("fileUrl") { audioFile in
-                            Link(destination: URL(string: audioFile.fileUrl)!, label: {
-                                Image(systemName: "bubble.left")
-                                Text("Web")
-                            })
-                        }
-                        TableColumn("mimeType") { audioFile in
-                            if audioFile.mimeType != nil {
-                                Text(audioFile.mimeType!)
+                    Section {
+                        /* AudioFiles */
+                        Table(of: AudioFile.self,
+                              selection: $audioFileSelection,
+                              sortOrder: $audioFileSortOrder) {
+                            TableColumn("id") { audioFile in
+                                Text("\(audioFile.id)")
+                            }
+                            TableColumn("fileName", value: \.fileName)
+                            TableColumn("fileUrl") { audioFile in
+                                Link(destination: URL(string: audioFile.fileUrl)!, label: {
+                                    Image(systemName: "bubble.left")
+                                    Text("Web")
+                                })
+                            }
+                            TableColumn("mimeType") { audioFile in
+                                if audioFile.mimeType != nil {
+                                    Text(audioFile.mimeType!)
+                                }
+                            }
+                        } rows: {
+                            ForEach(uploadAudioFiles) { audioFile in
+                                TableRow(audioFile)
                             }
                         }
-                    } rows: {
-                        ForEach(uploadAudioFiles) { audioFile in
-                            TableRow(audioFile)
-                        }
+                    } header: {
+                        Text("Media")
                     }
+                }
+                .onChange(of: audioFileSortOrder) { order in
+                    uploadAudioFiles.sort(using: order)
                 }
                 .tabItem {
                     Text("Media (\(uploadAudioFiles.count))")
                 }
 
                 VStack {
-                    /* TextFiles */
-                    Table(of: TextFile.self) {
-                        TableColumn("id") { textFile in
-                            Text("\(textFile.id)")
-                        }
-                        TableColumn("fileName", value: \.fileName)
-                        TableColumn("fileUrl") { textFile in
-                            Link(destination: URL(string: textFile.fileUrl)!, label: {
-                                Image(systemName: "bubble.left")
-                                Text("Web")
-                            })
-                        }
-                        TableColumn("mimeType") { textFile in
-                            if textFile.mimeType != nil {
-                                Text(textFile.mimeType!)
+                    Section {
+                        /* TextFiles */
+                        Table(of: TextFile.self,
+                              selection: $textFileSelection,
+                              sortOrder: $textFileSortOrder) {
+                            TableColumn("id") { textFile in
+                                Text("\(textFile.id)")
+                            }
+                            TableColumn("fileName", value: \.fileName)
+                            TableColumn("fileUrl") { textFile in
+                                Link(destination: URL(string: textFile.fileUrl)!, label: {
+                                    Image(systemName: "bubble.left")
+                                    Text("Web")
+                                })
+                            }
+                            TableColumn("mimeType") { textFile in
+                                if textFile.mimeType != nil {
+                                    Text(textFile.mimeType!)
+                                }
+                            }
+                        } rows: {
+                            ForEach(uploadTextFiles) { textFile in
+                                TableRow(textFile)
                             }
                         }
-                    } rows: {
-                        ForEach(uploadTextFiles) { textFile in
-                            TableRow(textFile)
-                        }
+                    } header: {
+                        Text("Documents")
                     }
+                .onChange(of: textFileSortOrder) { order in
+                    uploadTextFiles.sort(using: order)
+                }
                 }.tabItem {
                     Text("Documents (\(uploadTextFiles.count))")
                 }
-            }
+
+            }.padding(10)
 
             HStack {
                 VStack {

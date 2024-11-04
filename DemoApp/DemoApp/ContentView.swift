@@ -59,6 +59,22 @@ struct ContentView: View {
 
     @State var folders: Array<URL> = Array<URL>()
 
+    @State private var imageFileSortOrder = [KeyPathComparator(\ImageFile.fileName)]
+
+    @State private var imageFileSelection: ImageFile.ID? = nil
+
+    @State private var pdfFileSortOrder = [KeyPathComparator(\PdfFile.fileName)]
+
+    @State private var pdfFileSelection: PdfFile.ID? = nil
+
+    @State private var audioFileSortOrder = [KeyPathComparator(\AudioFile.fileName)]
+
+    @State private var audioFileSelection: AudioFile.ID? = nil
+
+    @State private var textFileSortOrder = [KeyPathComparator(\TextFile.fileName)]
+
+    @State private var textFileSelection: TextFile.ID? = nil
+
     @State private var progress:Float = Float(0)
 
     @State private var mimeTypes:[String:String] = [
@@ -402,7 +418,9 @@ struct ContentView: View {
             TabView {
                 VStack {
                     /* ImageFiles */
-                    Table(of: ImageFile.self) {
+                    Table(of: ImageFile.self,
+                          selection: $imageFileSelection,
+                          sortOrder: $imageFileSortOrder) {
                         TableColumn("id") { imageFile in
                             Text("\(imageFile.id)")
                         }
@@ -418,21 +436,14 @@ struct ContentView: View {
                                 Text(imageFile.mimeType!)
                             }
                         }
-                        TableColumn("width") { imageFile in
-                            if imageFile.width != nil {
-                                Text("\(imageFile.width!)")
-                            }
-                        }
-                        TableColumn("height") { imageFile in
-                            if imageFile.height != nil {
-                                Text("\(imageFile.height!)")
-                            }
-                        }
                     } rows: {
                         ForEach(uploadImageFiles) { imageFile in
                             TableRow(imageFile)
                         }
                     }
+                }
+                .onChange(of: imageFileSortOrder) { order in
+                    uploadImageFiles.sort(using: order)
                 }
                 .tabItem {
                     Text("Images (\(uploadImageFiles.count))")
@@ -440,7 +451,9 @@ struct ContentView: View {
 
                 VStack {
                     /* PdfFiles */
-                    Table(of: PdfFile.self) {
+                    Table(of: PdfFile.self,
+                          selection: $pdfFileSelection,
+                          sortOrder: $pdfFileSortOrder) {
                         TableColumn("id") { pdfFile in
                             Text("\(pdfFile.id)")
                         }
@@ -462,13 +475,18 @@ struct ContentView: View {
                         }
                     }
                 }
+                .onChange(of: pdfFileSortOrder) { order in
+                    uploadPdfFiles.sort(using: order)
+                }
                 .tabItem {
                     Text("Pdfs (\(uploadPdfFiles.count))")
                 }
 
                 VStack {
                     /* AudioFiles */
-                    Table(of: AudioFile.self) {
+                    Table(of: AudioFile.self,
+                          selection: $audioFileSelection,
+                          sortOrder: $audioFileSortOrder) {
                         TableColumn("id") { audioFile in
                             Text("\(audioFile.id)")
                         }
@@ -490,13 +508,18 @@ struct ContentView: View {
                         }
                     }
                 }
+                .onChange(of: audioFileSortOrder) { order in
+                    uploadAudioFiles.sort(using: order)
+                }
                 .tabItem {
                     Text("Media (\(uploadAudioFiles.count))")
                 }
 
                 VStack {
                     /* TextFiles */
-                    Table(of: TextFile.self) {
+                    Table(of: TextFile.self,
+                          selection: $textFileSelection,
+                          sortOrder: $textFileSortOrder) {
                         TableColumn("id") { textFile in
                             Text("\(textFile.id)")
                         }
@@ -517,10 +540,14 @@ struct ContentView: View {
                             TableRow(textFile)
                         }
                     }
+                .onChange(of: textFileSortOrder) { order in
+                    uploadTextFiles.sort(using: order)
+                }
                 }.tabItem {
                     Text("Documents (\(uploadTextFiles.count))")
                 }
-            }
+
+            }.padding(10)
 
             HStack {
                 VStack {

@@ -24,7 +24,6 @@ import Gzip
 /* Logger */
 import OSLog
 
-
 var logger = Logger()
 
 class NetworkDelegateClass: NSObject, URLSessionDelegate, URLSessionDataDelegate {
@@ -49,20 +48,26 @@ class NetworkDelegateClass: NSObject, URLSessionDelegate, URLSessionDataDelegate
 @MainActor
 struct ContentView: View {
 
-    @State var uploadsResponses: Array<UploadResponse> = Array<UploadResponse>()
+    /* Uploads */
+    @State private var uploadsResponses: Array<UploadResponse> = Array<UploadResponse>()
 
-    @State var uploadsWithFiles: Array<UploadWithFiles> = Array<UploadWithFiles>()
+    @State private var uploadsWithFiles: Array<UploadWithFiles> = Array<UploadWithFiles>()
 
-    @State var uploadImageFiles:Array<ImageFile> = Array<ImageFile>()
+    /* Attachments */
+    @State private var uploadImageFiles:Array<ImageFile> = Array<ImageFile>()
 
-    @State var uploadPdfFiles:Array<PdfFile> = Array<PdfFile>()
+    @State private var uploadPdfFiles:Array<PdfFile> = Array<PdfFile>()
 
-    @State var uploadAudioFiles:Array<AudioFile> = Array<AudioFile>()
+    @State private var uploadAudioFiles:Array<AudioFile> = Array<AudioFile>()
 
-    @State var uploadTextFiles:Array<TextFile> = Array<TextFile>()
+    @State private var uploadTextFiles:Array<TextFile> = Array<TextFile>()
 
-    @State var folders: Array<URL> = Array<URL>()
+    /* Folders  */
+    @State private var folders: Array<URL> = Array<URL>()
 
+    @State private var progress:Float = Float(0)
+
+    /* Tables  */
     @State private var imageFileSortOrder = [KeyPathComparator(\ImageFile.fileName)]
 
     @State private var imageFileSelection = Set<ImageFile.ID>()
@@ -87,8 +92,7 @@ struct ContentView: View {
 
     @State private var selectedTextFiles:Array<TextFile> = Array<TextFile>()
 
-    @State private var progress:Float = Float(0)
-
+    /* Upload Request  */
     @State private var mimeTypes:[String:String] = [
         /* DOCUMENTS */
         "pdf": "application/pdf",
@@ -326,6 +330,11 @@ struct ContentView: View {
         }
     }
 
+    func clearFolders() {
+        self.folders = []
+        progress = Float(0)
+    }
+
     struct Folder: Decodable, Identifiable {
         let id: Int
         let name: String
@@ -386,7 +395,6 @@ struct ContentView: View {
     }
 
     func setUploads(results: Array<UploadWithFiles>) {
-
         self.uploadsWithFiles = results
         logger.log("[setUpload] Results count=\(results.count)")
 
@@ -430,11 +438,51 @@ struct ContentView: View {
         }
     }
 
-    func clearFolders() {
-        self.folders = []
-        progress = Float(0)
+    /* Users */
+    struct User: Codable, Identifiable {
+        let id = UUID()
+        let firstName: String?
+        let lastName: String?
+        let emailAddress: String?
     }
 
+    @State private var userName: String = String()
+
+    @State private var password: String = String()
+
+    @State private var firstName: String = String()
+
+    @State private var lastName: String = String()
+
+    @State private var registrationURL:String = "http://127.0.0.1:3002/registration"
+
+    func submitForm() {
+        do {
+            let item = User(firstName: firstName, lastName: lastName, emailAddress: userName)
+            let data = try JSONEncoder().encode(item)
+            let url = URL(string: "\(registrationURL)")!
+            let delegateClass = NetworkDelegateClass()
+            let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
+            let optimizedData: Data = try! data.gzipped(level: .bestCompression)
+            let postLength = String(format: "%lu", UInt(optimizedData.count))
+            let request = newPostRequest(url: url, data: optimizedData, postLength: postLength)
+            let task = delegateSession.dataTask(with: request) { data, response, error in
+                do {
+                    let response = try JSONDecoder().decode(User.self, from: data!)
+                    print(response)
+                } catch let error {
+                    logger.error("[submitForm] Request: \(error)")
+                }
+            }
+
+            task.resume()
+
+        } catch let error {
+            logger.error("[submitForm] Error: \(error)")
+        }
+    }
+
+    /* Navigation */
     enum SideBarItem: String, Identifiable, CaseIterable {
         var id: String { rawValue }
 
@@ -705,7 +753,31 @@ struct ContentView: View {
                     }
                 }
             case .login:
-                Text("Login")
+                Form {
+                    VStack {
+                        TextField(text: $firstName, prompt: Text("John")) {
+                            Text("First Name")
+                        }
+                        .disableAutocorrection(true)
+                        TextField(text: $lastName, prompt: Text("Appleseed")) {
+                            Text("Last Name")
+                        }
+                        .disableAutocorrection(true)
+                        TextField(text: $userName, prompt: Text("johnatan@apple.com")) {
+                            Text("Email")
+                        }
+                        .disableAutocorrection(true)
+                        SecureField(text: $password, prompt: Text("Required")) {
+                            Text("Password")
+                        }
+                        .disableAutocorrection(true)
+
+                        Button(action: submitForm) {
+                            Text("Submit")
+                        }.buttonStyle(PlainButtonStyle())
+                    }
+                    .textFieldStyle(.roundedBorder)
+                }.padding(20)
             }
 
         } detail: {

@@ -150,6 +150,15 @@ struct ContentView: View {
         return request
     }
 
+    func newDeleteRequest(url: URL) -> URLRequest {
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        return request
+    }
+
     struct UploadResponse: Decodable {
         let id: Int
         let uuid: UUID
@@ -559,6 +568,36 @@ struct ContentView: View {
         }
     }
 
+    struct Message: Codable {
+        let message: String?
+    }
+
+    func submitDestroySessionForm() {
+        do {
+            let data = try JSONEncoder().encode("{}")
+            let url = URL(string: "\(sessionURL)")!
+            let delegateClass = NetworkDelegateClass()
+            let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
+            let optimizedData: Data = try! data.gzipped(level: .bestCompression)
+            let postLength = String(format: "%lu", UInt(optimizedData.count))
+            let request = newDeleteRequest(url: url)
+            let task = delegateSession.dataTask(with: request) { data, response, error in
+                do {
+                    let response = try JSONDecoder().decode(Message.self, from: data!)
+                    self.signedInUser = nil
+                    self.identified = false
+                } catch let error {
+                    logger.error("[submitDestroySessionForm] Request: \(error)")
+                }
+            }
+
+            task.resume()
+
+        } catch let error {
+            logger.error("[submitDestroySessionForm] Error: \(error)")
+        }
+    }
+
     /* Navigation */
     enum SideBarItem: String, Identifiable, CaseIterable {
         var id: String { rawValue }
@@ -584,7 +623,6 @@ struct ContentView: View {
             switch selectedSideBarItem {
             case .signin:
                 if self.identified {
-//                    Text("\(self.signedInUser)")
                     Text("Sign-in")
                 } else {
                     Form {
@@ -607,7 +645,6 @@ struct ContentView: View {
                 }
             case .signup:
                 if self.identified {
-//                    Text("\(self.signedInUser)")
                     Text("Sign-up")
                 } else {
                     Form {
@@ -647,7 +684,7 @@ struct ContentView: View {
                     Text("\(self.selectedTextFiles)")
                 }
             }
-            
+
             switch selectedSideBarItem {
             case .upload:
                 if self.identified {
@@ -906,8 +943,12 @@ struct ContentView: View {
                 }
             case .signin:
                 if self.identified {
-//                    Text("\(self.signedInUser)")
-                    Text("Already identified")
+                    Text("\(self.signedInUser?.emailAddress)")
+                    Divider()
+                    Button(action: submitDestroySessionForm) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 15))
+                    }
                 }
             }
         }.navigationSplitViewStyle(.balanced)

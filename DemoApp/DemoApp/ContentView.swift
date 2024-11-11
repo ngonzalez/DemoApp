@@ -395,6 +395,8 @@ struct ContentView: View {
         var uuids:Array<UUID> = Array<UUID>()
     }
 
+    @State var loadedFolders: Array<Folder> = Array<Folder>()
+
     func setUploads(results: Array<UploadWithFiles>) {
         self.uploadsWithFiles = results
         logger.log("[setUpload] Results count=\(results.count)")
@@ -403,12 +405,33 @@ struct ContentView: View {
         self.uploadPdfFiles = []
         self.uploadAudioFiles = []
         self.uploadTextFiles = []
+        self.loadedFolders = []
 
         for upload in self.uploadsWithFiles {
             self.uploadImageFiles += upload.imageFiles
+            for imageFile in upload.imageFiles {
+                if !self.loadedFolders.map { $0.id }.contains(imageFile.folder.id) {
+                    self.loadedFolders.append(imageFile.folder)
+                }
+            }
             self.uploadPdfFiles += upload.pdfFiles
+            for pdfFile in upload.pdfFiles {
+                if !self.loadedFolders.map { $0.id }.contains(pdfFile.folder.id) {
+                    self.loadedFolders.append(pdfFile.folder)
+                }
+            }
             self.uploadAudioFiles += upload.audioFiles
+            for audioFile in upload.audioFiles {
+                if !self.loadedFolders.map { $0.id }.contains(audioFile.folder.id) {
+                    self.loadedFolders.append(audioFile.folder)
+                }
+            }
             self.uploadTextFiles += upload.textFiles
+            for textFile in upload.textFiles {
+                if !self.loadedFolders.map { $0.id }.contains(textFile.folder.id) {
+                    self.loadedFolders.append(textFile.folder)
+                }
+            }
         }
     }
 
@@ -503,7 +526,8 @@ struct ContentView: View {
     enum SideBarItem: String, Identifiable, CaseIterable {
         var id: String { rawValue }
 
-        case login
+        case signup
+        case signin
         case upload
     }
 
@@ -519,10 +543,125 @@ struct ContentView: View {
             }
         } content : {
             switch selectedSideBarItem {
+            case .signin:
+                if self.identified {
+                    Text("\(self.signedInUser)")
+                } else {
+                    Form {
+                        VStack {
+                            TextField(text: $userName, prompt: Text("johnatan@apple.com")) {
+                                Text("Email")
+                            }
+                            .disableAutocorrection(true)
+                            SecureField(text: $password, prompt: Text("Required")) {
+                                Text("Password")
+                            }
+                            .disableAutocorrection(true)
+
+                            Button(action: submitForm) {
+                                Text("Submit")
+                            }.buttonStyle(PlainButtonStyle())
+                        }
+                        .textFieldStyle(.roundedBorder)
+                    }.padding(20)
+                }
+            case .signup:
+                if self.identified {
+                    Text("\(self.signedInUser)")
+                } else {
+                    Form {
+                        VStack {
+                            TextField(text: $firstName, prompt: Text("John")) {
+                                Text("First Name")
+                            }
+                            .disableAutocorrection(true)
+                            TextField(text: $lastName, prompt: Text("Appleseed")) {
+                                Text("Last Name")
+                            }
+                            .disableAutocorrection(true)
+                            TextField(text: $userName, prompt: Text("johnatan@apple.com")) {
+                                Text("Email")
+                            }
+                            .disableAutocorrection(true)
+                            SecureField(text: $password, prompt: Text("Required")) {
+                                Text("Password")
+                            }
+                            .disableAutocorrection(true)
+
+                            Button(action: submitForm) {
+                                Text("Submit")
+                            }.buttonStyle(PlainButtonStyle())
+                        }
+                        .textFieldStyle(.roundedBorder)
+                    }.padding(20)
+                }
             case .upload:
                 if !self.identified {
                     Text("You need to be identified. Please login.")
                 } else {
+                    Text("\(self.loadedFolders)")
+                    Text("\(self.selectedImageFiles)")
+                    Text("\(self.selectedPdfFiles)")
+                    Text("\(self.selectedAudioFiles)")
+                    Text("\(self.selectedTextFiles)")
+                    HStack {
+                        VStack {
+                            /* Browse Button */
+                            Button(action: syncFolders) {
+                                let folderNames = folders.map { String($0.path().split(separator: "/").last!) }
+                                Image(systemName: "arrow.down.square")
+                                Text("Import \(folderNames.joined(separator: ", "))")
+                                ProgressView(value: progress)
+                            }
+                            /* Clear Button */
+                            Button(action: clearFolders) {
+                                Text("Clear")
+                                    .foregroundStyle(.blue.gradient)
+                            }.buttonStyle(PlainButtonStyle())
+                            /* Import Button */
+                            Button(action: {
+                                isImporting = true
+                            }) {
+                                Image(systemName: "square.grid.3x1.folder.badge.plus")
+                                    .font(.system(size: 20))
+                                    .symbolEffect(.bounce, options: .repeat(1))
+                            }
+                            .fileImporter(
+                                isPresented: $isImporting,
+                                allowedContentTypes: [.folder],
+                                allowsMultipleSelection: true
+                            ) { result in
+                                if case .success = result {
+                                    do {
+                                        let items = try result.get()
+                                        
+                                        for url in items {
+                                            if url.startAccessingSecurityScopedResource() {
+                                                folders.append(url)
+                                            }
+                                        }
+                                        
+                                    } catch let error {
+                                        logger.error("[fileImporter] Error: \(error)")
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .padding(20)
+                    .navigationTitle("Demo App")
+                    .toolbar {
+                        Button(action: getUploads) {
+                            Image(systemName: "arrow.clockwise")
+                                .font(.system(size: 20))
+                        }
+                    }
+                }
+            }
+        } detail: {
+            switch selectedSideBarItem {
+            case .upload:
+                if self.identified {
                     TabView {
                         VStack {
                             Section {
@@ -715,101 +854,17 @@ struct ContentView: View {
                         }
                         
                     }.padding(10)
-                    
-                    HStack {
-                        VStack {
-                            /* Browse Button */
-                            Button(action: syncFolders) {
-                                let folderNames = folders.map { String($0.path().split(separator: "/").last!) }
-                                Image(systemName: "arrow.down.square")
-                                Text("Import \(folderNames.joined(separator: ", "))")
-                                ProgressView(value: progress)
-                            }
-                        }
-                        VStack {
-                            /* Clear Button */
-                            Button(action: clearFolders) {
-                                Text("Clear")
-                                    .foregroundStyle(.blue.gradient)
-                            }.buttonStyle(PlainButtonStyle())
-                        }
-                        VStack {
-                            /* Import Button */
-                            Button(action: {
-                                isImporting = true
-                            }) {
-                                Image(systemName: "square.grid.3x1.folder.badge.plus")
-                                    .font(.system(size: 20))
-                                    .symbolEffect(.bounce, options: .repeat(1))
-                            }
-                            .fileImporter(
-                                isPresented: $isImporting,
-                                allowedContentTypes: [.folder],
-                                allowsMultipleSelection: true
-                            ) { result in
-                                if case .success = result {
-                                    do {
-                                        let items = try result.get()
-                                        
-                                        for url in items {
-                                            if url.startAccessingSecurityScopedResource() {
-                                                folders.append(url)
-                                            }
-                                        }
-                                        
-                                    } catch let error {
-                                        logger.error("[fileImporter] Error: \(error)")
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    .padding(20)
-                    .navigationTitle("Demo App")
-                    .toolbar {
-                        Button(action: getUploads) {
-                            Image(systemName: "arrow.clockwise")
-                                .font(.system(size: 20))
-                        }
-                    }
                 }
-            case .login:
+            case .signup:
                 if self.identified {
                     Text("\(self.signedInUser)")
-                } else {
-                    Form {
-                        VStack {
-                            TextField(text: $firstName, prompt: Text("John")) {
-                                Text("First Name")
-                            }
-                            .disableAutocorrection(true)
-                            TextField(text: $lastName, prompt: Text("Appleseed")) {
-                                Text("Last Name")
-                            }
-                            .disableAutocorrection(true)
-                            TextField(text: $userName, prompt: Text("johnatan@apple.com")) {
-                                Text("Email")
-                            }
-                            .disableAutocorrection(true)
-                            SecureField(text: $password, prompt: Text("Required")) {
-                                Text("Password")
-                            }
-                            .disableAutocorrection(true)
-
-                            Button(action: submitForm) {
-                                Text("Submit")
-                            }.buttonStyle(PlainButtonStyle())
-                        }
-                        .textFieldStyle(.roundedBorder)
-                    }.padding(20)
+                }
+            case .signin:
+                if self.identified {
+                    Text("\(self.signedInUser)")
                 }
             }
-        } detail: {
-            Text("\(self.selectedImageFiles)")
-            Text("\(self.selectedPdfFiles)")
-            Text("\(self.selectedAudioFiles)")
-            Text("\(self.selectedTextFiles)")
-        }
+        }.navigationSplitViewStyle(.balanced)
     }
 }
 

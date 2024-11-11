@@ -130,6 +130,7 @@ struct ContentView: View {
     struct UploadItem: Codable {
         var id: Int?
         var uuid:UUID = UUID()
+        var userId:Int?
         var filePath: String
         var mimeType: String
         var source: String
@@ -172,6 +173,7 @@ struct ContentView: View {
             let createdAtFormatted = dateFormatter.string(from: createdAt)
             let updatedAtFormatted = dateFormatter.string(from: updatedAt)
             let item = UploadItem(
+                userId: self.signedInUser?.id,
                 filePath: path,
                 mimeType: mimeType,
                 source: source,

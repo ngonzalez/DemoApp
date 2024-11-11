@@ -614,6 +614,13 @@ struct ContentView: View {
 
     @State private var visibility: NavigationSplitViewVisibility = .detailOnly
 
+    func clearSelectedFiles() {
+        self.selectedImageFiles = []
+        self.selectedPdfFiles = []
+        self.selectedAudioFiles = []
+        self.selectedTextFiles = []
+    }
+
     var body: some View {
         NavigationSplitView(columnVisibility: $visibility) {
             List(SideBarItem.allCases, selection: $selectedSideBarItem) { item in
@@ -650,7 +657,7 @@ struct ContentView: View {
                 if self.identified {
                     Text("Sign-up")
                 } else {
-                    if self.signedInUser != nil {
+                    if self.signedInUser?.errors != nil {
                         Text("Errors \(self.signedInUser?.errors)")
                     }
                     Form {
@@ -683,11 +690,19 @@ struct ContentView: View {
                 if !self.identified {
                     Text("You need to be identified. Please login.")
                 } else {
-                    Text("\(self.loadedFolders)")
+                    List {
+                       ForEach(self.loadedFolders) { folder in
+                            Text("\(folder)")
+                        }
+                    }
                     Text("\(self.selectedImageFiles)")
                     Text("\(self.selectedPdfFiles)")
                     Text("\(self.selectedAudioFiles)")
                     Text("\(self.selectedTextFiles)")
+                    Button(action: clearSelectedFiles) {
+                        Text("Clear selected files")
+                    }.buttonStyle(PlainButtonStyle())
+
                 }
             }
 

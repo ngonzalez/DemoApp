@@ -347,6 +347,7 @@ struct ContentView: View {
 
     struct Folder: Decodable, Identifiable {
         let id: Int
+        let dataUrl: String?
         let name: String
         let folder: String?
         let subfolder: String?
@@ -692,7 +693,9 @@ struct ContentView: View {
                 } else {
                     List {
                        ForEach(self.loadedFolders) { folder in
-                            Text("\(folder)")
+                           Label("\(folder.name) > \(folder.folder ?? "") > \(folder.subfolder ?? "")", systemImage: "folder")
+                               .labelStyle(.titleAndIcon)
+                               .font(.system(size: 15))
                         }
                     }
                     Text("\(self.selectedImageFiles)")

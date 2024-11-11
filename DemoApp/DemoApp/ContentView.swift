@@ -487,7 +487,9 @@ struct ContentView: View {
 
     @State private var registrationURL:String = "http://127.0.0.1:3002/registration"
 
-    func submitForm() {
+    @State private var sessionURL:String = "http://127.0.0.1:3002/session"
+
+    func submitRegistrationForm() {
         do {
             let item = User(
                 id: nil,
@@ -511,14 +513,49 @@ struct ContentView: View {
                     self.signedInUser = response
                     self.identified = ((self.signedInUser?.createdAt) != nil)
                 } catch let error {
-                    logger.error("[submitForm] Request: \(error)")
+                    logger.error("[submitRegistrationForm] Request: \(error)")
                 }
             }
 
             task.resume()
 
         } catch let error {
-            logger.error("[submitForm] Error: \(error)")
+            logger.error("[submitRegistrationForm] Error: \(error)")
+        }
+    }
+
+    func submitSessionForm() {
+        do {
+            let item = User(
+                id: nil,
+                firstName: nil,
+                lastName: nil,
+                emailAddress: userName,
+                password: password,
+                createdAt: nil,
+                updatedAt: nil
+            )
+            let data = try JSONEncoder().encode(item)
+            let url = URL(string: "\(sessionURL)")!
+            let delegateClass = NetworkDelegateClass()
+            let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
+            let optimizedData: Data = try! data.gzipped(level: .bestCompression)
+            let postLength = String(format: "%lu", UInt(optimizedData.count))
+            let request = newPostRequest(url: url, data: optimizedData, postLength: postLength)
+            let task = delegateSession.dataTask(with: request) { data, response, error in
+                do {
+                    let response = try JSONDecoder().decode(User.self, from: data!)
+                    self.signedInUser = response
+                    self.identified = ((self.signedInUser?.createdAt) != nil)
+                } catch let error {
+                    logger.error("[submitSessionForm] Request: \(error)")
+                }
+            }
+
+            task.resume()
+
+        } catch let error {
+            logger.error("[submitSessionForm] Error: \(error)")
         }
     }
 
@@ -533,19 +570,22 @@ struct ContentView: View {
 
     @State var selectedSideBarItem: SideBarItem = .upload
 
+    @State private var visibility: NavigationSplitViewVisibility = .detailOnly
+
     var body: some View {
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: $visibility) {
             List(SideBarItem.allCases, selection: $selectedSideBarItem) { item in
                 NavigationLink(
                     item.rawValue.localizedCapitalized,
                     value: item
                 )
             }
-        } content : {
+        } detail: {
             switch selectedSideBarItem {
             case .signin:
                 if self.identified {
-                    Text("\(self.signedInUser)")
+//                    Text("\(self.signedInUser)")
+                    Text("Sign-in")
                 } else {
                     Form {
                         VStack {
@@ -558,7 +598,7 @@ struct ContentView: View {
                             }
                             .disableAutocorrection(true)
 
-                            Button(action: submitForm) {
+                            Button(action: submitSessionForm) {
                                 Text("Submit")
                             }.buttonStyle(PlainButtonStyle())
                         }
@@ -567,7 +607,8 @@ struct ContentView: View {
                 }
             case .signup:
                 if self.identified {
-                    Text("\(self.signedInUser)")
+//                    Text("\(self.signedInUser)")
+                    Text("Sign-up")
                 } else {
                     Form {
                         VStack {
@@ -588,7 +629,7 @@ struct ContentView: View {
                             }
                             .disableAutocorrection(true)
 
-                            Button(action: submitForm) {
+                            Button(action: submitRegistrationForm) {
                                 Text("Submit")
                             }.buttonStyle(PlainButtonStyle())
                         }
@@ -604,61 +645,9 @@ struct ContentView: View {
                     Text("\(self.selectedPdfFiles)")
                     Text("\(self.selectedAudioFiles)")
                     Text("\(self.selectedTextFiles)")
-                    HStack {
-                        VStack {
-                            /* Browse Button */
-                            Button(action: syncFolders) {
-                                let folderNames = folders.map { String($0.path().split(separator: "/").last!) }
-                                Image(systemName: "arrow.down.square")
-                                Text("Import \(folderNames.joined(separator: ", "))")
-                                ProgressView(value: progress)
-                            }
-                            /* Clear Button */
-                            Button(action: clearFolders) {
-                                Text("Clear")
-                                    .foregroundStyle(.blue.gradient)
-                            }.buttonStyle(PlainButtonStyle())
-                            /* Import Button */
-                            Button(action: {
-                                isImporting = true
-                            }) {
-                                Image(systemName: "square.grid.3x1.folder.badge.plus")
-                                    .font(.system(size: 20))
-                                    .symbolEffect(.bounce, options: .repeat(1))
-                            }
-                            .fileImporter(
-                                isPresented: $isImporting,
-                                allowedContentTypes: [.folder],
-                                allowsMultipleSelection: true
-                            ) { result in
-                                if case .success = result {
-                                    do {
-                                        let items = try result.get()
-                                        
-                                        for url in items {
-                                            if url.startAccessingSecurityScopedResource() {
-                                                folders.append(url)
-                                            }
-                                        }
-                                        
-                                    } catch let error {
-                                        logger.error("[fileImporter] Error: \(error)")
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    .padding(20)
-                    .navigationTitle("Demo App")
-                    .toolbar {
-                        Button(action: getUploads) {
-                            Image(systemName: "arrow.clockwise")
-                                .font(.system(size: 20))
-                        }
-                    }
                 }
             }
-        } detail: {
+            
             switch selectedSideBarItem {
             case .upload:
                 if self.identified {
@@ -852,16 +841,73 @@ struct ContentView: View {
                         .tabItem {
                             Text("Documents (\(uploadTextFiles.count))")
                         }
-                        
                     }.padding(10)
+                    HStack {
+                        VStack {
+                            /* Browse Button */
+                            Button(action: syncFolders) {
+                                let folderNames = folders.map { String($0.path().split(separator: "/").last!) }
+                                Image(systemName: "arrow.down.square")
+                                Text("Import \(folderNames.joined(separator: ", "))")
+                                ProgressView(value: progress)
+                            }
+                        }
+                        VStack {
+                            /* Clear Button */
+                            Button(action: clearFolders) {
+                                Text("Clear")
+                                    .foregroundStyle(.blue.gradient)
+                            }.buttonStyle(PlainButtonStyle())
+                        }
+                        VStack {
+                            /* Import Button */
+                            Button(action: {
+                                isImporting = true
+                            }) {
+                                Image(systemName: "square.grid.3x1.folder.badge.plus")
+                                    .font(.system(size: 20))
+                                    .symbolEffect(.bounce, options: .repeat(1))
+                            }
+                            .fileImporter(
+                                isPresented: $isImporting,
+                                allowedContentTypes: [.folder],
+                                allowsMultipleSelection: true
+                            ) { result in
+                                if case .success = result {
+                                    do {
+                                        let items = try result.get()
+                                        
+                                        for url in items {
+                                            if url.startAccessingSecurityScopedResource() {
+                                                folders.append(url)
+                                            }
+                                        }
+                                        
+                                    } catch let error {
+                                        logger.error("[fileImporter] Error: \(error)")
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .padding(20)
+                    .navigationTitle("Demo App (\(self.signedInUser?.emailAddress)")
+                    .toolbar {
+                        Button(action: getUploads) {
+                            Image(systemName: "arrow.clockwise")
+                                .font(.system(size: 20))
+                        }
+                    }
                 }
             case .signup:
                 if self.identified {
-                    Text("\(self.signedInUser)")
+//                    Text("\(self.signedInUser)")
+                    Text("Already identified")
                 }
             case .signin:
                 if self.identified {
-                    Text("\(self.signedInUser)")
+//                    Text("\(self.signedInUser)")
+                    Text("Already identified")
                 }
             }
         }.navigationSplitViewStyle(.balanced)

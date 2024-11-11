@@ -737,7 +737,7 @@ struct ContentView: View {
                         .tabItem {
                             Text("Images (\(uploadImageFiles.count))")
                         }
-                        
+
                         VStack {
                             Section {
                                 /* PdfFiles */
@@ -784,7 +784,7 @@ struct ContentView: View {
                         .tabItem {
                             Text("Pdfs (\(uploadPdfFiles.count))")
                         }
-                        
+
                         VStack {
                             Section {
                                 /* AudioFiles */
@@ -831,7 +831,7 @@ struct ContentView: View {
                         .tabItem {
                             Text("Media (\(uploadAudioFiles.count))")
                         }
-                        
+
                         VStack {
                             Section {
                                 /* TextFiles */
@@ -913,13 +913,13 @@ struct ContentView: View {
                                 if case .success = result {
                                     do {
                                         let items = try result.get()
-                                        
+
                                         for url in items {
                                             if url.startAccessingSecurityScopedResource() {
                                                 folders.append(url)
                                             }
                                         }
-                                        
+
                                     } catch let error {
                                         logger.error("[fileImporter] Error: \(error)")
                                     }
@@ -938,7 +938,6 @@ struct ContentView: View {
                 }
             case .signup:
                 if self.identified {
-//                    Text("\(self.signedInUser)")
                     Text("Already identified")
                 }
             case .signin:

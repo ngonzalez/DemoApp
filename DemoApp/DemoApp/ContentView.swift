@@ -480,6 +480,7 @@ struct ContentView: View {
         let password: String?
         let createdAt: String?
         let updatedAt: String?
+        let errors: [String]?
     }
 
     @State var identified:Bool = Bool(false)
@@ -507,7 +508,8 @@ struct ContentView: View {
                 emailAddress: userName,
                 password: password,
                 createdAt: nil,
-                updatedAt: nil
+                updatedAt: nil,
+                errors: nil
             )
             let data = try JSONEncoder().encode(item)
             let url = URL(string: "\(registrationURL)")!
@@ -542,7 +544,8 @@ struct ContentView: View {
                 emailAddress: userName,
                 password: password,
                 createdAt: nil,
-                updatedAt: nil
+                updatedAt: nil,
+                errors: nil
             )
             let data = try JSONEncoder().encode(item)
             let url = URL(string: "\(sessionURL)")!
@@ -623,7 +626,7 @@ struct ContentView: View {
             switch selectedSideBarItem {
             case .signin:
                 if self.identified {
-                    Text("Sign-in")
+                    Text("\(self.signedInUser)")
                 } else {
                     Form {
                         VStack {
@@ -647,6 +650,9 @@ struct ContentView: View {
                 if self.identified {
                     Text("Sign-up")
                 } else {
+                    if self.signedInUser != nil {
+                        Text("Errors \(self.signedInUser?.errors)")
+                    }
                     Form {
                         VStack {
                             TextField(text: $firstName, prompt: Text("John")) {

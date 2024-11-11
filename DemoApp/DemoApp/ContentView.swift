@@ -65,19 +65,19 @@ struct ContentView: View {
 
     @State private var imageFileSortOrder = [KeyPathComparator(\ImageFile.fileName)]
 
-    @State private var imageFileSelection: ImageFile.ID? = nil
+    @State private var imageFileSelection = Set<ImageFile.ID>()
 
     @State private var pdfFileSortOrder = [KeyPathComparator(\PdfFile.fileName)]
 
-    @State private var pdfFileSelection: PdfFile.ID? = nil
+    @State private var pdfFileSelection = Set<PdfFile.ID>()
 
     @State private var audioFileSortOrder = [KeyPathComparator(\AudioFile.fileName)]
 
-    @State private var audioFileSelection: AudioFile.ID? = nil
+    @State private var audioFileSelection = Set<AudioFile.ID>()
 
     @State private var textFileSortOrder = [KeyPathComparator(\TextFile.fileName)]
 
-    @State private var textFileSelection: TextFile.ID? = nil
+    @State private var textFileSelection = Set<TextFile.ID>()
 
     @State private var progress:Float = Float(0)
 
@@ -462,13 +462,15 @@ struct ContentView: View {
                         Text("Images")
                     }
                 }
-                .onChange(of: imageFileSelection) { id in
-                    uploadImageFiles.map { imageFile in
-                        if imageFile.id == id {
-                            print(imageFile)
-                        }
-                    }
-                }
+                 .onChange(of: imageFileSelection) { selectedIds in
+                     for selectedId in selectedIds {
+                         uploadImageFiles.map { imageFile in
+                             if imageFile.id == selectedId {
+                                 print(imageFile)
+                             }
+                         }
+                     }
+                 }
                 .onChange(of: imageFileSortOrder) { order in
                     withAnimation {
                         uploadImageFiles.sort(using: order)
@@ -508,6 +510,15 @@ struct ContentView: View {
                         Text("Pdfs")
                     }
                 }
+                 .onChange(of: pdfFileSelection) { selectedIds in
+                     for selectedId in selectedIds {
+                         uploadPdfFiles.map { pdfFile in
+                             if pdfFile.id == selectedId {
+                                 print(pdfFile)
+                             }
+                         }
+                     }
+                 }
                 .onChange(of: pdfFileSortOrder) { order in
                     uploadPdfFiles.sort(using: order)
                 }
@@ -545,6 +556,15 @@ struct ContentView: View {
                         Text("Media")
                     }
                 }
+                 .onChange(of: audioFileSelection) { selectedIds in
+                     for selectedId in selectedIds {
+                         uploadAudioFiles.map { audioFile in
+                             if audioFile.id == selectedId {
+                                 print(audioFile)
+                             }
+                         }
+                     }
+                 }
                 .onChange(of: audioFileSortOrder) { order in
                     uploadAudioFiles.sort(using: order)
                 }
@@ -581,10 +601,20 @@ struct ContentView: View {
                     } header: {
                         Text("Documents")
                     }
+                }
+                 .onChange(of: textFileSelection) { selectedIds in
+                     for selectedId in selectedIds {
+                         uploadTextFiles.map { textFile in
+                             if textFile.id == selectedId {
+                                 print(textFile)
+                             }
+                         }
+                     }
+                 }
                 .onChange(of: textFileSortOrder) { order in
                     uploadTextFiles.sort(using: order)
                 }
-                }.tabItem {
+                .tabItem {
                     Text("Documents (\(uploadTextFiles.count))")
                 }
 

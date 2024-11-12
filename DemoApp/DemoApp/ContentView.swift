@@ -624,6 +624,18 @@ struct ContentView: View {
         self.selectedTextFiles = []
     }
 
+    func getFolderName(folder: Folder) -> String {
+        var folderNames:[String] = []
+        folderNames += [folder.name]
+        if folder.folder != nil && (folder.folder != folder.name) {
+            folderNames += [folder.folder!]
+        }
+        if folder.subfolder != nil {
+            folderNames += [folder.subfolder!]
+        }
+        return folderNames.joined(separator: ", ")
+    }
+
     var body: some View {
         NavigationSplitView(columnVisibility: $visibility) {
             List(SideBarItem.allCases, selection: $selectedSideBarItem) { item in
@@ -695,7 +707,7 @@ struct ContentView: View {
                 } else {
                     List {
                        ForEach(self.loadedFolders) { folder in
-                           Label("\(folder.name) > \(folder.folder ?? "") > \(folder.subfolder ?? "")", systemImage: "folder")
+                           Label(getFolderName(folder: folder), systemImage: "folder")
                                .labelStyle(.titleAndIcon)
                                .font(.system(size: 15))
                         }
@@ -707,7 +719,6 @@ struct ContentView: View {
                     Button(action: clearSelectedFiles) {
                         Text("Clear selected files")
                     }.buttonStyle(PlainButtonStyle())
-
                 }
             }
 
@@ -905,6 +916,7 @@ struct ContentView: View {
                             Text("Documents (\(uploadTextFiles.count))")
                         }
                     }.padding(10)
+
                     HStack {
                         VStack {
                             /* Browse Button */

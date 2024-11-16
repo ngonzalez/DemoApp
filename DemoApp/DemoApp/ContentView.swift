@@ -49,8 +49,6 @@ class NetworkDelegateClass: NSObject, URLSessionDelegate, URLSessionDataDelegate
 struct ContentView: View {
 
     /* Uploads */
-    @State private var uploadsResponses: Array<UploadResponse> = Array<UploadResponse>()
-
     @State private var uploadsWithFiles: Array<UploadWithFiles> = Array<UploadWithFiles>()
 
     /* Attachments */
@@ -423,16 +421,21 @@ struct ContentView: View {
         }
     }
 
+    func newGetRequest(url: URL) -> URLRequest {
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        return request
+    }
+
     func getUploads() {
         do {
-            let item = UploadUuids(uuids: uploadsResponses.map{ $0.uuid })
-            let data = try JSONEncoder().encode(item)
-            let url = URL(string: "\(backendURL)/list")!
+            let url = URL(string: backendURL)!
             let delegateClass = NetworkDelegateClass()
             let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
-            let optimizedData: Data = try! data.gzipped(level: .bestCompression)
-            let postLength = String(format: "%lu", UInt(optimizedData.count))
-            let request = newPostRequest(url: url, data: optimizedData, postLength: postLength)
+            let request = newGetRequest(url: url)
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 do {
                     let response = try JSONDecoder().decode([UploadWithFiles].self, from: data!)

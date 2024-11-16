@@ -130,7 +130,6 @@ struct ContentView: View {
     struct UploadItem: Codable {
         var id: Int?
         var uuid:UUID = UUID()
-        var userId:Int?
         var filePath: String
         var mimeType: String
         var source: String
@@ -151,20 +150,6 @@ struct ContentView: View {
         return request
     }
 
-    func newDeleteRequest(url: URL) -> URLRequest {
-        var request = URLRequest(url: url)
-        request.httpMethod = "DELETE"
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        return request
-    }
-
-    struct UploadResponse: Decodable {
-        let id: Int
-        let uuid: UUID
-    }
-
     func uploadItem(source: String, path: String, mimeType: String, uploadData: Data, createdAt: Date, updatedAt: Date) {
 
         do {
@@ -173,7 +158,6 @@ struct ContentView: View {
             let createdAtFormatted = dateFormatter.string(from: createdAt)
             let updatedAtFormatted = dateFormatter.string(from: updatedAt)
             let item = UploadItem(
-                userId: self.signedInUser?.id,
                 filePath: path,
                 mimeType: mimeType,
                 source: source,
@@ -189,15 +173,7 @@ struct ContentView: View {
             let optimizedData: Data = try! data.gzipped(level: .bestCompression)
             let postLength = String(format: "%lu", UInt(optimizedData.count))
             let request = newPostRequest(url: url, data: optimizedData, postLength: postLength)
-            let task = delegateSession.dataTask(with: request) { data, response, error in
-                do {
-                    let upload = try JSONDecoder().decode(UploadResponse.self, from: data!)
-                    logger.log("[uploadItem] Upload id=\(upload.id) uuid=\(upload.uuid)")
-                    self.uploadsResponses.append(upload)
-                } catch let error {
-                    logger.error("[uploadItem] Error \(error)")
-                }
-            }
+            let task = delegateSession.uploadTask(withStreamedRequest: request)
 
             task.resume()
 
@@ -576,6 +552,15 @@ struct ContentView: View {
 
     struct Message: Codable {
         let message: String?
+    }
+
+    func newDeleteRequest(url: URL) -> URLRequest {
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        return request
     }
 
     func submitDestroySessionForm() {

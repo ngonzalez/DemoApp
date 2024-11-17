@@ -58,6 +58,8 @@ struct ContentView: View {
 
     @State private var uploadAudioFiles:Array<AudioFile> = Array<AudioFile>()
 
+    @State private var uploadVideoFiles:Array<VideoFile> = Array<VideoFile>()
+
     @State private var uploadTextFiles:Array<TextFile> = Array<TextFile>()
 
     /* Folders  */
@@ -78,9 +80,17 @@ struct ContentView: View {
 
     @State private var audioFileSelection = Set<AudioFile.ID>()
 
+    @State private var videoFileSortOrder = [KeyPathComparator(\VideoFile.fileName)]
+
+    @State private var videoFileSelection = Set<VideoFile.ID>()
+
     @State private var textFileSortOrder = [KeyPathComparator(\TextFile.fileName)]
 
     @State private var textFileSelection = Set<TextFile.ID>()
+
+    @State private var folderSortOrder = [KeyPathComparator(\Folder.name)]
+
+    @State private var folderSelection = Set<Folder.ID>()
 
     @State private var selectedImageFiles:Array<ImageFile> = Array<ImageFile>()
 
@@ -88,9 +98,15 @@ struct ContentView: View {
 
     @State private var selectedAudioFiles:Array<AudioFile> = Array<AudioFile>()
 
+    @State private var selectedVideoFiles:Array<VideoFile> = Array<VideoFile>()
+
     @State private var selectedTextFiles:Array<TextFile> = Array<TextFile>()
 
+    @State private var selectedFolders = Set<Folder.ID>()
+
     /* Upload Request  */
+    @State private var backendURL:String = "http://127.0.0.1:3002/upload"
+
     @State private var mimeTypes:[String:String] = [
         /* DOCUMENTS */
         "pdf": "application/pdf",
@@ -118,10 +134,11 @@ struct ContentView: View {
         "aiff": "audio/x-aiff",
 
         /* WAV */
-        "wav": "audio/wav"
-    ]
+        "wav": "audio/wav",
 
-    @State private var backendURL:String = "http://127.0.0.1:3002/uploads"
+        /* MKV */
+        "mkv": "video/x-matroska"
+    ]
 
     @State private var isImporting:Bool = false
 
@@ -178,7 +195,6 @@ struct ContentView: View {
         } catch let error {
             logger.error("[uploadItem] Error: \(error)")
         }
-
     }
 
     func importItem(itemPath: String, createdAt: Date, updatedAt: Date, source: String) {
@@ -368,6 +384,15 @@ struct ContentView: View {
         let mimeType: String?
     }
 
+    struct VideoFile: Decodable, Identifiable {
+        let id: Int
+        let folder: Folder
+        let fileName: String
+        let fileUrl: String
+        let dataUrl: String?
+        let mimeType: String?
+    }
+
     struct UploadWithFiles: Decodable, Identifiable {
         let id: Int
         let uuid: UUID
@@ -375,10 +400,7 @@ struct ContentView: View {
         let pdfFiles: Array<PdfFile>
         let textFiles: Array<TextFile>
         let audioFiles: Array<AudioFile>
-    }
-
-    struct UploadUuids: Codable {
-        var uuids:Array<UUID> = Array<UUID>()
+        let videoFiles: Array<VideoFile>
     }
 
     @State var loadedFolders: Array<Folder> = Array<Folder>()
@@ -390,6 +412,7 @@ struct ContentView: View {
         self.uploadImageFiles = []
         self.uploadPdfFiles = []
         self.uploadAudioFiles = []
+        self.uploadVideoFiles = []
         self.uploadTextFiles = []
         self.loadedFolders = []
 
@@ -412,6 +435,12 @@ struct ContentView: View {
                     self.loadedFolders.append(audioFile.folder)
                 }
             }
+            self.uploadVideoFiles += upload.videoFiles
+            for videoFile in upload.videoFiles {
+                if !self.loadedFolders.map { $0.id }.contains(videoFile.folder.id) {
+                    self.loadedFolders.append(videoFile.folder)
+                }
+            }
             self.uploadTextFiles += upload.textFiles
             for textFile in upload.textFiles {
                 if !self.loadedFolders.map { $0.id }.contains(textFile.folder.id) {
@@ -429,13 +458,26 @@ struct ContentView: View {
 
         return request
     }
+    
+    func getUploadsRequest() -> URL {
+        if (selectedFolders.count > 0) {
+            var str:String = ""
+            for folderId in selectedFolders {
+                str += ",\(folderId)"
+            }
+            let strData:Data = str.data(using: .utf8)!
+            let base64str:String = strData.base64EncodedString()
+            return URL(string: "\(backendURL)" + "?folderIds=\(base64str)")!
+        } else {
+            return URL(string: "\(backendURL)")!
+        }
+    }
 
     func getUploads() {
         do {
-            let url = URL(string: backendURL)!
             let delegateClass = NetworkDelegateClass()
             let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
-            let request = newGetRequest(url: url)
+            let request = newGetRequest(url: getUploadsRequest())
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 do {
                     let response = try JSONDecoder().decode([UploadWithFiles].self, from: data!)
@@ -493,6 +535,7 @@ struct ContentView: View {
                 updatedAt: nil,
                 errors: nil
             )
+
             let data = try JSONEncoder().encode(item)
             let url = URL(string: "\(registrationURL)")!
             let delegateClass = NetworkDelegateClass()
@@ -505,6 +548,7 @@ struct ContentView: View {
                     let response = try JSONDecoder().decode(User.self, from: data!)
                     self.signedInUser = response
                     self.identified = ((self.signedInUser?.createdAt) != nil)
+                    getUploads()
                 } catch let error {
                     logger.error("[submitRegistrationForm] Request: \(error)")
                 }
@@ -529,6 +573,7 @@ struct ContentView: View {
                 updatedAt: nil,
                 errors: nil
             )
+
             let data = try JSONEncoder().encode(item)
             let url = URL(string: "\(sessionURL)")!
             let delegateClass = NetworkDelegateClass()
@@ -541,6 +586,7 @@ struct ContentView: View {
                     let response = try JSONDecoder().decode(User.self, from: data!)
                     self.signedInUser = response
                     self.identified = ((self.signedInUser?.createdAt) != nil)
+                    getUploads()
                 } catch let error {
                     logger.error("[submitSessionForm] Request: \(error)")
                 }
@@ -596,8 +642,8 @@ struct ContentView: View {
     enum SideBarItem: String, Identifiable, CaseIterable {
         var id: String { rawValue }
 
-        case signup
         case signin
+        case signup
         case upload
     }
 
@@ -609,7 +655,13 @@ struct ContentView: View {
         self.selectedImageFiles = []
         self.selectedPdfFiles = []
         self.selectedAudioFiles = []
+        self.selectedVideoFiles = []
         self.selectedTextFiles = []
+    }
+
+    func clearSelectedFolders() {
+        self.folderSelection = Set()
+        clearSelectedFiles()
     }
 
     func getFolderName(folder: Folder) -> String {
@@ -622,6 +674,10 @@ struct ContentView: View {
             folderNames += [folder.subfolder!]
         }
         return folderNames.joined(separator: ", ")
+    }
+    
+    func displayFolder(folder: Folder) -> Void {
+        self.selectedFolders = Set([folder.id])
     }
 
     var body: some View {
@@ -658,7 +714,7 @@ struct ContentView: View {
                 }
             case .signup:
                 if self.identified {
-                    Text("Sign-up")
+                    Text("\(self.signedInUser)")
                 } else {
                     if self.signedInUser?.errors != nil {
                         Text("Errors \(self.signedInUser?.errors)")
@@ -693,218 +749,6 @@ struct ContentView: View {
                 if !self.identified {
                     Text("You need to be identified. Please login.")
                 } else {
-                    List {
-                       ForEach(self.loadedFolders) { folder in
-                           Label(getFolderName(folder: folder), systemImage: "folder")
-                               .labelStyle(.titleAndIcon)
-                               .font(.system(size: 15))
-                        }
-                    }
-                    Text("\(self.selectedImageFiles)")
-                    Text("\(self.selectedPdfFiles)")
-                    Text("\(self.selectedAudioFiles)")
-                    Text("\(self.selectedTextFiles)")
-                    Button(action: clearSelectedFiles) {
-                        Text("Clear selected files")
-                    }.buttonStyle(PlainButtonStyle())
-                }
-            }
-
-            switch selectedSideBarItem {
-            case .upload:
-                if self.identified {
-                    TabView {
-                        VStack {
-                            Section {
-                                /* ImageFiles */
-                                Table(of: ImageFile.self,
-                                      selection: $imageFileSelection,
-                                      sortOrder: $imageFileSortOrder) {
-                                    TableColumn("id") { imageFile in
-                                        Text("\(imageFile.id)")
-                                    }
-                                    TableColumn("fileName", value: \.fileName)
-                                    TableColumn("fileUrl") { imageFile in
-                                        Link(destination: URL(string: imageFile.fileUrl)!, label: {
-                                            Image(systemName: "bubble.left")
-                                            Text("Web")
-                                        })
-                                    }
-                                    TableColumn("mimeType") { imageFile in
-                                        if imageFile.mimeType != nil {
-                                            Text(imageFile.mimeType!)
-                                        }
-                                    }
-                                } rows: {
-                                    ForEach(uploadImageFiles) { imageFile in
-                                        TableRow(imageFile)
-                                    }
-                                }
-                            } header: {
-                                Text("Images")
-                            }
-                        }
-                        .onChange(of: imageFileSelection) { selectedIds in
-                            self.selectedImageFiles = []
-                            for selectedId in selectedIds {
-                                uploadImageFiles.map { imageFile in
-                                    if imageFile.id == selectedId {
-                                        self.selectedImageFiles.append(imageFile)
-                                    }
-                                }
-                            }
-                        }
-                        .onChange(of: imageFileSortOrder) { order in
-                            withAnimation {
-                                uploadImageFiles.sort(using: order)
-                            }
-                        }
-                        .tabItem {
-                            Text("Images (\(uploadImageFiles.count))")
-                        }
-
-                        VStack {
-                            Section {
-                                /* PdfFiles */
-                                Table(of: PdfFile.self,
-                                      selection: $pdfFileSelection,
-                                      sortOrder: $pdfFileSortOrder) {
-                                    TableColumn("id") { pdfFile in
-                                        Text("\(pdfFile.id)")
-                                    }
-                                    TableColumn("fileName", value: \.fileName)
-                                    TableColumn("fileUrl") { pdfFile in
-                                        Link(destination: URL(string: pdfFile.fileUrl)!, label: {
-                                            Image(systemName: "bubble.left")
-                                            Text("Web")
-                                        })
-                                    }
-                                    TableColumn("mimeType") { pdfFile in
-                                        if pdfFile.mimeType != nil {
-                                            Text(pdfFile.mimeType!)
-                                        }
-                                    }
-                                } rows: {
-                                    ForEach(uploadPdfFiles) { pdfFile in
-                                        TableRow(pdfFile)
-                                    }
-                                }
-                            } header: {
-                                Text("Pdfs")
-                            }
-                        }
-                        .onChange(of: pdfFileSelection) { selectedIds in
-                            self.selectedPdfFiles = []
-                            for selectedId in selectedIds {
-                                uploadPdfFiles.map { pdfFile in
-                                    if pdfFile.id == selectedId {
-                                        self.selectedPdfFiles.append(pdfFile)
-                                    }
-                                }
-                            }
-                        }
-                        .onChange(of: pdfFileSortOrder) { order in
-                            uploadPdfFiles.sort(using: order)
-                        }
-                        .tabItem {
-                            Text("Pdfs (\(uploadPdfFiles.count))")
-                        }
-
-                        VStack {
-                            Section {
-                                /* AudioFiles */
-                                Table(of: AudioFile.self,
-                                      selection: $audioFileSelection,
-                                      sortOrder: $audioFileSortOrder) {
-                                    TableColumn("id") { audioFile in
-                                        Text("\(audioFile.id)")
-                                    }
-                                    TableColumn("fileName", value: \.fileName)
-                                    TableColumn("fileUrl") { audioFile in
-                                        Link(destination: URL(string: audioFile.fileUrl)!, label: {
-                                            Image(systemName: "bubble.left")
-                                            Text("Web")
-                                        })
-                                    }
-                                    TableColumn("mimeType") { audioFile in
-                                        if audioFile.mimeType != nil {
-                                            Text(audioFile.mimeType!)
-                                        }
-                                    }
-                                } rows: {
-                                    ForEach(uploadAudioFiles) { audioFile in
-                                        TableRow(audioFile)
-                                    }
-                                }
-                            } header: {
-                                Text("Media")
-                            }
-                        }
-                        .onChange(of: audioFileSelection) { selectedIds in
-                            self.selectedAudioFiles = []
-                            for selectedId in selectedIds {
-                                uploadAudioFiles.map { audioFile in
-                                    if audioFile.id == selectedId {
-                                        self.selectedAudioFiles.append(audioFile)
-                                    }
-                                }
-                            }
-                        }
-                        .onChange(of: audioFileSortOrder) { order in
-                            uploadAudioFiles.sort(using: order)
-                        }
-                        .tabItem {
-                            Text("Media (\(uploadAudioFiles.count))")
-                        }
-
-                        VStack {
-                            Section {
-                                /* TextFiles */
-                                Table(of: TextFile.self,
-                                      selection: $textFileSelection,
-                                      sortOrder: $textFileSortOrder) {
-                                    TableColumn("id") { textFile in
-                                        Text("\(textFile.id)")
-                                    }
-                                    TableColumn("fileName", value: \.fileName)
-                                    TableColumn("fileUrl") { textFile in
-                                        Link(destination: URL(string: textFile.fileUrl)!, label: {
-                                            Image(systemName: "bubble.left")
-                                            Text("Web")
-                                        })
-                                    }
-                                    TableColumn("mimeType") { textFile in
-                                        if textFile.mimeType != nil {
-                                            Text(textFile.mimeType!)
-                                        }
-                                    }
-                                } rows: {
-                                    ForEach(uploadTextFiles) { textFile in
-                                        TableRow(textFile)
-                                    }
-                                }
-                            } header: {
-                                Text("Documents")
-                            }
-                        }
-                        .onChange(of: textFileSelection) { selectedIds in
-                            self.selectedTextFiles = []
-                            for selectedId in selectedIds {
-                                uploadTextFiles.map { textFile in
-                                    if textFile.id == selectedId {
-                                        self.selectedTextFiles.append(textFile)
-                                    }
-                                }
-                            }
-                        }
-                        .onChange(of: textFileSortOrder) { order in
-                            uploadTextFiles.sort(using: order)
-                        }
-                        .tabItem {
-                            Text("Documents (\(uploadTextFiles.count))")
-                        }
-                    }.padding(10)
-
                     HStack {
                         VStack {
                             /* Browse Button */
@@ -953,20 +797,326 @@ struct ContentView: View {
                             }
                         }
                     }
-                    .padding(20)
-                    .navigationTitle("Demo App (\(self.signedInUser?.emailAddress)")
+                    .padding(5)
+                    .navigationTitle("DemoApp (\(self.signedInUser?.emailAddress)")
                     .toolbar {
                         Button(action: getUploads) {
                             Image(systemName: "arrow.clockwise")
                                 .font(.system(size: 20))
                         }
                     }
+
+                    Table(of: Folder.self,
+                          selection: $folderSelection,
+                          sortOrder: $folderSortOrder) {
+                        TableColumn("name") { folder in
+                            Label(folder.name,
+                                  systemImage: "folder.circle")
+                                .labelStyle(.titleAndIcon)
+                        }
+                    } rows: {
+                        ForEach(loadedFolders) { folder in
+                            TableRow(folder)
+                        }
+                    }
+                    .onChange(of: folderSelection) { selectedIds in
+                        self.selectedFolders = []
+                        for selectedId in selectedIds {
+                            loadedFolders.map { folder in
+                                if folder.id == selectedId {
+                                    self.selectedFolders.insert(folder.id)
+                                }
+                            }
+                        }
+                        getUploads()
+                        clearSelectedFiles()
+                    }
                 }
-            case .signup:
+            }
+
+            switch selectedSideBarItem {
+            case .upload:
                 if self.identified {
-                    Text("Already identified")
+                    TabView {
+                        VStack {
+                            Section {
+                                /* ImageFiles */
+                                Table(of: ImageFile.self,
+                                      selection: $imageFileSelection,
+                                      sortOrder: $imageFileSortOrder) {
+                                    TableColumn("id") { imageFile in
+                                        Text("\(imageFile.id)")
+                                    }
+                                    TableColumn("fileName", value: \.fileName)
+                                    TableColumn("fileUrl") { imageFile in
+                                        Link(destination: URL(string: imageFile.fileUrl)!, label: {
+                                            Image(systemName: "bubble.left")
+                                            Text("Web")
+                                        })
+                                    }
+                                    TableColumn("mimeType") { imageFile in
+                                        if imageFile.mimeType != nil {
+                                            Text(imageFile.mimeType!)
+                                        }
+                                    }
+                                } rows: {
+                                    ForEach(uploadImageFiles) { imageFile in
+                                        TableRow(imageFile)
+                                    }
+                                }
+                            } header: {
+                                Text("Image")
+                            }
+                        }
+                        .onChange(of: imageFileSelection) { selectedIds in
+                            self.selectedImageFiles = []
+                            for selectedId in selectedIds {
+                                uploadImageFiles.map { imageFile in
+                                    if imageFile.id == selectedId {
+                                        self.selectedImageFiles.append(imageFile)
+                                    }
+                                }
+                            }
+                        }
+                        .onChange(of: imageFileSortOrder) { order in
+                            withAnimation {
+                                uploadImageFiles.sort(using: order)
+                            }
+                        }
+                        .tabItem {
+                            Text("Image (\(uploadImageFiles.count))")
+                        }
+
+                        VStack {
+                            Section {
+                                /* PdfFiles */
+                                Table(of: PdfFile.self,
+                                      selection: $pdfFileSelection,
+                                      sortOrder: $pdfFileSortOrder) {
+                                    TableColumn("id") { pdfFile in
+                                        Text("\(pdfFile.id)")
+                                    }
+                                    TableColumn("fileName", value: \.fileName)
+                                    TableColumn("fileUrl") { pdfFile in
+                                        Link(destination: URL(string: pdfFile.fileUrl)!, label: {
+                                            Image(systemName: "bubble.left")
+                                            Text("Web")
+                                        })
+                                    }
+                                    TableColumn("mimeType") { pdfFile in
+                                        if pdfFile.mimeType != nil {
+                                            Text(pdfFile.mimeType!)
+                                        }
+                                    }
+                                } rows: {
+                                    ForEach(uploadPdfFiles) { pdfFile in
+                                        TableRow(pdfFile)
+                                    }
+                                }
+                            } header: {
+                                Text("Pdf")
+                            }
+                        }
+                        .onChange(of: pdfFileSelection) { selectedIds in
+                            self.selectedPdfFiles = []
+                            for selectedId in selectedIds {
+                                uploadPdfFiles.map { pdfFile in
+                                    if pdfFile.id == selectedId {
+                                        self.selectedPdfFiles.append(pdfFile)
+                                    }
+                                }
+                            }
+                        }
+                        .onChange(of: pdfFileSortOrder) { order in
+                            uploadPdfFiles.sort(using: order)
+                        }
+                        .tabItem {
+                            Text("Pdfs (\(uploadPdfFiles.count))")
+                        }
+
+                        VStack {
+                            Section {
+                                /* AudioFiles */
+                                Table(of: AudioFile.self,
+                                      selection: $audioFileSelection,
+                                      sortOrder: $audioFileSortOrder) {
+                                    TableColumn("id") { audioFile in
+                                        Text("\(audioFile.id)")
+                                    }
+                                    TableColumn("fileName", value: \.fileName)
+                                    TableColumn("fileUrl") { audioFile in
+                                        Link(destination: URL(string: audioFile.fileUrl)!, label: {
+                                            Image(systemName: "bubble.left")
+                                            Text("Web")
+                                        })
+                                    }
+                                    TableColumn("mimeType") { audioFile in
+                                        if audioFile.mimeType != nil {
+                                            Text(audioFile.mimeType!)
+                                        }
+                                    }
+                                } rows: {
+                                    ForEach(uploadAudioFiles) { audioFile in
+                                        TableRow(audioFile)
+                                    }
+                                }
+                            } header: {
+                                Text("Audio")
+                            }
+                        }
+                        .onChange(of: audioFileSelection) { selectedIds in
+                            self.selectedAudioFiles = []
+                            for selectedId in selectedIds {
+                                uploadAudioFiles.map { audioFile in
+                                    if audioFile.id == selectedId {
+                                        self.selectedAudioFiles.append(audioFile)
+                                    }
+                                }
+                            }
+                        }
+                        .onChange(of: audioFileSortOrder) { order in
+                            uploadAudioFiles.sort(using: order)
+                        }
+                        .tabItem {
+                            Text("Audio (\(uploadAudioFiles.count))")
+                        }
+
+                        VStack {
+                            Section {
+                                /* VideoFiles */
+                                Table(of: VideoFile.self,
+                                      selection: $videoFileSelection,
+                                      sortOrder: $videoFileSortOrder) {
+                                    TableColumn("id") { videoFile in
+                                        Text("\(videoFile.id)")
+                                    }
+                                    TableColumn("fileName", value: \.fileName)
+                                    TableColumn("fileUrl") { videoFile in
+                                        Link(destination: URL(string: videoFile.fileUrl)!, label: {
+                                            Image(systemName: "bubble.left")
+                                            Text("Web")
+                                        })
+                                    }
+                                    TableColumn("mimeType") { videoFile in
+                                        if videoFile.mimeType != nil {
+                                            Text(videoFile.mimeType!)
+                                        }
+                                    }
+                                } rows: {
+                                    ForEach(uploadVideoFiles) { videoFile in
+                                        TableRow(videoFile)
+                                    }
+                                }
+                            } header: {
+                                Text("Video")
+                            }
+                        }
+                        .onChange(of: videoFileSelection) { selectedIds in
+                            self.selectedVideoFiles = []
+                            for selectedId in selectedIds {
+                                uploadVideoFiles.map { videoFile in
+                                    if videoFile.id == selectedId {
+                                        self.selectedVideoFiles.append(videoFile)
+                                    }
+                                }
+                            }
+                        }
+                        .onChange(of: videoFileSortOrder) { order in
+                            uploadVideoFiles.sort(using: order)
+                        }
+                        .tabItem {
+                            Text("Video (\(uploadVideoFiles.count))")
+                        }
+
+                        VStack {
+                            Section {
+                                /* TextFiles */
+                                Table(of: TextFile.self,
+                                      selection: $textFileSelection,
+                                      sortOrder: $textFileSortOrder) {
+                                    TableColumn("id") { textFile in
+                                        Text("\(textFile.id)")
+                                    }
+                                    TableColumn("fileName", value: \.fileName)
+                                    TableColumn("fileUrl") { textFile in
+                                        Link(destination: URL(string: textFile.fileUrl)!, label: {
+                                            Image(systemName: "bubble.left")
+                                            Text("Web")
+                                        })
+                                    }
+                                    TableColumn("mimeType") { textFile in
+                                        if textFile.mimeType != nil {
+                                            Text(textFile.mimeType!)
+                                        }
+                                    }
+                                } rows: {
+                                    ForEach(uploadTextFiles) { textFile in
+                                        TableRow(textFile)
+                                    }
+                                }
+                            } header: {
+                                Text("Text")
+                            }
+                        }
+                        .onChange(of: textFileSelection) { selectedIds in
+                            self.selectedTextFiles = []
+                            for selectedId in selectedIds {
+                                uploadTextFiles.map { textFile in
+                                    if textFile.id == selectedId {
+                                        self.selectedTextFiles.append(textFile)
+                                    }
+                                }
+                            }
+                        }
+                        .onChange(of: textFileSortOrder) { order in
+                            uploadTextFiles.sort(using: order)
+                        }
+                        .tabItem {
+                            Text("Text (\(uploadTextFiles.count))")
+                        }
+                    }
+                    .padding(.horizontal, 5)
+
+                    HStack {
+                        VStack {
+                            List {
+                               ForEach(self.selectedImageFiles) { imageFile in
+                                   Label(imageFile.fileName,
+                                         systemImage: "photo.circle")
+                                       .labelStyle(.titleAndIcon)
+                                       .font(.system(size: 15))
+                                }
+                                ForEach(self.selectedPdfFiles) { pdfFile in
+                                    Label(pdfFile.fileName,
+                                          systemImage: "doc.circle.fill")
+                                        .labelStyle(.titleAndIcon)
+                                        .font(.system(size: 15))
+                                 }
+                                ForEach(self.selectedAudioFiles) { audioFile in
+                                    Label(audioFile.fileName,
+                                          systemImage: "waveform.circle")
+                                        .labelStyle(.titleAndIcon)
+                                        .font(.system(size: 15))
+                                 }
+                                ForEach(self.selectedVideoFiles) { videoFile in
+                                    Label(videoFile.fileName,
+                                          systemImage: "video.circle")
+                                        .labelStyle(.titleAndIcon)
+                                        .font(.system(size: 15))
+                                 }
+                                ForEach(self.selectedTextFiles) { textFile in
+                                    Label(textFile.fileName,
+                                          systemImage: "doc.circle")
+                                        .labelStyle(.titleAndIcon)
+                                        .font(.system(size: 15))
+                                 }
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 5)
+
                 }
-            case .signin:
+            case .signin, .signup:
                 if self.identified {
                     Text("\(self.signedInUser?.emailAddress)")
                     Divider()

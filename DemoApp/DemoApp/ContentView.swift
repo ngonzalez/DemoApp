@@ -1,5 +1,5 @@
 /*
-    Copyright 2024 Nicolas GONZALEZ
+    Copyright 2024,2025 Nicolas GONZALEZ
 
     MIT License
 
@@ -17,6 +17,9 @@
 */
 
 import SwiftUI
+
+/* VideoPlayer */
+import AVKit
 
 /* GzipSwift */
 import Gzip
@@ -47,6 +50,11 @@ class NetworkDelegateClass: NSObject, URLSessionDelegate, URLSessionDataDelegate
 
 @MainActor
 struct ContentView: View {
+
+    /* Media Player */
+    @State private var player:AVPlayer = AVPlayer()
+
+    @State private var isPlaying:Bool = false
 
     /* Uploads */
     @State private var uploadsWithFiles: Array<UploadWithFiles> = Array<UploadWithFiles>()
@@ -105,7 +113,8 @@ struct ContentView: View {
     @State private var selectedFolders = Set<Folder.ID>()
 
     /* Upload Request  */
-    @State private var backendURL:String = "http://127.0.0.1:3002/upload"
+    @State private var backendURL:String = "https://link12.ddns.net:4040/upload"
+//    @State private var backendURL:String = "http://127.0.0.1:3002/upload"
 
     @State private var mimeTypes:[String:String] = [
         /* DOCUMENTS */
@@ -126,7 +135,7 @@ struct ContentView: View {
         /* AAC MP4 ALAC  **/
         "aac": "audio/m4a",
         "m4a": "audio/x-m4a",
-        "mp4": "audio/mp4",
+//        "mp4": "audio/mp4",
 
         /* AIFF */
         "aff": "audio/x-aiff",
@@ -137,7 +146,10 @@ struct ContentView: View {
         "wav": "audio/wav",
 
         /* MKV */
-        "mkv": "video/x-matroska"
+        "mkv": "video/x-matroska",
+        
+        /* */
+        "mp4": "video/mp4",
     ]
 
     @State private var isImporting:Bool = false
@@ -340,6 +352,7 @@ struct ContentView: View {
     struct Folder: Decodable, Identifiable {
         let id: Int
         let dataUrl: String?
+        let formattedName: String?
         let name: String
         let folder: String?
         let subfolder: String?
@@ -519,9 +532,11 @@ struct ContentView: View {
 
     @State private var lastName: String = String()
 
-    @State private var registrationURL:String = "http://127.0.0.1:3002/registration"
+    @State private var registrationURL:String = "https://link12.ddns.net:4040/registration"
+//    @State private var registrationURL:String = "http://127.0.0.1:3002/registration"
 
-    @State private var sessionURL:String = "http://127.0.0.1:3002/session"
+    @State private var sessionURL:String = "https://link12.ddns.net:4040/session"
+//    @State private var sessionURL:String = "http://127.0.0.1:3002/session"
 
     func submitRegistrationForm() {
         do {
@@ -659,9 +674,18 @@ struct ContentView: View {
         self.selectedTextFiles = []
     }
 
-    func clearSelectedFolders() {
+    func clearSelection() {
         self.folderSelection = Set()
+        self.audioFileSelection = Set()
+        self.videoFileSelection = Set()
+        self.imageFileSelection = Set()
+        self.pdfFileSelection = Set()
+        self.textFileSelection = Set()
+    }
+
+    func clearSelectedFolders() {
         clearSelectedFiles()
+        clearSelection()
     }
 
     func getFolderName(folder: Folder) -> String {
@@ -675,9 +699,23 @@ struct ContentView: View {
         }
         return folderNames.joined(separator: ", ")
     }
-    
-    func displayFolder(folder: Folder) -> Void {
-        self.selectedFolders = Set([folder.id])
+
+    /* Media Player*/
+    func initMediaPlayer(url: URL) {
+        self.player = AVPlayer(url: url)
+    }
+
+    func pauseMediaPlayer() {
+        do {
+            if (self.player != nil) {
+                self.player.pause()
+            } else {
+                self.player = AVPlayer()
+            }
+            print("pauseMediaPlayer")
+        } catch {
+            //
+        }
     }
 
     var body: some View {
@@ -688,7 +726,7 @@ struct ContentView: View {
                     value: item
                 )
             }
-        } detail: {
+        } content: {
             switch selectedSideBarItem {
             case .signin:
                 if self.identified {
@@ -704,7 +742,7 @@ struct ContentView: View {
                                 Text("Password")
                             }
                             .disableAutocorrection(true)
-
+                            
                             Button(action: submitSessionForm) {
                                 Text("Submit")
                             }.buttonStyle(PlainButtonStyle())
@@ -737,7 +775,7 @@ struct ContentView: View {
                                 Text("Password")
                             }
                             .disableAutocorrection(true)
-
+                            
                             Button(action: submitRegistrationForm) {
                                 Text("Submit")
                             }.buttonStyle(PlainButtonStyle())
@@ -783,13 +821,13 @@ struct ContentView: View {
                                 if case .success = result {
                                     do {
                                         let items = try result.get()
-
+                                        
                                         for url in items {
                                             if url.startAccessingSecurityScopedResource() {
                                                 folders.append(url)
                                             }
                                         }
-
+                                        
                                     } catch let error {
                                         logger.error("[fileImporter] Error: \(error)")
                                     }
@@ -806,30 +844,37 @@ struct ContentView: View {
                         }
                     }
 
-                    Table(of: Folder.self,
-                          selection: $folderSelection,
-                          sortOrder: $folderSortOrder) {
-                        TableColumn("name") { folder in
-                            Label(folder.name,
-                                  systemImage: "folder.circle")
+                    Section {
+                        Table(of: Folder.self,
+                              selection: $folderSelection,
+                              sortOrder: $folderSortOrder) {
+                            TableColumn("name") { folder in
+                                Label(folder.formattedName ?? "",
+                                      systemImage: "folder")
                                 .labelStyle(.titleAndIcon)
-                        }
-                    } rows: {
-                        ForEach(loadedFolders) { folder in
-                            TableRow(folder)
-                        }
-                    }
-                    .onChange(of: folderSelection) { selectedIds in
-                        self.selectedFolders = []
-                        for selectedId in selectedIds {
-                            loadedFolders.map { folder in
-                                if folder.id == selectedId {
-                                    self.selectedFolders.insert(folder.id)
-                                }
+                                .font(.system(size: 11))
+                            }
+                        } rows: {
+                            ForEach(loadedFolders) { folder in
+                                TableRow(folder)
                             }
                         }
-                        getUploads()
-                        clearSelectedFiles()
+                        .onChange(of: folderSelection) { selectedIds in
+                            self.selectedFolders = []
+                            for selectedId in selectedIds {
+                                loadedFolders.map { folder in
+                                    if folder.id == selectedId {
+                                        self.selectedFolders.insert(folder.id)
+                                    }
+                                }
+                            }
+                            pauseMediaPlayer()
+                            clearSelectedFiles()
+                            getUploads()
+                        }.tableStyle(.inset(alternatesRowBackgrounds: false))
+                            .frame(height: 250)
+                    } header: {
+                        Text("Folders")
                     }
                 }
             }
@@ -847,17 +892,24 @@ struct ContentView: View {
                                     TableColumn("id") { imageFile in
                                         Text("\(imageFile.id)")
                                     }
-                                    TableColumn("fileName", value: \.fileName)
+                                    TableColumn("fileName") { imageFile in
+                                        Label(imageFile.fileName ?? "",
+                                              systemImage: "document")
+                                        .labelStyle(.titleAndIcon)
+                                        .font(.system(size: 11))
+                                    }
                                     TableColumn("fileUrl") { imageFile in
                                         Link(destination: URL(string: imageFile.fileUrl)!, label: {
                                             Image(systemName: "bubble.left")
                                             Text("Web")
+                                                .font(.system(size: 11))
                                         })
                                     }
                                     TableColumn("mimeType") { imageFile in
-                                        if imageFile.mimeType != nil {
-                                            Text(imageFile.mimeType!)
-                                        }
+                                        Label(imageFile.mimeType ?? "",
+                                              systemImage: "document")
+                                        .labelStyle(.titleAndIcon)
+                                        .font(.system(size: 11))
                                     }
                                 } rows: {
                                     ForEach(uploadImageFiles) { imageFile in
@@ -867,26 +919,26 @@ struct ContentView: View {
                             } header: {
                                 Text("Image")
                             }
-                        }
-                        .onChange(of: imageFileSelection) { selectedIds in
-                            self.selectedImageFiles = []
-                            for selectedId in selectedIds {
-                                uploadImageFiles.map { imageFile in
-                                    if imageFile.id == selectedId {
-                                        self.selectedImageFiles.append(imageFile)
+                        }.tableStyle(.inset(alternatesRowBackgrounds: false))
+                            .onChange(of: imageFileSelection) { selectedIds in
+                                self.selectedImageFiles = []
+                                for selectedId in selectedIds {
+                                    uploadImageFiles.map { imageFile in
+                                        if imageFile.id == selectedId {
+                                            self.selectedImageFiles.append(imageFile)
+                                        }
                                     }
                                 }
                             }
-                        }
-                        .onChange(of: imageFileSortOrder) { order in
-                            withAnimation {
-                                uploadImageFiles.sort(using: order)
+                            .onChange(of: imageFileSortOrder) { order in
+                                withAnimation {
+                                    uploadImageFiles.sort(using: order)
+                                }
                             }
-                        }
-                        .tabItem {
-                            Text("Image (\(uploadImageFiles.count))")
-                        }
-
+                            .tabItem {
+                                Text("Image (\(uploadImageFiles.count))")
+                            }
+                        
                         VStack {
                             Section {
                                 /* PdfFiles */
@@ -896,17 +948,24 @@ struct ContentView: View {
                                     TableColumn("id") { pdfFile in
                                         Text("\(pdfFile.id)")
                                     }
-                                    TableColumn("fileName", value: \.fileName)
+                                    TableColumn("fileName") { pdfFile in
+                                        Label(pdfFile.fileName ?? "",
+                                              systemImage: "document")
+                                        .labelStyle(.titleAndIcon)
+                                        .font(.system(size: 11))
+                                    }
                                     TableColumn("fileUrl") { pdfFile in
                                         Link(destination: URL(string: pdfFile.fileUrl)!, label: {
                                             Image(systemName: "bubble.left")
                                             Text("Web")
+                                                .font(.system(size: 11))
                                         })
                                     }
                                     TableColumn("mimeType") { pdfFile in
-                                        if pdfFile.mimeType != nil {
-                                            Text(pdfFile.mimeType!)
-                                        }
+                                        Label(pdfFile.mimeType ?? "",
+                                              systemImage: "document")
+                                        .labelStyle(.titleAndIcon)
+                                        .font(.system(size: 11))
                                     }
                                 } rows: {
                                     ForEach(uploadPdfFiles) { pdfFile in
@@ -916,24 +975,24 @@ struct ContentView: View {
                             } header: {
                                 Text("Pdf")
                             }
-                        }
-                        .onChange(of: pdfFileSelection) { selectedIds in
-                            self.selectedPdfFiles = []
-                            for selectedId in selectedIds {
-                                uploadPdfFiles.map { pdfFile in
-                                    if pdfFile.id == selectedId {
-                                        self.selectedPdfFiles.append(pdfFile)
+                        }.tableStyle(.inset(alternatesRowBackgrounds: false))
+                            .onChange(of: pdfFileSelection) { selectedIds in
+                                self.selectedPdfFiles = []
+                                for selectedId in selectedIds {
+                                    uploadPdfFiles.map { pdfFile in
+                                        if pdfFile.id == selectedId {
+                                            self.selectedPdfFiles.append(pdfFile)
+                                        }
                                     }
                                 }
                             }
-                        }
-                        .onChange(of: pdfFileSortOrder) { order in
-                            uploadPdfFiles.sort(using: order)
-                        }
-                        .tabItem {
-                            Text("Pdfs (\(uploadPdfFiles.count))")
-                        }
-
+                            .onChange(of: pdfFileSortOrder) { order in
+                                uploadPdfFiles.sort(using: order)
+                            }
+                            .tabItem {
+                                Text("Pdfs (\(uploadPdfFiles.count))")
+                            }
+                        
                         VStack {
                             Section {
                                 /* AudioFiles */
@@ -943,17 +1002,24 @@ struct ContentView: View {
                                     TableColumn("id") { audioFile in
                                         Text("\(audioFile.id)")
                                     }
-                                    TableColumn("fileName", value: \.fileName)
+                                    TableColumn("fileName") { audioFile in
+                                        Label(audioFile.fileName ?? "",
+                                              systemImage: "document")
+                                        .labelStyle(.titleAndIcon)
+                                        .font(.system(size: 11))
+                                    }
                                     TableColumn("fileUrl") { audioFile in
                                         Link(destination: URL(string: audioFile.fileUrl)!, label: {
                                             Image(systemName: "bubble.left")
                                             Text("Web")
+                                                .font(.system(size: 11))
                                         })
                                     }
                                     TableColumn("mimeType") { audioFile in
-                                        if audioFile.mimeType != nil {
-                                            Text(audioFile.mimeType!)
-                                        }
+                                        Label(audioFile.mimeType ?? "",
+                                              systemImage: "document")
+                                        .labelStyle(.titleAndIcon)
+                                        .font(.system(size: 11))
                                     }
                                 } rows: {
                                     ForEach(uploadAudioFiles) { audioFile in
@@ -963,24 +1029,24 @@ struct ContentView: View {
                             } header: {
                                 Text("Audio")
                             }
-                        }
-                        .onChange(of: audioFileSelection) { selectedIds in
-                            self.selectedAudioFiles = []
-                            for selectedId in selectedIds {
-                                uploadAudioFiles.map { audioFile in
-                                    if audioFile.id == selectedId {
-                                        self.selectedAudioFiles.append(audioFile)
+                        }.tableStyle(.inset(alternatesRowBackgrounds: false))
+                            .onChange(of: audioFileSelection) { selectedIds in
+                                self.selectedAudioFiles = []
+                                for selectedId in selectedIds {
+                                    uploadAudioFiles.map { audioFile in
+                                        if audioFile.id == selectedId {
+                                            self.selectedAudioFiles.append(audioFile)
+                                        }
                                     }
                                 }
                             }
-                        }
-                        .onChange(of: audioFileSortOrder) { order in
-                            uploadAudioFiles.sort(using: order)
-                        }
-                        .tabItem {
-                            Text("Audio (\(uploadAudioFiles.count))")
-                        }
-
+                            .onChange(of: audioFileSortOrder) { order in
+                                uploadAudioFiles.sort(using: order)
+                            }
+                            .tabItem {
+                                Text("Audio (\(uploadAudioFiles.count))")
+                            }
+                        
                         VStack {
                             Section {
                                 /* VideoFiles */
@@ -990,17 +1056,24 @@ struct ContentView: View {
                                     TableColumn("id") { videoFile in
                                         Text("\(videoFile.id)")
                                     }
-                                    TableColumn("fileName", value: \.fileName)
+                                    TableColumn("fileName") { videoFile in
+                                        Label(videoFile.fileName ?? "",
+                                              systemImage: "document")
+                                        .labelStyle(.titleAndIcon)
+                                        .font(.system(size: 11))
+                                    }
                                     TableColumn("fileUrl") { videoFile in
                                         Link(destination: URL(string: videoFile.fileUrl)!, label: {
                                             Image(systemName: "bubble.left")
                                             Text("Web")
+                                                .font(.system(size: 11))
                                         })
                                     }
                                     TableColumn("mimeType") { videoFile in
-                                        if videoFile.mimeType != nil {
-                                            Text(videoFile.mimeType!)
-                                        }
+                                        Label(videoFile.mimeType ?? "",
+                                              systemImage: "document")
+                                        .labelStyle(.titleAndIcon)
+                                        .font(.system(size: 11))
                                     }
                                 } rows: {
                                     ForEach(uploadVideoFiles) { videoFile in
@@ -1010,24 +1083,27 @@ struct ContentView: View {
                             } header: {
                                 Text("Video")
                             }
-                        }
-                        .onChange(of: videoFileSelection) { selectedIds in
-                            self.selectedVideoFiles = []
-                            for selectedId in selectedIds {
-                                uploadVideoFiles.map { videoFile in
-                                    if videoFile.id == selectedId {
-                                        self.selectedVideoFiles.append(videoFile)
+                        }.tableStyle(.inset(alternatesRowBackgrounds: false))
+                            .onChange(of: videoFileSelection) { selectedIds in
+                                self.selectedVideoFiles = []
+                                for selectedId in selectedIds {
+                                    uploadVideoFiles.map { videoFile in
+                                        let url = URL(string: "https://link12.ddns.net:5050/hls/video-\(videoFile.id).m3u8")!
+                                        pauseMediaPlayer()
+                                        initMediaPlayer(url: url)
+                                        if videoFile.id == selectedId {
+                                            self.selectedVideoFiles.append(videoFile)
+                                        }
                                     }
                                 }
                             }
-                        }
-                        .onChange(of: videoFileSortOrder) { order in
-                            uploadVideoFiles.sort(using: order)
-                        }
-                        .tabItem {
-                            Text("Video (\(uploadVideoFiles.count))")
-                        }
-
+                            .onChange(of: videoFileSortOrder) { order in
+                                uploadVideoFiles.sort(using: order)
+                            }
+                            .tabItem {
+                                Text("Video (\(uploadVideoFiles.count))").colorMultiply(.cyan)
+                            }
+                        
                         VStack {
                             Section {
                                 /* TextFiles */
@@ -1037,17 +1113,24 @@ struct ContentView: View {
                                     TableColumn("id") { textFile in
                                         Text("\(textFile.id)")
                                     }
-                                    TableColumn("fileName", value: \.fileName)
+                                    TableColumn("fileName") { textFile in
+                                        Label(textFile.fileName ?? "",
+                                              systemImage: "document")
+                                        .labelStyle(.titleAndIcon)
+                                        .font(.system(size: 11))
+                                    }
                                     TableColumn("fileUrl") { textFile in
                                         Link(destination: URL(string: textFile.fileUrl)!, label: {
                                             Image(systemName: "bubble.left")
                                             Text("Web")
+                                                .font(.system(size: 11))
                                         })
                                     }
                                     TableColumn("mimeType") { textFile in
-                                        if textFile.mimeType != nil {
-                                            Text(textFile.mimeType!)
-                                        }
+                                        Label(textFile.mimeType ?? "",
+                                              systemImage: "document")
+                                        .labelStyle(.titleAndIcon)
+                                        .font(.system(size: 11))
                                     }
                                 } rows: {
                                     ForEach(uploadTextFiles) { textFile in
@@ -1057,64 +1140,25 @@ struct ContentView: View {
                             } header: {
                                 Text("Text")
                             }
-                        }
-                        .onChange(of: textFileSelection) { selectedIds in
-                            self.selectedTextFiles = []
-                            for selectedId in selectedIds {
-                                uploadTextFiles.map { textFile in
-                                    if textFile.id == selectedId {
-                                        self.selectedTextFiles.append(textFile)
+                        }.tableStyle(.inset(alternatesRowBackgrounds: false))
+                            .onChange(of: textFileSelection) { selectedIds in
+                                self.selectedTextFiles = []
+                                for selectedId in selectedIds {
+                                    uploadTextFiles.map { textFile in
+                                        if textFile.id == selectedId {
+                                            self.selectedTextFiles.append(textFile)
+                                        }
                                     }
                                 }
                             }
-                        }
-                        .onChange(of: textFileSortOrder) { order in
-                            uploadTextFiles.sort(using: order)
-                        }
-                        .tabItem {
-                            Text("Text (\(uploadTextFiles.count))")
-                        }
-                    }
-                    .padding(.horizontal, 5)
-
-                    HStack {
-                        VStack {
-                            List {
-                               ForEach(self.selectedImageFiles) { imageFile in
-                                   Label(imageFile.fileName,
-                                         systemImage: "photo.circle")
-                                       .labelStyle(.titleAndIcon)
-                                       .font(.system(size: 15))
-                                }
-                                ForEach(self.selectedPdfFiles) { pdfFile in
-                                    Label(pdfFile.fileName,
-                                          systemImage: "doc.circle.fill")
-                                        .labelStyle(.titleAndIcon)
-                                        .font(.system(size: 15))
-                                 }
-                                ForEach(self.selectedAudioFiles) { audioFile in
-                                    Label(audioFile.fileName,
-                                          systemImage: "waveform.circle")
-                                        .labelStyle(.titleAndIcon)
-                                        .font(.system(size: 15))
-                                 }
-                                ForEach(self.selectedVideoFiles) { videoFile in
-                                    Label(videoFile.fileName,
-                                          systemImage: "video.circle")
-                                        .labelStyle(.titleAndIcon)
-                                        .font(.system(size: 15))
-                                 }
-                                ForEach(self.selectedTextFiles) { textFile in
-                                    Label(textFile.fileName,
-                                          systemImage: "doc.circle")
-                                        .labelStyle(.titleAndIcon)
-                                        .font(.system(size: 15))
-                                 }
+                            .onChange(of: textFileSortOrder) { order in
+                                uploadTextFiles.sort(using: order)
                             }
-                        }
+                            .tabItem {
+                                Text("Text (\(uploadTextFiles.count))")
+                            }
                     }
                     .padding(.horizontal, 5)
-
                 }
             case .signin, .signup:
                 if self.identified {
@@ -1126,7 +1170,55 @@ struct ContentView: View {
                     }
                 }
             }
-        }.navigationSplitViewStyle(.balanced)
+        } detail: {
+
+            HStack {
+                VStack {
+                    List {
+                       ForEach(self.selectedImageFiles) { imageFile in
+                           Label(imageFile.fileName,
+                                 systemImage: "photo.circle")
+                               .labelStyle(.titleAndIcon)
+                               .font(.system(size: 11))
+                           AsyncImage(url: URL(string: imageFile.fileUrl)) { result in
+                               result.image?
+                                   .resizable()
+                                   .scaledToFill()
+                           }
+                           .frame(width: 400)
+                        }
+                        ForEach(self.selectedPdfFiles) { pdfFile in
+                            Label(pdfFile.fileName,
+                                  systemImage: "doc.circle.fill")
+                                .labelStyle(.titleAndIcon)
+                                .font(.system(size: 15))
+                         }
+                        ForEach(self.selectedAudioFiles) { audioFile in
+                            Label(audioFile.fileName,
+                                  systemImage: "waveform.circle")
+                                .labelStyle(.titleAndIcon)
+                                .font(.system(size: 15))
+                         }
+                        ForEach(self.selectedVideoFiles) { videoFile in
+                            Label(videoFile.fileName,
+                                  systemImage: "video.circle")
+                                .labelStyle(.titleAndIcon)
+                                .font(.system(size: 15))
+                            VideoPlayer(player: player)
+                                .frame(width: 400, height: 300)
+                        }
+                        ForEach(self.selectedTextFiles) { textFile in
+                            Label(textFile.fileName,
+                                  systemImage: "doc.circle")
+                                .labelStyle(.titleAndIcon)
+                                .font(.system(size: 15))
+                         }
+                    }
+                }
+            }
+            .padding(.horizontal, 5)
+
+        }.navigationSplitViewStyle(.prominentDetail)
     }
 }
 

@@ -919,26 +919,27 @@ struct ContentView: View {
                             } header: {
                                 Text("Image")
                             }
-                        }.tableStyle(.inset(alternatesRowBackgrounds: false))
-                            .onChange(of: imageFileSelection) { selectedIds in
-                                self.selectedImageFiles = []
-                                for selectedId in selectedIds {
-                                    uploadImageFiles.map { imageFile in
-                                        if imageFile.id == selectedId {
-                                            self.selectedImageFiles.append(imageFile)
-                                        }
+                        }
+                        .tableStyle(.inset(alternatesRowBackgrounds: false))
+                        .onChange(of: imageFileSelection) { selectedIds in
+                            self.selectedImageFiles = []
+                            for selectedId in selectedIds {
+                                uploadImageFiles.map { imageFile in
+                                    if imageFile.id == selectedId {
+                                        self.selectedImageFiles.append(imageFile)
                                     }
                                 }
                             }
-                            .onChange(of: imageFileSortOrder) { order in
-                                withAnimation {
-                                    uploadImageFiles.sort(using: order)
-                                }
+                        }
+                        .onChange(of: imageFileSortOrder) { order in
+                            withAnimation {
+                                uploadImageFiles.sort(using: order)
                             }
-                            .tabItem {
-                                Text("Image (\(uploadImageFiles.count))")
-                            }
-                        
+                        }
+                        .tabItem {
+                            Text("Image (\(uploadImageFiles.count))")
+                        }
+
                         VStack {
                             Section {
                                 /* PdfFiles */
@@ -975,24 +976,25 @@ struct ContentView: View {
                             } header: {
                                 Text("Pdf")
                             }
-                        }.tableStyle(.inset(alternatesRowBackgrounds: false))
-                            .onChange(of: pdfFileSelection) { selectedIds in
-                                self.selectedPdfFiles = []
-                                for selectedId in selectedIds {
-                                    uploadPdfFiles.map { pdfFile in
-                                        if pdfFile.id == selectedId {
-                                            self.selectedPdfFiles.append(pdfFile)
-                                        }
+                        }
+                        .tableStyle(.inset(alternatesRowBackgrounds: false))
+                        .onChange(of: pdfFileSelection) { selectedIds in
+                            self.selectedPdfFiles = []
+                            for selectedId in selectedIds {
+                                uploadPdfFiles.map { pdfFile in
+                                    if pdfFile.id == selectedId {
+                                        self.selectedPdfFiles.append(pdfFile)
                                     }
                                 }
                             }
-                            .onChange(of: pdfFileSortOrder) { order in
-                                uploadPdfFiles.sort(using: order)
-                            }
-                            .tabItem {
-                                Text("Pdfs (\(uploadPdfFiles.count))")
-                            }
-                        
+                        }
+                        .onChange(of: pdfFileSortOrder) { order in
+                            uploadPdfFiles.sort(using: order)
+                        }
+                        .tabItem {
+                            Text("Pdfs (\(uploadPdfFiles.count))")
+                        }
+
                         VStack {
                             Section {
                                 /* AudioFiles */
@@ -1029,24 +1031,25 @@ struct ContentView: View {
                             } header: {
                                 Text("Audio")
                             }
-                        }.tableStyle(.inset(alternatesRowBackgrounds: false))
-                            .onChange(of: audioFileSelection) { selectedIds in
-                                self.selectedAudioFiles = []
-                                for selectedId in selectedIds {
-                                    uploadAudioFiles.map { audioFile in
-                                        if audioFile.id == selectedId {
-                                            self.selectedAudioFiles.append(audioFile)
-                                        }
+                        }
+                        .tableStyle(.inset(alternatesRowBackgrounds: false))
+                        .onChange(of: audioFileSelection) { selectedIds in
+                            self.selectedAudioFiles = []
+                            for selectedId in selectedIds {
+                                uploadAudioFiles.map { audioFile in
+                                    if audioFile.id == selectedId {
+                                        self.selectedAudioFiles.append(audioFile)
                                     }
                                 }
                             }
-                            .onChange(of: audioFileSortOrder) { order in
-                                uploadAudioFiles.sort(using: order)
-                            }
-                            .tabItem {
-                                Text("Audio (\(uploadAudioFiles.count))")
-                            }
-                        
+                        }
+                        .onChange(of: audioFileSortOrder) { order in
+                            uploadAudioFiles.sort(using: order)
+                        }
+                        .tabItem {
+                            Text("Audio (\(uploadAudioFiles.count))")
+                        }
+
                         VStack {
                             Section {
                                 /* VideoFiles */
@@ -1083,27 +1086,28 @@ struct ContentView: View {
                             } header: {
                                 Text("Video")
                             }
-                        }.tableStyle(.inset(alternatesRowBackgrounds: false))
-                            .onChange(of: videoFileSelection) { selectedIds in
-                                self.selectedVideoFiles = []
-                                for selectedId in selectedIds {
-                                    uploadVideoFiles.map { videoFile in
-                                        let url = URL(string: "https://link12.ddns.net:5050/hls/video-\(videoFile.id).m3u8")!
-                                        pauseMediaPlayer()
-                                        initMediaPlayer(url: url)
-                                        if videoFile.id == selectedId {
-                                            self.selectedVideoFiles.append(videoFile)
-                                        }
+                        }
+                        .tableStyle(.inset(alternatesRowBackgrounds: false))
+                        .onChange(of: videoFileSelection) { selectedIds in
+                            self.selectedVideoFiles = []
+                            for selectedId in selectedIds {
+                                uploadVideoFiles.map { videoFile in
+                                    let url = URL(string: "https://link12.ddns.net:5050/hls/video-\(videoFile.id).m3u8")!
+                                    pauseMediaPlayer()
+                                    initMediaPlayer(url: url)
+                                    if videoFile.id == selectedId {
+                                        self.selectedVideoFiles.append(videoFile)
                                     }
                                 }
                             }
-                            .onChange(of: videoFileSortOrder) { order in
-                                uploadVideoFiles.sort(using: order)
-                            }
-                            .tabItem {
-                                Text("Video (\(uploadVideoFiles.count))").colorMultiply(.cyan)
-                            }
-                        
+                        }
+                        .onChange(of: videoFileSortOrder) { order in
+                            uploadVideoFiles.sort(using: order)
+                        }
+                        .tabItem {
+                            Text("Video (\(uploadVideoFiles.count))").colorMultiply(.cyan)
+                        }
+
                         VStack {
                             Section {
                                 /* TextFiles */
@@ -1140,23 +1144,24 @@ struct ContentView: View {
                             } header: {
                                 Text("Text")
                             }
-                        }.tableStyle(.inset(alternatesRowBackgrounds: false))
-                            .onChange(of: textFileSelection) { selectedIds in
-                                self.selectedTextFiles = []
-                                for selectedId in selectedIds {
-                                    uploadTextFiles.map { textFile in
-                                        if textFile.id == selectedId {
-                                            self.selectedTextFiles.append(textFile)
-                                        }
+                        }
+                        .tableStyle(.inset(alternatesRowBackgrounds: false))
+                        .onChange(of: textFileSelection) { selectedIds in
+                            self.selectedTextFiles = []
+                            for selectedId in selectedIds {
+                                uploadTextFiles.map { textFile in
+                                    if textFile.id == selectedId {
+                                        self.selectedTextFiles.append(textFile)
                                     }
                                 }
                             }
-                            .onChange(of: textFileSortOrder) { order in
-                                uploadTextFiles.sort(using: order)
-                            }
-                            .tabItem {
-                                Text("Text (\(uploadTextFiles.count))")
-                            }
+                        }
+                        .onChange(of: textFileSortOrder) { order in
+                            uploadTextFiles.sort(using: order)
+                        }
+                        .tabItem {
+                            Text("Text (\(uploadTextFiles.count))")
+                        }
                     }
                     .padding(.horizontal, 5)
                 }
@@ -1185,7 +1190,8 @@ struct ContentView: View {
                                    .resizable()
                                    .scaledToFill()
                            }
-                           .frame(width: 400)
+                           .frame(minWidth: 300, maxWidth: .infinity,
+                                  minHeight: 200, maxHeight: .infinity)
                         }
                         ForEach(self.selectedPdfFiles) { pdfFile in
                             Label(pdfFile.fileName,
@@ -1205,7 +1211,8 @@ struct ContentView: View {
                                 .labelStyle(.titleAndIcon)
                                 .font(.system(size: 15))
                             VideoPlayer(player: player)
-                                .frame(width: 400, height: 300)
+                                .frame(minWidth: 300, maxWidth: .infinity,
+                                       minHeight: 200, maxHeight: .infinity)
                         }
                         ForEach(self.selectedTextFiles) { textFile in
                             Label(textFile.fileName,

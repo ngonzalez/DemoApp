@@ -1190,8 +1190,7 @@ struct ContentView: View {
                                    .resizable()
                                    .scaledToFill()
                            }
-                           .frame(minWidth: 300, maxWidth: .infinity,
-                                  minHeight: 200, maxHeight: .infinity)
+                           .frame(maxWidth: .infinity, maxHeight: .infinity)
                         }
                         ForEach(self.selectedPdfFiles) { pdfFile in
                             Label(pdfFile.fileName,
@@ -1211,8 +1210,8 @@ struct ContentView: View {
                                 .labelStyle(.titleAndIcon)
                                 .font(.system(size: 15))
                             VideoPlayer(player: player)
-                                .frame(minWidth: 300, maxWidth: .infinity,
-                                       minHeight: 200, maxHeight: .infinity)
+                                .frame(minWidth: 400, maxWidth: .infinity,
+                                       minHeight: 300, maxHeight: .infinity)
                         }
                         ForEach(self.selectedTextFiles) { textFile in
                             Label(textFile.fileName,

@@ -700,21 +700,55 @@ struct ContentView: View {
         return folderNames.joined(separator: ", ")
     }
 
+    /* Streaming */
+    struct Stream: Decodable, Identifiable {
+        let id: Int
+        let m3u8Exists:Bool
+    }
+
+    @State private var videoStreams:Array<Stream> = Array<Stream>()
+
+    @State private var serviceURL:String = "https://link12.ddns.net:5050"
+
+    func getVideoStream(videoFile: VideoFile) {
+        do {
+            let delegateClass = NetworkDelegateClass()
+            let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
+            let url = URL(string: "\(serviceURL)/video_files/\(videoFile.id).json")!
+            let request = newGetRequest(url: url)
+            let task = delegateSession.dataTask(with: request) { data, response, error in
+                do {
+                    let response = try JSONDecoder().decode(Stream.self, from: data!)
+                    if response.m3u8Exists == true {
+                        if !self.videoStreams.map { $0.id }.contains(videoFile.id) {
+                            self.videoStreams.append(response)
+                        }
+                    }
+                } catch let error {
+                    logger.error("[getVideoStream] Request: \(error)")
+                }
+            }
+
+            task.resume()
+
+        } catch let error {
+            logger.error("[getVideoStream] Error: \(error)")
+        }
+    }
+
     /* Media Player*/
     func initMediaPlayer(url: URL) {
         self.player = AVPlayer(url: url)
     }
 
     func pauseMediaPlayer() {
-        do {
-            if (self.player != nil) {
-                self.player.pause()
-            } else {
-                self.player = AVPlayer()
-            }
-            print("pauseMediaPlayer")
-        } catch {
-            //
+        self.player.pause()
+    }
+
+    func displayVideo(videoFile: VideoFile) {
+        if self.videoStreams.map { $0.id }.contains(videoFile.id) {
+            let url = URL(string: "\(serviceURL)/hls/video-\(videoFile.id).m3u8")!
+            initMediaPlayer(url: url)
         }
     }
 
@@ -821,13 +855,11 @@ struct ContentView: View {
                                 if case .success = result {
                                     do {
                                         let items = try result.get()
-                                        
                                         for url in items {
                                             if url.startAccessingSecurityScopedResource() {
                                                 folders.append(url)
                                             }
                                         }
-                                        
                                     } catch let error {
                                         logger.error("[fileImporter] Error: \(error)")
                                     }
@@ -1092,11 +1124,13 @@ struct ContentView: View {
                             self.selectedVideoFiles = []
                             for selectedId in selectedIds {
                                 uploadVideoFiles.map { videoFile in
-                                    let url = URL(string: "https://link12.ddns.net:5050/hls/video-\(videoFile.id).m3u8")!
-                                    pauseMediaPlayer()
-                                    initMediaPlayer(url: url)
                                     if videoFile.id == selectedId {
                                         self.selectedVideoFiles.append(videoFile)
+                                        self.player = AVPlayer()
+                                        displayVideo(videoFile: videoFile)
+                                        DispatchQueue.main.async {
+                                            getVideoStream(videoFile: videoFile)
+                                        }
                                     }
                                 }
                             }
@@ -1197,13 +1231,13 @@ struct ContentView: View {
                                   systemImage: "doc.circle.fill")
                                 .labelStyle(.titleAndIcon)
                                 .font(.system(size: 15))
-                         }
+                        }
                         ForEach(self.selectedAudioFiles) { audioFile in
                             Label(audioFile.fileName,
                                   systemImage: "waveform.circle")
                                 .labelStyle(.titleAndIcon)
                                 .font(.system(size: 15))
-                         }
+                        }
                         ForEach(self.selectedVideoFiles) { videoFile in
                             Label(videoFile.fileName,
                                   systemImage: "video.circle")
@@ -1218,7 +1252,7 @@ struct ContentView: View {
                                   systemImage: "doc.circle")
                                 .labelStyle(.titleAndIcon)
                                 .font(.system(size: 15))
-                         }
+                        }
                     }
                 }
             }

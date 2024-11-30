@@ -363,6 +363,7 @@ struct ContentView: View {
         let fileUrl: String
         let thumbUrl: String
         let dataUrl: String?
+        let fileSize: String?
         let mimeType: String?
         let width: Int?
         let height: Int?
@@ -374,6 +375,7 @@ struct ContentView: View {
         let fileName: String
         let fileUrl: String
         let dataUrl: String?
+        let fileSize: String?
         let mimeType: String?
     }
 
@@ -383,6 +385,7 @@ struct ContentView: View {
         let fileName: String
         let fileUrl: String
         let dataUrl: String?
+        let fileSize: String?
         let mimeType: String?
     }
 
@@ -392,7 +395,13 @@ struct ContentView: View {
         let fileName: String
         let fileUrl: String
         let dataUrl: String?
+        let fileSize: String?
         let mimeType: String?
+        let bitrate: Int?
+        let channels: Int?
+        let lengthInMilliseconds: Int?
+        let lengthInSeconds: Int?
+        let sampleRate: Int?
     }
 
     struct VideoFile: Decodable, Identifiable {
@@ -402,6 +411,7 @@ struct ContentView: View {
         let fileUrl: String
         let dataUrl: String?
         let mimeType: String?
+        let fileSize: String?
     }
 
     struct UploadWithFiles: Decodable, Identifiable {
@@ -957,7 +967,8 @@ struct ContentView: View {
                             pauseMediaPlayer()
                             clearSelectedFiles()
                             getUploads()
-                        }.tableStyle(.inset(alternatesRowBackgrounds: false))
+                        }
+                        .tableStyle(.inset(alternatesRowBackgrounds: false))
                             .frame(height: 250)
                     } header: {
                         Text("Folders")
@@ -1291,36 +1302,62 @@ struct ContentView: View {
                                    .scaledToFill()
                            }
                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                           Text("Width: \(imageFile.width!)")
+                               .font(.system(size: 11))
+                           Text("Height: \(imageFile.height!)")
+                               .font(.system(size: 11))
+                           Text("Mime/Type: \(imageFile.mimeType!)")
+                               .font(.system(size: 11))
+                           Text("File Size: \(imageFile.fileSize!)")
+                               .font(.system(size: 11))
                         }
                         ForEach(self.selectedPdfFiles) { pdfFile in
                             Label(pdfFile.fileName,
                                   systemImage: "doc.circle.fill")
                                 .labelStyle(.titleAndIcon)
-                                .font(.system(size: 15))
+                                .font(.system(size: 11))
                         }
                         ForEach(self.selectedAudioFiles) { audioFile in
                             Label(audioFile.fileName,
                                   systemImage: "waveform.circle")
                                 .labelStyle(.titleAndIcon)
-                                .font(.system(size: 15))
+                                .font(.system(size: 11))
                             VideoPlayer(player: player)
                                 .frame(minWidth: 400, maxWidth: .infinity,
                                        minHeight: 150, maxHeight: .infinity)
+                            Text("Mime/Type: \(audioFile.mimeType!)")
+                                .font(.system(size: 11))
+                            Text("File Size: \(audioFile.fileSize!)")
+                                .font(.system(size: 11))
+                            Text("Bitrate: \(audioFile.bitrate!)")
+                                .font(.system(size: 11))
+                            Text("Channels: \(audioFile.channels!)")
+                                .font(.system(size: 11))
+                            Text("Length (ms): \(audioFile.lengthInMilliseconds!)")
+                                .font(.system(size: 11))
+                            Text("Length (s): \(audioFile.lengthInSeconds!)")
+                                .font(.system(size: 11))
+                            Text("Sample Rate: \(audioFile.sampleRate!)")
+                                .font(.system(size: 11))
                         }
                         ForEach(self.selectedVideoFiles) { videoFile in
                             Label(videoFile.fileName,
                                   systemImage: "video.circle")
                                 .labelStyle(.titleAndIcon)
-                                .font(.system(size: 15))
+                                .font(.system(size: 11))
                             VideoPlayer(player: player)
                                 .frame(minWidth: 400, maxWidth: .infinity,
                                        minHeight: 300, maxHeight: .infinity)
+                            Text("Mime/Type: \(videoFile.mimeType!)")
+                                .font(.system(size: 11))
+                            Text("File Size: \(videoFile.fileSize!)")
+                                .font(.system(size: 11))
                         }
                         ForEach(self.selectedTextFiles) { textFile in
                             Label(textFile.fileName,
                                   systemImage: "doc.circle")
                                 .labelStyle(.titleAndIcon)
-                                .font(.system(size: 15))
+                                .font(.system(size: 11))
                         }
                     }
                 }

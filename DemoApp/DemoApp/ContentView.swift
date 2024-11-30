@@ -54,8 +54,6 @@ struct ContentView: View {
     /* Media Player */
     @State private var player:AVPlayer = AVPlayer()
 
-    @State private var isPlaying:Bool = false
-
     /* Uploads */
     @State private var uploadsWithFiles: Array<UploadWithFiles> = Array<UploadWithFiles>()
 
@@ -447,11 +445,17 @@ struct ContentView: View {
                 if !self.loadedFolders.map { $0.id }.contains(audioFile.folder.id) {
                     self.loadedFolders.append(audioFile.folder)
                 }
+                DispatchQueue.main.async {
+                    getAudioStream(audioFile: audioFile)
+                }
             }
             self.uploadVideoFiles += upload.videoFiles
             for videoFile in upload.videoFiles {
                 if !self.loadedFolders.map { $0.id }.contains(videoFile.folder.id) {
                     self.loadedFolders.append(videoFile.folder)
+                }
+                DispatchQueue.main.async {
+                    getVideoStream(videoFile: videoFile)
                 }
             }
             self.uploadTextFiles += upload.textFiles
@@ -708,6 +712,8 @@ struct ContentView: View {
 
     @State private var videoStreams:Array<Stream> = Array<Stream>()
 
+    @State private var audioStreams:Array<Stream> = Array<Stream>()
+
     @State private var serviceURL:String = "https://link12.ddns.net:5050"
 
     func getVideoStream(videoFile: VideoFile) {
@@ -736,6 +742,32 @@ struct ContentView: View {
         }
     }
 
+    func getAudioStream(audioFile: AudioFile) {
+        do {
+            let delegateClass = NetworkDelegateClass()
+            let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
+            let url = URL(string: "\(serviceURL)/audio_files/\(audioFile.id).json")!
+            let request = newGetRequest(url: url)
+            let task = delegateSession.dataTask(with: request) { data, response, error in
+                do {
+                    let response = try JSONDecoder().decode(Stream.self, from: data!)
+                    if response.m3u8Exists == true {
+                        if !self.audioStreams.map { $0.id }.contains(audioFile.id) {
+                            self.audioStreams.append(response)
+                        }
+                    }
+                } catch let error {
+                    logger.error("[getAudioStream] Request: \(error)")
+                }
+            }
+
+            task.resume()
+
+        } catch let error {
+            logger.error("[getAudioStream] Error: \(error)")
+        }
+    }
+
     /* Media Player*/
     func initMediaPlayer(url: URL) {
         self.player = AVPlayer(url: url)
@@ -748,6 +780,13 @@ struct ContentView: View {
     func displayVideo(videoFile: VideoFile) {
         if self.videoStreams.map { $0.id }.contains(videoFile.id) {
             let url = URL(string: "\(serviceURL)/hls/video-\(videoFile.id).m3u8")!
+            initMediaPlayer(url: url)
+        }
+    }
+
+    func displayAudio(audioFile: AudioFile) {
+        if self.audioStreams.map { $0.id }.contains(audioFile.id) {
+            let url = URL(string: "\(serviceURL)/hls/audio-\(audioFile.id).m3u8")!
             initMediaPlayer(url: url)
         }
     }
@@ -881,11 +920,26 @@ struct ContentView: View {
                               selection: $folderSelection,
                               sortOrder: $folderSortOrder) {
                             TableColumn("name") { folder in
-                                Label(folder.formattedName ?? "",
+                                Label("\(folder.formattedName ?? "")",
                                       systemImage: "folder")
+                                .foregroundStyle(.primary)
                                 .labelStyle(.titleAndIcon)
                                 .font(.system(size: 11))
                             }
+//                            TableColumn("folder") { folder in
+//                                if folder.folder != nil && folder.folder != folder.name {
+//                                    Text("\(folder.folder ?? "")")
+//                                    .foregroundStyle(.secondary)
+//                                    .font(.system(size: 11))
+//                                }
+//                            }
+//                            TableColumn("subfolder") { folder in
+//                                if folder.subfolder != nil {
+//                                    Text("\(folder.subfolder ?? "")")
+//                                    .foregroundStyle(.secondary)
+//                                    .font(.system(size: 11))
+//                                }
+//                            }
                         } rows: {
                             ForEach(loadedFolders) { folder in
                                 TableRow(folder)
@@ -1071,6 +1125,22 @@ struct ContentView: View {
                                 uploadAudioFiles.map { audioFile in
                                     if audioFile.id == selectedId {
                                         self.selectedAudioFiles.append(audioFile)
+                                        self.player = AVPlayer()
+                                        displayAudio(audioFile: audioFile)
+                                        DispatchQueue.main.async {
+                                            getAudioStream(audioFile: audioFile)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        .onChange(of: audioFileSelection) { selectedIds in
+                            self.selectedAudioFiles = []
+                            for selectedId in selectedIds {
+                                uploadAudioFiles.map { audioFile in
+                                    if audioFile.id == selectedId {
+                                        self.selectedAudioFiles.append(audioFile)
+                                        displayAudio(audioFile: audioFile)
                                     }
                                 }
                             }
@@ -1126,11 +1196,7 @@ struct ContentView: View {
                                 uploadVideoFiles.map { videoFile in
                                     if videoFile.id == selectedId {
                                         self.selectedVideoFiles.append(videoFile)
-                                        self.player = AVPlayer()
                                         displayVideo(videoFile: videoFile)
-                                        DispatchQueue.main.async {
-                                            getVideoStream(videoFile: videoFile)
-                                        }
                                     }
                                 }
                             }
@@ -1237,6 +1303,9 @@ struct ContentView: View {
                                   systemImage: "waveform.circle")
                                 .labelStyle(.titleAndIcon)
                                 .font(.system(size: 15))
+                            VideoPlayer(player: player)
+                                .frame(minWidth: 400, maxWidth: .infinity,
+                                       minHeight: 150, maxHeight: .infinity)
                         }
                         ForEach(self.selectedVideoFiles) { videoFile in
                             Label(videoFile.fileName,

@@ -485,7 +485,7 @@ struct ContentView: View {
 
         return request
     }
-    
+
     func getUploadsRequest() -> URL {
         if (selectedFolders.count > 0) {
             var str:String = ""
@@ -798,6 +798,30 @@ struct ContentView: View {
         if self.audioStreams.map { $0.id }.contains(audioFile.id) {
             let url = URL(string: "\(serviceURL)/hls/audio-\(audioFile.id).m3u8")!
             initMediaPlayer(url: url)
+        }
+    }
+
+    /* Text, Markdown */
+
+    @State private var textContent:AttributedString = AttributedString()
+
+    func displayText(textFile: TextFile) {
+        do {
+            let delegateClass = NetworkDelegateClass()
+            let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
+            let request = newGetRequest(url: URL(string: "\(textFile.fileUrl)")!)
+            let task = delegateSession.dataTask(with: request) { data, response, error in
+                do {
+                    self.textContent = try AttributedString(markdown: data!)
+                } catch let error {
+                    logger.error("[displayText] Request: \(error)")
+                }
+            }
+
+            task.resume()
+
+        } catch let error {
+            logger.error("[displayText] Error: \(error)")
         }
     }
 
@@ -1263,6 +1287,7 @@ struct ContentView: View {
                                 uploadTextFiles.map { textFile in
                                     if textFile.id == selectedId {
                                         self.selectedTextFiles.append(textFile)
+                                        displayText(textFile: textFile)
                                     }
                                 }
                             }
@@ -1357,6 +1382,13 @@ struct ContentView: View {
                             Label(textFile.fileName,
                                   systemImage: "doc.circle")
                                 .labelStyle(.titleAndIcon)
+                                .font(.system(size: 11))
+                            Text("""
+                                \(textContent)
+                                """)
+                            Text("Mime/Type: \(textFile.mimeType!)")
+                                .font(.system(size: 11))
+                            Text("File Size: \(textFile.fileSize!)")
                                 .font(.system(size: 11))
                         }
                     }

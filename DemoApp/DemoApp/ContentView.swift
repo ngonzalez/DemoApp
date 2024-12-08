@@ -145,8 +145,8 @@ struct ContentView: View {
 
         /* MKV */
         "mkv": "video/x-matroska",
-        
-        /* */
+
+        /* MP4 */
         "mp4": "video/mp4",
     ]
 
@@ -363,8 +363,8 @@ struct ContentView: View {
         let fileUrl: String
         let thumbUrl: String
         let dataUrl: String?
-        let fileSize: String?
         let mimeType: String?
+        let fileSize: String?
         let width: Int?
         let height: Int?
     }
@@ -375,7 +375,6 @@ struct ContentView: View {
         let fileName: String
         let fileUrl: String
         let dataUrl: String?
-        let fileSize: String?
         let mimeType: String?
     }
 
@@ -385,7 +384,6 @@ struct ContentView: View {
         let fileName: String
         let fileUrl: String
         let dataUrl: String?
-        let fileSize: String?
         let mimeType: String?
     }
 
@@ -395,12 +393,11 @@ struct ContentView: View {
         let fileName: String
         let fileUrl: String
         let dataUrl: String?
-        let fileSize: String?
         let mimeType: String?
+        let fileSize: Int?
+        let length: Float?
         let bitrate: Int?
         let channels: Int?
-        let lengthInMilliseconds: Int?
-        let lengthInSeconds: Int?
         let sampleRate: Int?
     }
 
@@ -411,7 +408,13 @@ struct ContentView: View {
         let fileUrl: String
         let dataUrl: String?
         let mimeType: String?
-        let fileSize: String?
+        let fileSize: Int?
+        let length: Float?
+        let bitrate: Int?
+        let frameRate: Int?
+        let width: Int?
+        let height: Int?
+        let aspectRatio: Int?
     }
 
     struct UploadWithFiles: Decodable, Identifiable {
@@ -825,6 +828,32 @@ struct ContentView: View {
         }
     }
 
+    /* Pdf */
+//    @State private var pdfContent:PDFDocument = PDFDocument()
+//
+//    @State private var pdfView:PDFView = PDFView()
+
+//    func displayPdf(pdfFile: PdfFile) {
+//        do {
+//            let delegateClass = NetworkDelegateClass()
+//            let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
+//            let request = newGetRequest(url: URL(string: "\(pdfFile.fileUrl)")!)
+//            let task = delegateSession.dataTask(with: request) { data, response, error in
+//                do {
+////                    self.pdfContent = PDFDocument(data: data!)!
+////                    pdfView.document = self.pdfContent
+//                } catch let error {
+//                    logger.error("[displayText] Request: \(error)")
+//                }
+//            }
+//
+//            task.resume()
+//
+//        } catch let error {
+//            logger.error("[displayText] Error: \(error)")
+//        }
+//    }
+
     var body: some View {
         NavigationSplitView(columnVisibility: $visibility) {
             List(SideBarItem.allCases, selection: $selectedSideBarItem) { item in
@@ -1105,6 +1134,7 @@ struct ContentView: View {
                                 uploadPdfFiles.map { pdfFile in
                                     if pdfFile.id == selectedId {
                                         self.selectedPdfFiles.append(pdfFile)
+//                                        displayPdf(pdfFile: pdfFile)
                                     }
                                 }
                             }
@@ -1327,14 +1357,14 @@ struct ContentView: View {
                                    .scaledToFill()
                            }
                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                           Text("Width: \(imageFile.width!)")
-                               .font(.system(size: 11))
-                           Text("Height: \(imageFile.height!)")
-                               .font(.system(size: 11))
                            Text("Mime/Type: \(imageFile.mimeType!)")
                                .font(.system(size: 11))
-                           Text("File Size: \(imageFile.fileSize!)")
-                               .font(.system(size: 11))
+//                           Text("Width: \(imageFile.width!)")
+//                               .font(.system(size: 11))
+//                           Text("Height: \(imageFile.height!)")
+//                               .font(.system(size: 11))
+//                           Text("File Size: \(imageFile.fileSize!)")
+//                               .font(.system(size: 11))
                         }
                         ForEach(self.selectedPdfFiles) { pdfFile in
                             Label(pdfFile.fileName,
@@ -1358,9 +1388,7 @@ struct ContentView: View {
                                 .font(.system(size: 11))
                             Text("Channels: \(audioFile.channels!)")
                                 .font(.system(size: 11))
-                            Text("Length (ms): \(audioFile.lengthInMilliseconds!)")
-                                .font(.system(size: 11))
-                            Text("Length (s): \(audioFile.lengthInSeconds!)")
+                            Text("Length (ms): \(audioFile.length!)")
                                 .font(.system(size: 11))
                             Text("Sample Rate: \(audioFile.sampleRate!)")
                                 .font(.system(size: 11))
@@ -1377,6 +1405,18 @@ struct ContentView: View {
                                 .font(.system(size: 11))
                             Text("File Size: \(videoFile.fileSize!)")
                                 .font(.system(size: 11))
+                            Text("Bitrate: \(videoFile.bitrate!)")
+                                .font(.system(size: 11))
+                            Text("FrameRate: \(videoFile.frameRate!)")
+                                .font(.system(size: 11))
+                            Text("Length (ms): \(videoFile.length!)")
+                                .font(.system(size: 11))
+                            Text("Width: \(videoFile.width!)")
+                                .font(.system(size: 11))
+                            Text("Height: \(videoFile.height!)")
+                                .font(.system(size: 11))
+                            Text("Aspect Ratio: \(videoFile.aspectRatio!)")
+                                .font(.system(size: 11))
                         }
                         ForEach(self.selectedTextFiles) { textFile in
                             Label(textFile.fileName,
@@ -1387,8 +1427,6 @@ struct ContentView: View {
                                 \(textContent)
                                 """)
                             Text("Mime/Type: \(textFile.mimeType!)")
-                                .font(.system(size: 11))
-                            Text("File Size: \(textFile.fileSize!)")
                                 .font(.system(size: 11))
                         }
                     }

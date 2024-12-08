@@ -1359,12 +1359,12 @@ struct ContentView: View {
                            .frame(maxWidth: .infinity, maxHeight: .infinity)
                            Text("Mime/Type: \(imageFile.mimeType!)")
                                .font(.system(size: 11))
-//                           Text("Width: \(imageFile.width!)")
-//                               .font(.system(size: 11))
-//                           Text("Height: \(imageFile.height!)")
-//                               .font(.system(size: 11))
-//                           Text("File Size: \(imageFile.fileSize!)")
-//                               .font(.system(size: 11))
+                           Text("Width: \(imageFile.width!)")
+                               .font(.system(size: 11))
+                           Text("Height: \(imageFile.height!)")
+                               .font(.system(size: 11))
+                           Text("File Size: \(imageFile.fileSize!)")
+                               .font(.system(size: 11))
                         }
                         ForEach(self.selectedPdfFiles) { pdfFile in
                             Label(pdfFile.fileName,

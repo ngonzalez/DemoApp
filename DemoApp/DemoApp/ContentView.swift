@@ -364,9 +364,12 @@ struct ContentView: View {
         let thumbUrl: String
         let dataUrl: String?
         let mimeType: String?
+        let formatInfo: String?
         let fileSize: String?
         let width: Int?
         let height: Int?
+        let dimensions: String?
+        let megapixels: Float?
     }
 
     struct PdfFile: Decodable, Identifiable {
@@ -376,6 +379,7 @@ struct ContentView: View {
         let fileUrl: String
         let dataUrl: String?
         let mimeType: String?
+        let formatInfo: String?
     }
 
     struct TextFile: Decodable, Identifiable {
@@ -385,6 +389,7 @@ struct ContentView: View {
         let fileUrl: String
         let dataUrl: String?
         let mimeType: String?
+        let formatInfo: String?
     }
 
     struct AudioFile: Decodable, Identifiable {
@@ -394,6 +399,7 @@ struct ContentView: View {
         let fileUrl: String
         let dataUrl: String?
         let mimeType: String?
+        let formatInfo: String?
         let fileSize: Int?
         let length: Float?
         let bitrate: Int?
@@ -408,6 +414,7 @@ struct ContentView: View {
         let fileUrl: String
         let dataUrl: String?
         let mimeType: String?
+        let formatInfo: String?
         let fileSize: Int?
         let length: Float?
         let bitrate: Int?
@@ -854,6 +861,11 @@ struct ContentView: View {
 //        }
 //    }
 
+    func displayImageFileMimeType(imageFile: ImageFile) -> Text {
+        Text("Mime/Type: \(imageFile.mimeType!)")
+            .font(.system(size: 11))
+    }
+    
     var body: some View {
         NavigationSplitView(columnVisibility: $visibility) {
             List(SideBarItem.allCases, selection: $selectedSideBarItem) { item in
@@ -1359,12 +1371,25 @@ struct ContentView: View {
                            .frame(maxWidth: .infinity, maxHeight: .infinity)
                            Text("Mime/Type: \(imageFile.mimeType!)")
                                .font(.system(size: 11))
+                               .foregroundStyle(.gray)
+                           Text("Format: \(imageFile.formatInfo!)")
+                               .font(.system(size: 11))
+                               .foregroundStyle(.gray)
+                           Text("Dimensions: \(imageFile.dimensions!)")
+                               .font(.system(size: 11))
+                               .foregroundStyle(.gray)
+                           Text("Megapixels: \(imageFile.megapixels!)")
+                               .font(.system(size: 11))
+                               .foregroundStyle(.gray)
                            Text("Width: \(imageFile.width!)")
                                .font(.system(size: 11))
+                               .foregroundStyle(.gray)
                            Text("Height: \(imageFile.height!)")
                                .font(.system(size: 11))
+                               .foregroundStyle(.gray)
                            Text("File Size: \(imageFile.fileSize!)")
                                .font(.system(size: 11))
+                               .foregroundStyle(.gray)
                         }
                         ForEach(self.selectedPdfFiles) { pdfFile in
                             Label(pdfFile.fileName,
@@ -1381,6 +1406,8 @@ struct ContentView: View {
                                 .frame(minWidth: 400, maxWidth: .infinity,
                                        minHeight: 150, maxHeight: .infinity)
                             Text("Mime/Type: \(audioFile.mimeType!)")
+                                .font(.system(size: 11))
+                            Text("Format: \(audioFile.formatInfo!)")
                                 .font(.system(size: 11))
                             Text("File Size: \(audioFile.fileSize!)")
                                 .font(.system(size: 11))
@@ -1402,6 +1429,8 @@ struct ContentView: View {
                                 .frame(minWidth: 400, maxWidth: .infinity,
                                        minHeight: 300, maxHeight: .infinity)
                             Text("Mime/Type: \(videoFile.mimeType!)")
+                                .font(.system(size: 11))
+                            Text("Format: \(videoFile.formatInfo!)")
                                 .font(.system(size: 11))
                             Text("File Size: \(videoFile.fileSize!)")
                                 .font(.system(size: 11))
@@ -1426,7 +1455,9 @@ struct ContentView: View {
                             Text("""
                                 \(textContent)
                                 """)
-                            Text("Mime/Type: \(textFile.mimeType!)")
+                            Text("\(textFile.mimeType!)")
+                                .font(.system(size: 11))
+                            Text("\(textFile.formatInfo!)")
                                 .font(.system(size: 11))
                         }
                     }

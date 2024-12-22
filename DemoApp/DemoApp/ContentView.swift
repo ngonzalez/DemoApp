@@ -349,6 +349,7 @@ struct ContentView: View {
 
     struct Folder: Decodable, Identifiable {
         let id: Int
+//        let state: String
         let dataUrl: String?
         let formattedName: String?
         let name: String
@@ -1001,19 +1002,12 @@ struct ContentView: View {
                                 .labelStyle(.titleAndIcon)
                                 .font(.system(size: 11))
                             }
-//                            TableColumn("folder") { folder in
-//                                if folder.folder != nil && folder.folder != folder.name {
-//                                    Text("\(folder.folder ?? "")")
-//                                    .foregroundStyle(.secondary)
-//                                    .font(.system(size: 11))
-//                                }
-//                            }
-//                            TableColumn("subfolder") { folder in
-//                                if folder.subfolder != nil {
-//                                    Text("\(folder.subfolder ?? "")")
-//                                    .foregroundStyle(.secondary)
-//                                    .font(.system(size: 11))
-//                                }
+//                            TableColumn("name") { folder in
+//                                Label("\(folder.state ?? "")",
+//                                      systemImage: "folder")
+//                                .foregroundStyle(.primary)
+//                                .labelStyle(.titleAndIcon)
+//                                .font(.system(size: 11))
 //                            }
                         } rows: {
                             ForEach(loadedFolders) { folder in
@@ -1369,33 +1363,103 @@ struct ContentView: View {
                                    .scaledToFill()
                            }
                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                           Text("Mime/Type: \(imageFile.mimeType!)")
-                               .font(.system(size: 11))
-                               .foregroundStyle(.gray)
-                           Text("Format: \(imageFile.formatInfo!)")
-                               .font(.system(size: 11))
-                               .foregroundStyle(.gray)
-                           Text("Dimensions: \(imageFile.dimensions!)")
-                               .font(.system(size: 11))
-                               .foregroundStyle(.gray)
-                           Text("Megapixels: \(imageFile.megapixels!)")
-                               .font(.system(size: 11))
-                               .foregroundStyle(.gray)
-                           Text("Width: \(imageFile.width!)")
-                               .font(.system(size: 11))
-                               .foregroundStyle(.gray)
-                           Text("Height: \(imageFile.height!)")
-                               .font(.system(size: 11))
-                               .foregroundStyle(.gray)
-                           Text("File Size: \(imageFile.fileSize!)")
-                               .font(.system(size: 11))
-                               .foregroundStyle(.gray)
+
+                           Label {
+                               Text("Mime/Type \(imageFile.mimeType ?? "--")")
+                                   .font(.system(size: 11))
+                                   .foregroundStyle(.gray)
+                           } icon: {
+                               Rectangle()
+                                   .fill(.gray)
+                                   .frame(width: 8, height: 8)
+                           }
+
+                           Label {
+                               Text("Format \(imageFile.formatInfo ?? "--")")
+                                   .font(.system(size: 11))
+                                   .foregroundStyle(.gray)
+                           } icon: {
+                               Rectangle()
+                                   .fill(.gray)
+                                   .frame(width: 8, height: 8)
+                           }
+
+                           Label {
+                               Text("Dimensions \(imageFile.dimensions ?? "--")")
+                                   .font(.system(size: 11))
+                                   .foregroundStyle(.gray)
+                           } icon: {
+                               Rectangle()
+                                   .fill(.gray)
+                                   .frame(width: 8, height: 8)
+                           }
+
+                           Label {
+                               Text("Megapixels \(imageFile.megapixels ?? 0.1)")
+                                   .font(.system(size: 11))
+                                   .foregroundStyle(.gray)
+                           } icon: {
+                               Rectangle()
+                                   .fill(.gray)
+                                   .frame(width: 8, height: 8)
+                           }
+
+                           Label {
+                               Text("Width \(imageFile.width ?? 0)")
+                                   .font(.system(size: 11))
+                                   .foregroundStyle(.gray)
+                           } icon: {
+                               Rectangle()
+                                   .fill(.gray)
+                                   .frame(width: 8, height: 8)
+                           }
+
+                           Label {
+                               Text("Height \(imageFile.height ?? 0)")
+                                   .font(.system(size: 11))
+                                   .foregroundStyle(.gray)
+                           } icon: {
+                               Rectangle()
+                                   .fill(.gray)
+                                   .frame(width: 8, height: 8)
+                           }
+
+                           Label {
+                               Text("File Size \(imageFile.fileSize ?? "")")
+                                   .font(.system(size: 11))
+                                   .foregroundStyle(.gray)
+                           } icon: {
+                               Rectangle()
+                                   .fill(.gray)
+                                   .frame(width: 8, height: 8)
+                           }
+
                         }
                         ForEach(self.selectedPdfFiles) { pdfFile in
                             Label(pdfFile.fileName,
                                   systemImage: "doc.circle.fill")
                                 .labelStyle(.titleAndIcon)
                                 .font(.system(size: 11))
+
+                            Label {
+                                Text("Mime/Type \(pdfFile.mimeType ?? "--")")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.gray)
+                            } icon: {
+                                Rectangle()
+                                    .fill(.gray)
+                                    .frame(width: 8, height: 8)
+                            }
+
+                            Label {
+                                Text("Format \(pdfFile.formatInfo ?? "--")")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.gray)
+                            } icon: {
+                                Rectangle()
+                                    .fill(.gray)
+                                    .frame(width: 8, height: 8)
+                            }
                         }
                         ForEach(self.selectedAudioFiles) { audioFile in
                             Label(audioFile.fileName,
@@ -1405,20 +1469,76 @@ struct ContentView: View {
                             VideoPlayer(player: player)
                                 .frame(minWidth: 400, maxWidth: .infinity,
                                        minHeight: 150, maxHeight: .infinity)
-                            Text("Mime/Type: \(audioFile.mimeType!)")
-                                .font(.system(size: 11))
-                            Text("Format: \(audioFile.formatInfo!)")
-                                .font(.system(size: 11))
-                            Text("File Size: \(audioFile.fileSize!)")
-                                .font(.system(size: 11))
-                            Text("Bitrate: \(audioFile.bitrate!)")
-                                .font(.system(size: 11))
-                            Text("Channels: \(audioFile.channels!)")
-                                .font(.system(size: 11))
-                            Text("Length (ms): \(audioFile.length!)")
-                                .font(.system(size: 11))
-                            Text("Sample Rate: \(audioFile.sampleRate!)")
-                                .font(.system(size: 11))
+
+                            Label {
+                                Text("Mime/Type \(audioFile.mimeType ?? "--")")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.gray)
+                            } icon: {
+                                Rectangle()
+                                    .fill(.gray)
+                                    .frame(width: 8, height: 8)
+                            }
+
+                            Label {
+                                Text("Format \(audioFile.formatInfo ?? "--")")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.gray)
+                            } icon: {
+                                Rectangle()
+                                    .fill(.gray)
+                                    .frame(width: 8, height: 8)
+                            }
+
+                            Label {
+                                Text("File Size \(audioFile.fileSize ?? 0)")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.gray)
+                            } icon: {
+                                Rectangle()
+                                    .fill(.gray)
+                                    .frame(width: 8, height: 8)
+                            }
+
+                            Label {
+                                Text("Bitrate \(audioFile.bitrate ?? 0)")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.gray)
+                            } icon: {
+                                Rectangle()
+                                    .fill(.gray)
+                                    .frame(width: 8, height: 8)
+                            }
+
+                            Label {
+                                Text("Channels \(audioFile.channels ?? 0)")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.gray)
+                            } icon: {
+                                Rectangle()
+                                    .fill(.gray)
+                                    .frame(width: 8, height: 8)
+                            }
+
+                            Label {
+                                Text("Length (ms) \(audioFile.length ?? 0)")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.gray)
+                            } icon: {
+                                Rectangle()
+                                    .fill(.gray)
+                                    .frame(width: 8, height: 8)
+                            }
+
+                            Label {
+                                Text("Sample Rate \(audioFile.sampleRate ?? 0)")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.gray)
+                            } icon: {
+                                Rectangle()
+                                    .fill(.gray)
+                                    .frame(width: 8, height: 8)
+                            }
                         }
                         ForEach(self.selectedVideoFiles) { videoFile in
                             Label(videoFile.fileName,
@@ -1428,24 +1548,96 @@ struct ContentView: View {
                             VideoPlayer(player: player)
                                 .frame(minWidth: 400, maxWidth: .infinity,
                                        minHeight: 300, maxHeight: .infinity)
-                            Text("Mime/Type: \(videoFile.mimeType!)")
-                                .font(.system(size: 11))
-                            Text("Format: \(videoFile.formatInfo!)")
-                                .font(.system(size: 11))
-                            Text("File Size: \(videoFile.fileSize!)")
-                                .font(.system(size: 11))
-                            Text("Bitrate: \(videoFile.bitrate!)")
-                                .font(.system(size: 11))
-                            Text("FrameRate: \(videoFile.frameRate!)")
-                                .font(.system(size: 11))
-                            Text("Length (ms): \(videoFile.length!)")
-                                .font(.system(size: 11))
-                            Text("Width: \(videoFile.width!)")
-                                .font(.system(size: 11))
-                            Text("Height: \(videoFile.height!)")
-                                .font(.system(size: 11))
-                            Text("Aspect Ratio: \(videoFile.aspectRatio!)")
-                                .font(.system(size: 11))
+
+                            Label {
+                                Text("Mime/Type \(videoFile.mimeType ?? "")")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.gray)
+                            } icon: {
+                                Rectangle()
+                                    .fill(.gray)
+                                    .frame(width: 8, height: 8)
+                            }
+
+                            Label {
+                                Text("Format \(videoFile.formatInfo ?? "")")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.gray)
+                            } icon: {
+                                Rectangle()
+                                    .fill(.gray)
+                                    .frame(width: 8, height: 8)
+                            }
+
+                            Label {
+                                Text("File Size \(videoFile.fileSize ?? 0)")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.gray)
+                            } icon: {
+                                Rectangle()
+                                    .fill(.gray)
+                                    .frame(width: 8, height: 8)
+                            }
+
+                            Label {
+                                Text("Bitrate \(videoFile.bitrate ?? 0)")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.gray)
+                            } icon: {
+                                Rectangle()
+                                    .fill(.gray)
+                                    .frame(width: 8, height: 8)
+                            }
+
+                            Label {
+                                Text("FrameRate \(videoFile.frameRate ?? 0)")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.gray)
+                            } icon: {
+                                Rectangle()
+                                    .fill(.gray)
+                                    .frame(width: 8, height: 8)
+                            }
+
+                            Label {
+                                Text("Length (s) \(videoFile.length ?? 0)")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.gray)
+                            } icon: {
+                                Rectangle()
+                                    .fill(.gray)
+                                    .frame(width: 8, height: 8)
+                            }
+
+                            Label {
+                                Text("Width \(videoFile.width ?? 0)")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.gray)
+                            } icon: {
+                                Rectangle()
+                                    .fill(.gray)
+                                    .frame(width: 8, height: 8)
+                            }
+
+                            Label {
+                                Text("Height \(videoFile.height ?? 0)")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.gray)
+                            } icon: {
+                                Rectangle()
+                                    .fill(.gray)
+                                    .frame(width: 8, height: 8)
+                            }
+
+                            Label {
+                                Text("Aspect Ratio: \(videoFile.aspectRatio ?? 0)")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.gray)
+                            } icon: {
+                                Rectangle()
+                                    .fill(.gray)
+                                    .frame(width: 8, height: 8)
+                            }
                         }
                         ForEach(self.selectedTextFiles) { textFile in
                             Label(textFile.fileName,
@@ -1455,10 +1647,26 @@ struct ContentView: View {
                             Text("""
                                 \(textContent)
                                 """)
-                            Text("\(textFile.mimeType!)")
-                                .font(.system(size: 11))
-                            Text("\(textFile.formatInfo!)")
-                                .font(.system(size: 11))
+
+                            Label {
+                                Text("Mime/Type \(textFile.mimeType ?? "")")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.gray)
+                            } icon: {
+                                Rectangle()
+                                    .fill(.gray)
+                                    .frame(width: 8, height: 8)
+                            }
+
+                            Label {
+                                Text("Format \(textFile.formatInfo ?? "")")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.gray)
+                            } icon: {
+                                Rectangle()
+                                    .fill(.gray)
+                                    .frame(width: 8, height: 8)
+                            }
                         }
                     }
                 }

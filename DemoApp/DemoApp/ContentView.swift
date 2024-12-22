@@ -349,10 +349,9 @@ struct ContentView: View {
 
     struct Folder: Decodable, Identifiable {
         let id: Int
-//        let state: String
-        let dataUrl: String?
-        let formattedName: String?
         let name: String
+        let state: String
+        let dataUrl: String
         let folder: String?
         let subfolder: String?
     }
@@ -996,19 +995,23 @@ struct ContentView: View {
                               selection: $folderSelection,
                               sortOrder: $folderSortOrder) {
                             TableColumn("name") { folder in
-                                Label("\(folder.formattedName ?? "")",
+                                Label("\(folder.name ?? "")",
                                       systemImage: "folder")
                                 .foregroundStyle(.primary)
                                 .labelStyle(.titleAndIcon)
                                 .font(.system(size: 11))
                             }
-//                            TableColumn("name") { folder in
-//                                Label("\(folder.state ?? "")",
-//                                      systemImage: "folder")
-//                                .foregroundStyle(.primary)
-//                                .labelStyle(.titleAndIcon)
-//                                .font(.system(size: 11))
-//                            }
+                            TableColumn("state") { folder in
+                                Label {
+                                    Text("\(folder.state)" ?? "")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.gray)
+                                } icon: {
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
+                                }
+                            }
                         } rows: {
                             ForEach(loadedFolders) { folder in
                                 TableRow(folder)

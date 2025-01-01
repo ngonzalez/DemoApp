@@ -111,8 +111,8 @@ struct ContentView: View {
     @State private var selectedFolders = Set<Folder.ID>()
 
     /* Upload Request  */
-    @State private var backendURL:String = "https://link12.ddns.net:4040/upload"
-//    @State private var backendURL:String = "http://127.0.0.1:3002/upload"
+//    @State private var backendURL:String = "https://link12.ddns.net:4040/upload"
+    @State private var backendURL:String = "http://127.0.0.1:3002/upload"
 
     @State private var mimeTypes:[String:String] = [
         /* DOCUMENTS */
@@ -546,6 +546,12 @@ struct ContentView: View {
 
     @State var identified:Bool = Bool(false)
 
+    @State var newAccount:Bool = Bool(false)
+
+    @State var newPassword:Bool = Bool(false)
+
+    @State var validationErrors:String = String("")
+
     @State private var signedInUser: User?
 
     @State private var userName: String = String()
@@ -556,11 +562,21 @@ struct ContentView: View {
 
     @State private var lastName: String = String()
 
-    @State private var registrationURL:String = "https://link12.ddns.net:4040/registration"
-//    @State private var registrationURL:String = "http://127.0.0.1:3002/registration"
+//    @State private var registrationURL:String = "https://link12.ddns.net:4040/registration"
+    @State private var registrationURL:String = "http://127.0.0.1:3002/registration"
 
-    @State private var sessionURL:String = "https://link12.ddns.net:4040/session"
-//    @State private var sessionURL:String = "http://127.0.0.1:3002/session"
+//    @State private var sessionURL:String = "https://link12.ddns.net:4040/session"
+    @State private var sessionURL:String = "http://127.0.0.1:3002/session"
+
+//    @State private var passwordURL:String = "https://link12.ddns.net:4040/password"
+    @State private var passwordURL:String = "http://127.0.0.1:3002/password"
+
+    func iterateOverErrors(errors: [String?]) {
+        validationErrors = ""
+        errors.forEach { error in
+            validationErrors += "\n▫️\(error!)"
+        }
+    }
 
     func submitRegistrationForm() {
         do {
@@ -586,6 +602,8 @@ struct ContentView: View {
                 do {
                     let response = try JSONDecoder().decode(User.self, from: data!)
                     self.signedInUser = response
+                    let errorsData = self.signedInUser?.errors as! [String]
+                    iterateOverErrors(errors: errorsData)
                     self.identified = ((self.signedInUser?.createdAt) != nil)
                     getUploads()
                 } catch let error {
@@ -624,6 +642,8 @@ struct ContentView: View {
                 do {
                     let response = try JSONDecoder().decode(User.self, from: data!)
                     self.signedInUser = response
+                    let errorsData = self.signedInUser?.errors as! [String]
+                    iterateOverErrors(errors: errorsData)
                     self.identified = ((self.signedInUser?.createdAt) != nil)
                     getUploads()
                 } catch let error {
@@ -677,12 +697,62 @@ struct ContentView: View {
         }
     }
 
+    @State var passwordFormResponse:Message = Message(message: "")
+
+    func submitPasswordForm() {
+        do {
+            let item = User(
+                id: nil,
+                firstName: nil,
+                lastName: nil,
+                emailAddress: userName,
+                password: nil,
+                createdAt: nil,
+                updatedAt: nil,
+                errors: nil
+            )
+
+            let data = try JSONEncoder().encode(item)
+            let url = URL(string: "\(passwordURL)")!
+            let delegateClass = NetworkDelegateClass()
+            let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
+            let optimizedData: Data = try! data.gzipped(level: .bestCompression)
+            let postLength = String(format: "%lu", UInt(optimizedData.count))
+            let request = newPostRequest(url: url, data: optimizedData, postLength: postLength)
+            let task = delegateSession.dataTask(with: request) { data, response, error in
+                do {
+                    let message = try JSONDecoder().decode(Message.self, from: data!)
+                    self.passwordFormResponse = message
+                } catch let error {
+                    logger.error("[submitPasswordForm] Request: \(error)")
+                }
+            }
+
+            task.resume()
+
+        } catch let error {
+            logger.error("[submitRegistrationForm] Error: \(error)")
+        }
+    }
+
+    func clickRegisterLink() {
+        self.newAccount = true
+    }
+
+    func clickPasswordLink() {
+        self.newPassword = true
+    }
+
+    func clickSigninLink() {
+        self.newAccount = false
+        self.newPassword = false
+    }
+
     /* Navigation */
     enum SideBarItem: String, Identifiable, CaseIterable {
         var id: String { rawValue }
 
-        case signin
-        case signup
+        case account
         case upload
     }
 
@@ -865,7 +935,7 @@ struct ContentView: View {
         Text("Mime/Type: \(imageFile.mimeType!)")
             .font(.system(size: 11))
     }
-    
+
     var body: some View {
         NavigationSplitView(columnVisibility: $visibility) {
             List(SideBarItem.allCases, selection: $selectedSideBarItem) { item in
@@ -876,56 +946,133 @@ struct ContentView: View {
             }
         } content: {
             switch selectedSideBarItem {
-            case .signin:
+            case .account:
                 if self.identified {
+
                     Text("\(self.signedInUser)")
-                } else {
+
+                } else if self.newPassword {
+
                     Form {
                         VStack {
+                            Spacer()
+
+                            if let message = self.passwordFormResponse.message {
+                                Text("\(message)")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.gray)
+                            }
+
                             TextField(text: $userName, prompt: Text("johnatan@apple.com")) {
                                 Text("Email")
                             }
                             .disableAutocorrection(true)
-                            SecureField(text: $password, prompt: Text("Required")) {
-                                Text("Password")
-                            }
-                            .disableAutocorrection(true)
-                            
-                            Button(action: submitSessionForm) {
+
+                            Button(action: submitPasswordForm) {
                                 Text("Submit")
+                            }.buttonStyle(PlainButtonStyle())
+
+                            Spacer()
+                            Divider()
+
+                            /* Signin */
+                            Button(action: clickSigninLink) {
+                                Image(systemName: "person.text.rectangle")
+                                    .font(.system(size: 20))
+                                Text("Back to Sign-In")
+                                    .foregroundStyle(.blue.gradient)
                             }.buttonStyle(PlainButtonStyle())
                         }
                         .textFieldStyle(.roundedBorder)
                     }.padding(20)
-                }
-            case .signup:
-                if self.identified {
-                    Text("\(self.signedInUser)")
-                } else {
-                    if self.signedInUser?.errors != nil {
-                        Text("Errors \(self.signedInUser?.errors)")
-                    }
+
+                } else if self.newAccount {
+
                     Form {
                         VStack {
+                            Spacer()
+
+                            Text("\(validationErrors)")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.gray)
+
                             TextField(text: $firstName, prompt: Text("John")) {
                                 Text("First Name")
                             }
                             .disableAutocorrection(true)
+
                             TextField(text: $lastName, prompt: Text("Appleseed")) {
                                 Text("Last Name")
                             }
                             .disableAutocorrection(true)
+
                             TextField(text: $userName, prompt: Text("johnatan@apple.com")) {
                                 Text("Email")
                             }
                             .disableAutocorrection(true)
+
                             SecureField(text: $password, prompt: Text("Required")) {
                                 Text("Password")
                             }
                             .disableAutocorrection(true)
-                            
+
                             Button(action: submitRegistrationForm) {
                                 Text("Submit")
+                            }.buttonStyle(PlainButtonStyle())
+
+                            Spacer()
+                            Divider()
+
+                            /* Signin */
+                            Button(action: clickSigninLink) {
+                                Image(systemName: "person.text.rectangle")
+                                    .font(.system(size: 20))
+                                Text("Back to Sign-In")
+                                    .foregroundStyle(.blue.gradient)
+                            }.buttonStyle(PlainButtonStyle())
+                        }
+                        .textFieldStyle(.roundedBorder)
+                    }.padding(20)
+
+                } else {
+
+                    Form {
+                        VStack {
+                            Spacer()
+
+                            TextField(text: $userName, prompt: Text("johnatan@apple.com")) {
+                                Text("Email")
+                            }
+                            .disableAutocorrection(true)
+
+                            SecureField(text: $password, prompt: Text("Required")) {
+                                Text("Password")
+                            }
+                            .disableAutocorrection(true)
+
+                            Button(action: submitSessionForm) {
+                                Text("Submit")
+                            }.buttonStyle(PlainButtonStyle())
+
+                            /* Register */
+                            Button(action: clickRegisterLink) {
+                                Image(systemName: "person.crop.circle.badge.plus")
+                                    .font(.system(size: 20))
+                                    .symbolEffect(.bounce, options: .repeat(1))
+                                Text("Register a new account")
+                                    .foregroundStyle(.blue.gradient)
+                            }.buttonStyle(PlainButtonStyle()).padding(10)
+
+                            Spacer()
+
+                            Divider()
+
+                            /* Forgot Password */
+                            Button(action: clickPasswordLink) {
+                                Image(systemName: "mail")
+                                    .font(.system(size: 20))
+                                Text("Forgot your password?")
+                                    .foregroundStyle(.blue.gradient)
                             }.buttonStyle(PlainButtonStyle())
                         }
                         .textFieldStyle(.roundedBorder)
@@ -1340,7 +1487,7 @@ struct ContentView: View {
                     }
                     .padding(.horizontal, 5)
                 }
-            case .signin, .signup:
+            case .account:
                 if self.identified {
                     Text("\(self.signedInUser?.emailAddress)")
                     Divider()

@@ -111,8 +111,8 @@ struct ContentView: View {
     @State private var selectedFolders = Set<Folder.ID>()
 
     /* Upload Request  */
-//    @State private var backendURL:String = "https://link12.ddns.net:4040/upload"
-    @State private var backendURL:String = "http://127.0.0.1:3002/upload"
+    @State private var backendURL:String = "https://link12.ddns.net:4040/upload"
+//    @State private var backendURL:String = "http://127.0.0.1:3002/upload"
 
     @State private var mimeTypes:[String:String] = [
         /* DOCUMENTS */
@@ -562,14 +562,14 @@ struct ContentView: View {
 
     @State private var lastName: String = String()
 
-//    @State private var registrationURL:String = "https://link12.ddns.net:4040/registration"
-    @State private var registrationURL:String = "http://127.0.0.1:3002/registration"
+    @State private var registrationURL:String = "https://link12.ddns.net:4040/registration"
+//    @State private var registrationURL:String = "http://127.0.0.1:3002/registration"
 
-//    @State private var sessionURL:String = "https://link12.ddns.net:4040/session"
-    @State private var sessionURL:String = "http://127.0.0.1:3002/session"
+    @State private var sessionURL:String = "https://link12.ddns.net:4040/session"
+//    @State private var sessionURL:String = "http://127.0.0.1:3002/session"
 
-//    @State private var passwordURL:String = "https://link12.ddns.net:4040/password"
-    @State private var passwordURL:String = "http://127.0.0.1:3002/password"
+    @State private var passwordURL:String = "https://link12.ddns.net:4040/password"
+//    @State private var passwordURL:String = "http://127.0.0.1:3002/password"
 
     func iterateOverErrors(errors: [String?]) {
         validationErrors = ""
@@ -642,8 +642,6 @@ struct ContentView: View {
                 do {
                     let response = try JSONDecoder().decode(User.self, from: data!)
                     self.signedInUser = response
-                    let errorsData = self.signedInUser?.errors as! [String]
-                    iterateOverErrors(errors: errorsData)
                     self.identified = ((self.signedInUser?.createdAt) != nil)
                     getUploads()
                 } catch let error {

@@ -111,6 +111,7 @@ struct ContentView: View {
     @State private var selectedFolders = Set<Folder.ID>()
 
     /* Upload Request  */
+//    @State private var backendURL:String = "https://appshare.site:4040/upload"
     @State private var backendURL:String = "https://link12.ddns.net:4040/upload"
 //    @State private var backendURL:String = "http://127.0.0.1:3002/upload"
 
@@ -562,12 +563,15 @@ struct ContentView: View {
 
     @State private var lastName: String = String()
 
+//    @State private var registrationURL:String = "https://appshare.site:4040/registration"
     @State private var registrationURL:String = "https://link12.ddns.net:4040/registration"
 //    @State private var registrationURL:String = "http://127.0.0.1:3002/registration"
 
+//    @State private var sessionURL:String = "https://appshare.site:4040/session"
     @State private var sessionURL:String = "https://link12.ddns.net:4040/session"
 //    @State private var sessionURL:String = "http://127.0.0.1:3002/session"
 
+//    @State private var passwordURL:String = "https://appshare.site:4040/password"
     @State private var passwordURL:String = "https://link12.ddns.net:4040/password"
 //    @State private var passwordURL:String = "http://127.0.0.1:3002/password"
 
@@ -669,6 +673,8 @@ struct ContentView: View {
         return request
     }
 
+    @State var destroySessionFormResponse:Message = Message(message: "")
+
     func submitDestroySessionForm() {
         do {
             let data = try JSONEncoder().encode("{}")
@@ -680,7 +686,8 @@ struct ContentView: View {
             let request = newDeleteRequest(url: url)
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 do {
-                    let response = try JSONDecoder().decode(Message.self, from: data!)
+                    let message = try JSONDecoder().decode(Message.self, from: data!)
+                    self.destroySessionFormResponse = message
                     self.signedInUser = nil
                     self.identified = false
                 } catch let error {
@@ -802,7 +809,9 @@ struct ContentView: View {
 
     @State private var audioStreams:Array<Stream> = Array<Stream>()
 
+//    @State private var serviceURL:String = "https://appshare.site:5050"
     @State private var serviceURL:String = "https://link12.ddns.net:5050"
+//    @State private var serviceURL:String = "http://127.0.0.1:3001"
 
     func getVideoStream(videoFile: VideoFile) {
         do {
@@ -838,10 +847,12 @@ struct ContentView: View {
             let request = newGetRequest(url: url)
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 do {
-                    let response = try JSONDecoder().decode(Stream.self, from: data!)
-                    if response.m3u8Exists == true {
-                        if !self.audioStreams.map { $0.id }.contains(audioFile.id) {
-                            self.audioStreams.append(response)
+                    if (data != nil) {
+                        let response = try JSONDecoder().decode(Stream.self, from: data!)
+                        if response.m3u8Exists == true {
+                            if !self.audioStreams.map { $0.id }.contains(audioFile.id) {
+                                self.audioStreams.append(response)
+                            }
                         }
                     }
                 } catch let error {
@@ -867,14 +878,14 @@ struct ContentView: View {
 
     func displayVideo(videoFile: VideoFile) {
         if self.videoStreams.map { $0.id }.contains(videoFile.id) {
-            let url = URL(string: "\(serviceURL)/hls/video-\(videoFile.id).m3u8")!
+            let url = URL(string: "\(serviceURL)/playlists/video-\(videoFile.id).m3u8")!
             initMediaPlayer(url: url)
         }
     }
 
     func displayAudio(audioFile: AudioFile) {
         if self.audioStreams.map { $0.id }.contains(audioFile.id) {
-            let url = URL(string: "\(serviceURL)/hls/audio-\(audioFile.id).m3u8")!
+            let url = URL(string: "\(serviceURL)/playlists/audio-\(audioFile.id).m3u8")!
             initMediaPlayer(url: url)
         }
     }
@@ -934,6 +945,14 @@ struct ContentView: View {
             .font(.system(size: 11))
     }
 
+    func publishSelectedFolders() {
+//        print("publish \(self.selectedFolders)")
+    }
+
+    func archiveSelectedFolders() {
+//        print("archive \(self.selectedFolders)")
+    }
+
     var body: some View {
         NavigationSplitView(columnVisibility: $visibility) {
             List(SideBarItem.allCases, selection: $selectedSideBarItem) { item in
@@ -956,7 +975,7 @@ struct ContentView: View {
                             Spacer()
 
                             if let message = self.passwordFormResponse.message {
-                                Text("\(message)")
+                                Text("\(message)\n")
                                     .font(.system(size: 11))
                                     .foregroundStyle(.gray)
                             }
@@ -988,9 +1007,10 @@ struct ContentView: View {
 
                     Form {
                         VStack {
+
                             Spacer()
 
-                            Text("\(validationErrors)")
+                            Text("\(validationErrors)\n")
                                 .font(.system(size: 11))
                                 .foregroundStyle(.gray)
 
@@ -1038,6 +1058,12 @@ struct ContentView: View {
                         VStack {
                             Spacer()
 
+                            if let message = self.destroySessionFormResponse.message {
+                                Text("\(message)\n")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.gray)
+                            }
+
                             TextField(text: $userName, prompt: Text("johnatan@apple.com")) {
                                 Text("Email")
                             }
@@ -1076,6 +1102,7 @@ struct ContentView: View {
                         .textFieldStyle(.roundedBorder)
                     }.padding(20)
                 }
+
             case .upload:
                 if !self.identified {
                     Text("You need to be identified. Please login.")
@@ -1500,94 +1527,118 @@ struct ContentView: View {
             HStack {
                 VStack {
                     List {
-                       ForEach(self.selectedImageFiles) { imageFile in
-                           Label(imageFile.fileName,
+                        if (self.selectedFolders.count > 0 &&
+                            (self.selectedImageFiles.count == 0 &&
+                                self.selectedAudioFiles.count == 0 &&
+                                self.selectedPdfFiles.count == 0 &&
+                                self.selectedVideoFiles.count == 0 &&
+                                self.selectedTextFiles.count == 0)) {
+
+                            Button(action: publishSelectedFolders) {
+                                Image(systemName: "newspaper")
+                                    .font(.system(size: 9))
+                                Text("Publish \(self.selectedFolders.count) selected folders")
+                                    .font(.system(size: 9))
+                                    .foregroundStyle(Color.white)
+                            }.buttonStyle(.bordered)
+
+                            Button(action: archiveSelectedFolders) {
+                                Image(systemName: "barcode")
+                                    .font(.system(size: 9))
+                                Text("Archive \(self.selectedFolders.count) selected folders")
+                                    .font(.system(size: 9))
+                                    .foregroundStyle(Color.white)
+                            }.buttonStyle(.bordered)
+                        }
+
+                        ForEach(self.selectedImageFiles) { imageFile in
+                            Label(imageFile.fileName,
                                  systemImage: "photo.circle")
                                .labelStyle(.titleAndIcon)
-                               .font(.system(size: 11))
-                           AsyncImage(url: URL(string: imageFile.fileUrl)) { result in
+                               .font(.system(size: 13))
+                            AsyncImage(url: URL(string: imageFile.fileUrl)) { result in
                                result.image?
                                    .resizable()
                                    .scaledToFill()
-                           }
-                           .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            }
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                           Label {
+                            Label {
                                Text("Mime/Type \(imageFile.mimeType ?? "--")")
                                    .font(.system(size: 11))
                                    .foregroundStyle(.gray)
-                           } icon: {
+                            } icon: {
                                Rectangle()
                                    .fill(.gray)
                                    .frame(width: 8, height: 8)
-                           }
+                            }
 
-                           Label {
+                            Label {
                                Text("Format \(imageFile.formatInfo ?? "--")")
                                    .font(.system(size: 11))
                                    .foregroundStyle(.gray)
-                           } icon: {
+                            } icon: {
                                Rectangle()
                                    .fill(.gray)
                                    .frame(width: 8, height: 8)
-                           }
+                            }
 
-                           Label {
+                            Label {
                                Text("Dimensions \(imageFile.dimensions ?? "--")")
                                    .font(.system(size: 11))
                                    .foregroundStyle(.gray)
-                           } icon: {
+                            } icon: {
                                Rectangle()
                                    .fill(.gray)
                                    .frame(width: 8, height: 8)
-                           }
+                            }
 
-                           Label {
+                            Label {
                                Text("Megapixels \(imageFile.megapixels ?? 0.1)")
                                    .font(.system(size: 11))
                                    .foregroundStyle(.gray)
-                           } icon: {
+                            } icon: {
                                Rectangle()
                                    .fill(.gray)
                                    .frame(width: 8, height: 8)
-                           }
+                            }
 
-                           Label {
+                            Label {
                                Text("Width \(imageFile.width ?? 0)")
                                    .font(.system(size: 11))
                                    .foregroundStyle(.gray)
-                           } icon: {
+                            } icon: {
                                Rectangle()
                                    .fill(.gray)
                                    .frame(width: 8, height: 8)
-                           }
+                            }
 
-                           Label {
+                            Label {
                                Text("Height \(imageFile.height ?? 0)")
                                    .font(.system(size: 11))
                                    .foregroundStyle(.gray)
-                           } icon: {
+                            } icon: {
                                Rectangle()
                                    .fill(.gray)
                                    .frame(width: 8, height: 8)
-                           }
+                            }
 
-                           Label {
+                            Label {
                                Text("File Size \(imageFile.fileSize ?? "")")
                                    .font(.system(size: 11))
                                    .foregroundStyle(.gray)
-                           } icon: {
+                            } icon: {
                                Rectangle()
                                    .fill(.gray)
                                    .frame(width: 8, height: 8)
-                           }
-
+                            }
                         }
+
                         ForEach(self.selectedPdfFiles) { pdfFile in
                             Label(pdfFile.fileName,
                                   systemImage: "doc.circle.fill")
                                 .labelStyle(.titleAndIcon)
-                                .font(.system(size: 11))
+                                .font(.system(size: 13))
 
                             Label {
                                 Text("Mime/Type \(pdfFile.mimeType ?? "--")")
@@ -1609,11 +1660,12 @@ struct ContentView: View {
                                     .frame(width: 8, height: 8)
                             }
                         }
+
                         ForEach(self.selectedAudioFiles) { audioFile in
                             Label(audioFile.fileName,
                                   systemImage: "waveform.circle")
                                 .labelStyle(.titleAndIcon)
-                                .font(.system(size: 11))
+                                .font(.system(size: 13))
                             VideoPlayer(player: player)
                                 .frame(minWidth: 400, maxWidth: .infinity,
                                        minHeight: 150, maxHeight: .infinity)
@@ -1688,11 +1740,12 @@ struct ContentView: View {
                                     .frame(width: 8, height: 8)
                             }
                         }
+
                         ForEach(self.selectedVideoFiles) { videoFile in
                             Label(videoFile.fileName,
                                   systemImage: "video.circle")
                                 .labelStyle(.titleAndIcon)
-                                .font(.system(size: 11))
+                                .font(.system(size: 13))
                             VideoPlayer(player: player)
                                 .frame(minWidth: 400, maxWidth: .infinity,
                                        minHeight: 300, maxHeight: .infinity)
@@ -1787,14 +1840,15 @@ struct ContentView: View {
                                     .frame(width: 8, height: 8)
                             }
                         }
+
                         ForEach(self.selectedTextFiles) { textFile in
                             Label(textFile.fileName,
                                   systemImage: "doc.circle")
                                 .labelStyle(.titleAndIcon)
-                                .font(.system(size: 11))
-                            Text("""
-                                \(textContent)
-                                """)
+                                .font(.system(size: 13))
+//                            Text("""
+//                                \(textContent)
+//                                """)
 
                             Label {
                                 Text("Mime/Type \(textFile.mimeType ?? "")")
@@ -1816,6 +1870,27 @@ struct ContentView: View {
                                     .frame(width: 8, height: 8)
                             }
                         }
+
+                        Spacer()
+
+                        if (self.selectedImageFiles.count > 0 ||
+                            self.selectedAudioFiles.count > 0 ||
+                            self.selectedPdfFiles.count > 0 ||
+                            self.selectedVideoFiles.count > 0 ||
+                            self.selectedTextFiles.count > 0 ||
+                            self.selectedFolders.count > 0) {
+
+                            Button(action: clearSelection) {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 9))
+                                    .foregroundStyle(Color.gray)
+                                Text("Clear selection")
+                                    .font(.system(size: 9))
+                                    .foregroundStyle(Color.gray)
+                            }.buttonStyle(.bordered)
+                        }
+
+
                     }
                 }
             }

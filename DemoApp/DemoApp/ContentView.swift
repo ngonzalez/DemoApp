@@ -398,10 +398,13 @@ struct ContentView: View {
         let folder: Folder
         let fileName: String
         let fileUrl: String
+        let playlistUrl: String
+        let aasmState: String
         let dataUrl: String?
         let mimeType: String?
         let formatInfo: String?
         let fileSize: Int?
+        let title: String?
         let length: Float?
         let bitrate: Int?
         let channels: Int?
@@ -413,10 +416,13 @@ struct ContentView: View {
         let folder: Folder
         let fileName: String
         let fileUrl: String
+        let playlistUrl: String
+        let aasmState: String
         let dataUrl: String?
         let mimeType: String?
         let formatInfo: String?
         let fileSize: Int?
+        let title: String?
         let length: Float?
         let bitrate: Int?
         let frameRate: Int?
@@ -945,12 +951,64 @@ struct ContentView: View {
             .font(.system(size: 11))
     }
 
-    func publishSelectedFolders() {
-//        print("publish \(self.selectedFolders)")
+    struct FolderIds: Codable {
+        var id: Array<Int>
     }
 
-    func archiveSelectedFolders() {
-//        print("archive \(self.selectedFolders)")
+    @State private var publishURL:String = "https://link12.ddns.net:4040/publish"
+    //    @State private var publishURL:String = "http://127.0.0.1:3002/publish"
+
+    func publishSelectedFolders() {
+        do {
+            let item = FolderIds(id: self.selectedFolders.map { $0 })
+            let data = try JSONEncoder().encode(item)
+            let url = URL(string: "\(publishURL)")!
+            let delegateClass = NetworkDelegateClass()
+            let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
+            let optimizedData: Data = try! data.gzipped(level: .bestCompression)
+            let postLength = String(format: "%lu", UInt(optimizedData.count))
+            let request = newPostRequest(url: url, data: optimizedData, postLength: postLength)
+            let task = delegateSession.dataTask(with: request) { data, response, error in
+                do {
+                    getUploads()
+                } catch let error {
+                    logger.error("[publishSelectedFolders] Request: \(error)")
+                }
+            }
+
+            task.resume()
+
+        } catch let error {
+            logger.error("[publishSelectedFolders] \(error)")
+        }
+    }
+
+    @State private var unpublishURL:String = "https://link12.ddns.net:4040/unpublish"
+    //    @State private var unpublishURL:String = "http://127.0.0.1:3002/unpublish"
+
+    func unpublishSelectedFolders() {
+        do {
+            let item = FolderIds(id: self.selectedFolders.map { $0 })
+            let data = try JSONEncoder().encode(item)
+            let url = URL(string: "\(unpublishURL)")!
+            let delegateClass = NetworkDelegateClass()
+            let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
+            let optimizedData: Data = try! data.gzipped(level: .bestCompression)
+            let postLength = String(format: "%lu", UInt(optimizedData.count))
+            let request = newPostRequest(url: url, data: optimizedData, postLength: postLength)
+            let task = delegateSession.dataTask(with: request) { data, response, error in
+                do {
+                    getUploads()
+                } catch let error {
+                    logger.error("[unpublishSelectedFolders] Request: \(error)")
+                }
+            }
+
+            task.resume()
+
+        } catch let error {
+            logger.error("[unpublishSelectedFolders] \(error)")
+        }
     }
 
     var body: some View {
@@ -1177,10 +1235,10 @@ struct ContentView: View {
                                 Label {
                                     Text("\(folder.state)" ?? "")
                                         .font(.system(size: 11))
-                                        .foregroundStyle(.gray)
+                                        .foregroundStyle(folder.state == "published" ? .white : .gray)
                                 } icon: {
                                     Rectangle()
-                                        .fill(.gray)
+                                        .fill(folder.state == "published" ? .yellow : .gray)
                                         .frame(width: 8, height: 8)
                                 }
                             }
@@ -1529,10 +1587,10 @@ struct ContentView: View {
                     List {
                         if (self.selectedFolders.count > 0 &&
                             (self.selectedImageFiles.count == 0 &&
-                                self.selectedAudioFiles.count == 0 &&
-                                self.selectedPdfFiles.count == 0 &&
-                                self.selectedVideoFiles.count == 0 &&
-                                self.selectedTextFiles.count == 0)) {
+                             self.selectedAudioFiles.count == 0 &&
+                             self.selectedPdfFiles.count == 0 &&
+                             self.selectedVideoFiles.count == 0 &&
+                             self.selectedTextFiles.count == 0)) {
 
                             Button(action: publishSelectedFolders) {
                                 Image(systemName: "newspaper")
@@ -1542,12 +1600,12 @@ struct ContentView: View {
                                     .foregroundStyle(Color.white)
                             }.buttonStyle(.bordered)
 
-                            Button(action: archiveSelectedFolders) {
+                            Button(action: unpublishSelectedFolders) {
                                 Image(systemName: "barcode")
                                     .font(.system(size: 9))
-                                Text("Archive \(self.selectedFolders.count) selected folders")
+                                Text("Unpublish \(self.selectedFolders.count) selected folders")
                                     .font(.system(size: 9))
-                                    .foregroundStyle(Color.white)
+                                    .foregroundStyle(Color.gray)
                             }.buttonStyle(.bordered)
                         }
 
@@ -1666,9 +1724,34 @@ struct ContentView: View {
                                   systemImage: "waveform.circle")
                                 .labelStyle(.titleAndIcon)
                                 .font(.system(size: 13))
-                            VideoPlayer(player: player)
-                                .frame(minWidth: 400, maxWidth: .infinity,
-                                       minHeight: 150, maxHeight: .infinity)
+
+                            if (audioFile.aasmState == "created") {
+                                Text("Processing…")
+                            } else if (audioFile.aasmState == "processed") {
+                                VideoPlayer(player: player)
+                                    .frame(minWidth: 400, maxWidth: .infinity,
+                                           minHeight: 150, maxHeight: .infinity)
+                            }
+
+                            Label {
+                                Text("File Size \(audioFile.fileSize ?? 0)")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.gray)
+                            } icon: {
+                                Rectangle()
+                                    .fill(.gray)
+                                    .frame(width: 8, height: 8)
+                            }
+
+                            Label {
+                                Text("Title \(audioFile.title ?? "--")")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.gray)
+                            } icon: {
+                                Rectangle()
+                                    .fill(.gray)
+                                    .frame(width: 8, height: 8)
+                            }
 
                             Label {
                                 Text("Mime/Type \(audioFile.mimeType ?? "--")")
@@ -1682,16 +1765,6 @@ struct ContentView: View {
 
                             Label {
                                 Text("Format \(audioFile.formatInfo ?? "--")")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(.gray)
-                            } icon: {
-                                Rectangle()
-                                    .fill(.gray)
-                                    .frame(width: 8, height: 8)
-                            }
-
-                            Label {
-                                Text("File Size \(audioFile.fileSize ?? 0)")
                                     .font(.system(size: 11))
                                     .foregroundStyle(.gray)
                             } icon: {
@@ -1746,9 +1819,34 @@ struct ContentView: View {
                                   systemImage: "video.circle")
                                 .labelStyle(.titleAndIcon)
                                 .font(.system(size: 13))
-                            VideoPlayer(player: player)
-                                .frame(minWidth: 400, maxWidth: .infinity,
-                                       minHeight: 300, maxHeight: .infinity)
+
+                            if (videoFile.aasmState == "created") {
+                                Text("Processing…")
+                            } else if (videoFile.aasmState == "processed") {
+                                VideoPlayer(player: player)
+                                    .frame(minWidth: 400, maxWidth: .infinity,
+                                           minHeight: 300, maxHeight: .infinity)
+                            }
+
+                            Label {
+                                Text("File Size \(videoFile.fileSize ?? 0)")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.gray)
+                            } icon: {
+                                Rectangle()
+                                    .fill(.gray)
+                                    .frame(width: 8, height: 8)
+                            }
+
+                            Label {
+                                Text("Title \(videoFile.title ?? "--")")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.gray)
+                            } icon: {
+                                Rectangle()
+                                    .fill(.gray)
+                                    .frame(width: 8, height: 8)
+                            }
 
                             Label {
                                 Text("Mime/Type \(videoFile.mimeType ?? "")")
@@ -1762,16 +1860,6 @@ struct ContentView: View {
 
                             Label {
                                 Text("Format \(videoFile.formatInfo ?? "")")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(.gray)
-                            } icon: {
-                                Rectangle()
-                                    .fill(.gray)
-                                    .frame(width: 8, height: 8)
-                            }
-
-                            Label {
-                                Text("File Size \(videoFile.fileSize ?? 0)")
                                     .font(.system(size: 11))
                                     .foregroundStyle(.gray)
                             } icon: {

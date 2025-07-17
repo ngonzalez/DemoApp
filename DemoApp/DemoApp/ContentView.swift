@@ -155,7 +155,7 @@ struct ContentView: View {
 
     struct UploadItem: Codable {
         var id: Int?
-        var uuid:UUID = UUID()
+        var uuid: UUID
         var filePath: String
         var mimeType: String
         var source: String
@@ -184,6 +184,7 @@ struct ContentView: View {
             let createdAtFormatted = dateFormatter.string(from: createdAt)
             let updatedAtFormatted = dateFormatter.string(from: updatedAt)
             let item = UploadItem(
+                uuid: UUID(),
                 filePath: path,
                 mimeType: mimeType,
                 source: source,
@@ -398,8 +399,8 @@ struct ContentView: View {
         let folder: Folder
         let fileName: String
         let fileUrl: String
-        let playlistUrl: String
         let aasmState: String
+        let playlistUrl: String?
         let dataUrl: String?
         let mimeType: String?
         let formatInfo: String?
@@ -416,8 +417,8 @@ struct ContentView: View {
         let folder: Folder
         let fileName: String
         let fileUrl: String
-        let playlistUrl: String
         let aasmState: String
+        let playlistUrl: String?
         let dataUrl: String?
         let mimeType: String?
         let formatInfo: String?
@@ -445,31 +446,51 @@ struct ContentView: View {
 
     func setUploads(results: Array<UploadWithFiles>) {
         self.uploadsWithFiles = results
-        logger.log("[setUpload] Results count=\(results.count)")
+        logger.log("[setUploads] Results count=\(results.count)")
 
         self.uploadImageFiles = []
         self.uploadPdfFiles = []
         self.uploadAudioFiles = []
         self.uploadVideoFiles = []
         self.uploadTextFiles = []
-        self.loadedFolders = []
 
         for upload in self.uploadsWithFiles {
             self.uploadImageFiles += upload.imageFiles
             for imageFile in upload.imageFiles {
-                if !self.loadedFolders.map { $0.id }.contains(imageFile.folder.id) {
+                if self.loadedFolders.map({ $0.id }).contains(imageFile.folder.id) {
+                    for i in 0..<self.loadedFolders.count {
+                        let el = self.loadedFolders[i]
+                        if (el.id == imageFile.folder.id) {
+                            self.loadedFolders[i] = imageFile.folder
+                        }
+                    }
+                } else {
                     self.loadedFolders.append(imageFile.folder)
                 }
             }
             self.uploadPdfFiles += upload.pdfFiles
             for pdfFile in upload.pdfFiles {
-                if !self.loadedFolders.map { $0.id }.contains(pdfFile.folder.id) {
+                if self.loadedFolders.map({ $0.id }).contains(pdfFile.folder.id) {
+                    for i in 0..<self.loadedFolders.count {
+                        let el = self.loadedFolders[i]
+                        if (el.id == pdfFile.folder.id) {
+                            self.loadedFolders[i] = pdfFile.folder
+                        }
+                    }
+                } else {
                     self.loadedFolders.append(pdfFile.folder)
                 }
             }
             self.uploadAudioFiles += upload.audioFiles
             for audioFile in upload.audioFiles {
-                if !self.loadedFolders.map { $0.id }.contains(audioFile.folder.id) {
+                if self.loadedFolders.map({ $0.id }).contains(audioFile.folder.id) {
+                    for i in 0..<self.loadedFolders.count {
+                        let el = self.loadedFolders[i]
+                        if (el.id == audioFile.folder.id) {
+                            self.loadedFolders[i] = audioFile.folder
+                        }
+                    }
+                } else {
                     self.loadedFolders.append(audioFile.folder)
                 }
                 DispatchQueue.main.async {
@@ -478,7 +499,14 @@ struct ContentView: View {
             }
             self.uploadVideoFiles += upload.videoFiles
             for videoFile in upload.videoFiles {
-                if !self.loadedFolders.map { $0.id }.contains(videoFile.folder.id) {
+                if self.loadedFolders.map({ $0.id }).contains(videoFile.folder.id) {
+                    for i in 0..<self.loadedFolders.count {
+                        let el = self.loadedFolders[i]
+                        if (el.id == videoFile.folder.id) {
+                            self.loadedFolders[i] = videoFile.folder
+                        }
+                    }
+                } else {
                     self.loadedFolders.append(videoFile.folder)
                 }
                 DispatchQueue.main.async {
@@ -487,7 +515,14 @@ struct ContentView: View {
             }
             self.uploadTextFiles += upload.textFiles
             for textFile in upload.textFiles {
-                if !self.loadedFolders.map { $0.id }.contains(textFile.folder.id) {
+                if self.loadedFolders.map({ $0.id }).contains(textFile.folder.id) {
+                    for i in 0..<self.loadedFolders.count {
+                        let el = self.loadedFolders[i]
+                        if (el.id == textFile.folder.id) {
+                            self.loadedFolders[i] = textFile.folder
+                        }
+                    }
+                } else {
                     self.loadedFolders.append(textFile.folder)
                 }
             }
@@ -503,7 +538,39 @@ struct ContentView: View {
         return request
     }
 
-    func getUploadsRequest() -> URL {
+    func getAllUploadsRequest() -> URL {
+        if (loadedFolders.count > 0) {
+            var str:String = ""
+            for folderId in (loadedFolders.map { $0.id }) {
+                str += ",\(folderId)"
+            }
+            let strData:Data = str.data(using: .utf8)!
+            let base64str:String = strData.base64EncodedString()
+            return URL(string: "\(backendURL)" + "?folderIds=\(base64str)")!
+        } else {
+            return URL(string: "\(backendURL)")!
+        }
+    }
+
+    func getAllUploads() {
+        let delegateClass = NetworkDelegateClass()
+        let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
+        let request = newGetRequest(url: getAllUploadsRequest())
+        let task = delegateSession.dataTask(with: request) { data, response, error in
+            do {
+                let response = try JSONDecoder().decode([UploadWithFiles].self, from: data!)
+                DispatchQueue.main.async {
+                    setUploads(results: response)
+                }
+            } catch let error {
+                logger.error("[getAllUploads] Request: \(error)")
+            }
+        }
+
+        task.resume()
+    }
+
+    func getSelectedUploadsRequest() -> URL {
         if (selectedFolders.count > 0) {
             var str:String = ""
             for folderId in selectedFolders {
@@ -517,31 +584,28 @@ struct ContentView: View {
         }
     }
 
-    func getUploads() {
-        do {
-            let delegateClass = NetworkDelegateClass()
-            let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
-            let request = newGetRequest(url: getUploadsRequest())
-            let task = delegateSession.dataTask(with: request) { data, response, error in
-                do {
-                    let response = try JSONDecoder().decode([UploadWithFiles].self, from: data!)
+    func getSelectedUploads() {
+        let delegateClass = NetworkDelegateClass()
+        let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
+        let request = newGetRequest(url: getSelectedUploadsRequest())
+        let task = delegateSession.dataTask(with: request) { data, response, error in
+            do {
+                let response = try JSONDecoder().decode([UploadWithFiles].self, from: data!)
+                DispatchQueue.main.async {
                     setUploads(results: response)
-                } catch let error {
-                    logger.error("[getUpload] Request: \(error)")
                 }
+            } catch let error {
+                logger.error("[getSelectedUploads] Request: \(error)")
             }
-
-            task.resume()
-
-        } catch let error {
-            logger.error("[getUploads] Error: \(error)")
         }
+
+        task.resume()
     }
 
     /* Users */
     struct User: Codable, Identifiable {
-        let id:Int?
-        let uuid:UUID = UUID()
+        let id: Int?
+        let uuid: UUID
         let firstName: String?
         let lastName: String?
         let emailAddress: String?
@@ -592,6 +656,7 @@ struct ContentView: View {
         do {
             let item = User(
                 id: nil,
+                uuid: UUID(),
                 firstName: firstName,
                 lastName: lastName,
                 emailAddress: userName,
@@ -612,10 +677,16 @@ struct ContentView: View {
                 do {
                     let response = try JSONDecoder().decode(User.self, from: data!)
                     self.signedInUser = response
-                    let errorsData = self.signedInUser?.errors as! [String]
-                    iterateOverErrors(errors: errorsData)
-                    self.identified = ((self.signedInUser?.createdAt) != nil)
-                    getUploads()
+                    if (self.signedInUser != nil) {
+                        let errorsData = self.signedInUser?.errors as! [String]
+                        iterateOverErrors(errors: errorsData)
+                        self.identified = ((self.signedInUser?.createdAt) != nil)
+                    }
+
+                    DispatchQueue.main.async {
+                        getAllUploads()
+                    }
+
                 } catch let error {
                     logger.error("[submitRegistrationForm] Request: \(error)")
                 }
@@ -632,6 +703,7 @@ struct ContentView: View {
         do {
             let item = User(
                 id: nil,
+                uuid: UUID(),
                 firstName: nil,
                 lastName: nil,
                 emailAddress: userName,
@@ -653,9 +725,11 @@ struct ContentView: View {
                     let response = try JSONDecoder().decode(User.self, from: data!)
                     self.signedInUser = response
                     self.identified = ((self.signedInUser?.createdAt) != nil)
-                    getUploads()
                 } catch let error {
                     logger.error("[submitSessionForm] Request: \(error)")
+                }
+                DispatchQueue.main.async {
+                    getAllUploads()
                 }
             }
 
@@ -714,6 +788,7 @@ struct ContentView: View {
         do {
             let item = User(
                 id: nil,
+                uuid: UUID(),
                 firstName: nil,
                 lastName: nil,
                 emailAddress: userName,
@@ -829,7 +904,7 @@ struct ContentView: View {
                 do {
                     let response = try JSONDecoder().decode(Stream.self, from: data!)
                     if response.m3u8Exists == true {
-                        if !self.videoStreams.map { $0.id }.contains(videoFile.id) {
+                        if !self.videoStreams.map({ $0.id }).contains(videoFile.id) {
                             self.videoStreams.append(response)
                         }
                     }
@@ -839,7 +914,6 @@ struct ContentView: View {
             }
 
             task.resume()
-
         } catch let error {
             logger.error("[getVideoStream] Error: \(error)")
         }
@@ -883,14 +957,14 @@ struct ContentView: View {
     }
 
     func displayVideo(videoFile: VideoFile) {
-        if self.videoStreams.map { $0.id }.contains(videoFile.id) {
+        if self.videoStreams.map({ $0.id }).contains(videoFile.id) {
             let url = URL(string: "\(serviceURL)/playlists/video-\(videoFile.id).m3u8")!
             initMediaPlayer(url: url)
         }
     }
 
     func displayAudio(audioFile: AudioFile) {
-        if self.audioStreams.map { $0.id }.contains(audioFile.id) {
+        if self.audioStreams.map({ $0.id }).contains(audioFile.id) {
             let url = URL(string: "\(serviceURL)/playlists/audio-\(audioFile.id).m3u8")!
             initMediaPlayer(url: url)
         }
@@ -914,7 +988,6 @@ struct ContentView: View {
             }
 
             task.resume()
-
         } catch let error {
             logger.error("[displayText] Error: \(error)")
         }
@@ -969,10 +1042,8 @@ struct ContentView: View {
             let postLength = String(format: "%lu", UInt(optimizedData.count))
             let request = newPostRequest(url: url, data: optimizedData, postLength: postLength)
             let task = delegateSession.dataTask(with: request) { data, response, error in
-                do {
-                    getUploads()
-                } catch let error {
-                    logger.error("[publishSelectedFolders] Request: \(error)")
+                DispatchQueue.main.async {
+                    getSelectedUploads()
                 }
             }
 
@@ -997,10 +1068,8 @@ struct ContentView: View {
             let postLength = String(format: "%lu", UInt(optimizedData.count))
             let request = newPostRequest(url: url, data: optimizedData, postLength: postLength)
             let task = delegateSession.dataTask(with: request) { data, response, error in
-                do {
-                    getUploads()
-                } catch let error {
-                    logger.error("[unpublishSelectedFolders] Request: \(error)")
+                DispatchQueue.main.async {
+                    getSelectedUploads()
                 }
             }
 
@@ -1024,7 +1093,7 @@ struct ContentView: View {
             case .account:
                 if self.identified {
 
-                    Text("\(self.signedInUser)")
+                    Text("\(String(describing: self.signedInUser))")
 
                 } else if self.newPassword {
 
@@ -1214,7 +1283,7 @@ struct ContentView: View {
                     .padding(5)
                     .navigationTitle("DemoApp (\(self.signedInUser?.emailAddress)")
                     .toolbar {
-                        Button(action: getUploads) {
+                        Button(action: getSelectedUploads) {
                             Image(systemName: "arrow.clockwise")
                                 .font(.system(size: 20))
                         }
@@ -1256,9 +1325,7 @@ struct ContentView: View {
                                     }
                                 }
                             }
-                            pauseMediaPlayer()
-                            clearSelectedFiles()
-                            getUploads()
+                            getSelectedUploads()
                         }
                         .tableStyle(.inset(alternatesRowBackgrounds: false))
                             .frame(height: 250)
@@ -1592,6 +1659,8 @@ struct ContentView: View {
                              self.selectedVideoFiles.count == 0 &&
                              self.selectedTextFiles.count == 0)) {
 
+                            Text("\(self.loadedFolders)")
+
                             Button(action: publishSelectedFolders) {
                                 Image(systemName: "newspaper")
                                     .font(.system(size: 9))
@@ -1743,14 +1812,16 @@ struct ContentView: View {
                                     .frame(width: 8, height: 8)
                             }
 
-                            Label {
-                                Text("Title \(audioFile.title ?? "--")")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(.gray)
-                            } icon: {
-                                Rectangle()
-                                    .fill(.gray)
-                                    .frame(width: 8, height: 8)
+                            if (audioFile.title != "") {
+                                Label {
+                                    Text("Title \(audioFile.title ?? "--")")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.gray)
+                                } icon: {
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
+                                }
                             }
 
                             Label {
@@ -1838,14 +1909,16 @@ struct ContentView: View {
                                     .frame(width: 8, height: 8)
                             }
 
-                            Label {
-                                Text("Title \(videoFile.title ?? "--")")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(.gray)
-                            } icon: {
-                                Rectangle()
-                                    .fill(.gray)
-                                    .frame(width: 8, height: 8)
+                            if (videoFile.title != "") {
+                                Label {
+                                    Text("Title \(videoFile.title ?? "--")")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.gray)
+                                } icon: {
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
+                                }
                             }
 
                             Label {
@@ -1934,6 +2007,7 @@ struct ContentView: View {
                                   systemImage: "doc.circle")
                                 .labelStyle(.titleAndIcon)
                                 .font(.system(size: 13))
+
 //                            Text("""
 //                                \(textContent)
 //                                """)
@@ -1977,13 +2051,10 @@ struct ContentView: View {
                                     .foregroundStyle(Color.gray)
                             }.buttonStyle(.bordered)
                         }
-
-
                     }
                 }
             }
             .padding(.horizontal, 5)
-
         }.navigationSplitViewStyle(.prominentDetail)
     }
 }

@@ -1325,6 +1325,7 @@ struct ContentView: View {
                                     }
                                 }
                             }
+                            clearSelectedFiles()
                             getSelectedUploads()
                         }
                         .tableStyle(.inset(alternatesRowBackgrounds: false))
@@ -1648,173 +1649,139 @@ struct ContentView: View {
                 }
             }
         } detail: {
+            if (selectedSideBarItem == .upload) {
 
-            HStack {
-                VStack {
-                    List {
-                        if (self.selectedFolders.count > 0 &&
-                            (self.selectedImageFiles.count == 0 &&
-                             self.selectedAudioFiles.count == 0 &&
-                             self.selectedPdfFiles.count == 0 &&
-                             self.selectedVideoFiles.count == 0 &&
-                             self.selectedTextFiles.count == 0)) {
+                // upload panel
+                HStack {
+                    VStack {
+                        List {
+                            if (self.selectedFolders.count > 0 &&
+                                (self.selectedImageFiles.count == 0 &&
+                                 self.selectedAudioFiles.count == 0 &&
+                                 self.selectedPdfFiles.count == 0 &&
+                                 self.selectedVideoFiles.count == 0 &&
+                                 self.selectedTextFiles.count == 0)) {
 
-                            Text("\(self.loadedFolders)")
+                                Text("\(self.loadedFolders)")
 
-                            Button(action: publishSelectedFolders) {
-                                Image(systemName: "newspaper")
-                                    .font(.system(size: 9))
-                                Text("Publish \(self.selectedFolders.count) selected folders")
-                                    .font(.system(size: 9))
-                                    .foregroundStyle(Color.white)
-                            }.buttonStyle(.bordered)
+                                Button(action: publishSelectedFolders) {
+                                    Image(systemName: "newspaper")
+                                        .font(.system(size: 9))
+                                    Text("Publish \(self.selectedFolders.count) selected folders")
+                                        .font(.system(size: 9))
+                                        .foregroundStyle(Color.white)
+                                }.buttonStyle(.bordered)
 
-                            Button(action: unpublishSelectedFolders) {
-                                Image(systemName: "barcode")
-                                    .font(.system(size: 9))
-                                Text("Unpublish \(self.selectedFolders.count) selected folders")
-                                    .font(.system(size: 9))
-                                    .foregroundStyle(Color.gray)
-                            }.buttonStyle(.bordered)
-                        }
-
-                        ForEach(self.selectedImageFiles) { imageFile in
-                            Label(imageFile.fileName,
-                                 systemImage: "photo.circle")
-                               .labelStyle(.titleAndIcon)
-                               .font(.system(size: 13))
-                            AsyncImage(url: URL(string: imageFile.fileUrl)) { result in
-                               result.image?
-                                   .resizable()
-                                   .scaledToFill()
-                            }
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-                            Label {
-                               Text("Mime/Type \(imageFile.mimeType ?? "--")")
-                                   .font(.system(size: 11))
-                                   .foregroundStyle(.gray)
-                            } icon: {
-                               Rectangle()
-                                   .fill(.gray)
-                                   .frame(width: 8, height: 8)
+                                Button(action: unpublishSelectedFolders) {
+                                    Image(systemName: "barcode")
+                                        .font(.system(size: 9))
+                                    Text("Unpublish \(self.selectedFolders.count) selected folders")
+                                        .font(.system(size: 9))
+                                        .foregroundStyle(Color.gray)
+                                }.buttonStyle(.bordered)
                             }
 
-                            Label {
-                               Text("Format \(imageFile.formatInfo ?? "--")")
-                                   .font(.system(size: 11))
-                                   .foregroundStyle(.gray)
-                            } icon: {
-                               Rectangle()
-                                   .fill(.gray)
-                                   .frame(width: 8, height: 8)
-                            }
+                            ForEach(self.selectedImageFiles) { imageFile in
+                                Label(imageFile.fileName,
+                                     systemImage: "photo.circle")
+                                   .labelStyle(.titleAndIcon)
+                                   .font(.system(size: 13))
+                                AsyncImage(url: URL(string: imageFile.fileUrl)) { result in
+                                   result.image?
+                                       .resizable()
+                                       .scaledToFill()
+                                }
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                            Label {
-                               Text("Dimensions \(imageFile.dimensions ?? "--")")
-                                   .font(.system(size: 11))
-                                   .foregroundStyle(.gray)
-                            } icon: {
-                               Rectangle()
-                                   .fill(.gray)
-                                   .frame(width: 8, height: 8)
-                            }
-
-                            Label {
-                               Text("Megapixels \(imageFile.megapixels ?? 0.1)")
-                                   .font(.system(size: 11))
-                                   .foregroundStyle(.gray)
-                            } icon: {
-                               Rectangle()
-                                   .fill(.gray)
-                                   .frame(width: 8, height: 8)
-                            }
-
-                            Label {
-                               Text("Width \(imageFile.width ?? 0)")
-                                   .font(.system(size: 11))
-                                   .foregroundStyle(.gray)
-                            } icon: {
-                               Rectangle()
-                                   .fill(.gray)
-                                   .frame(width: 8, height: 8)
-                            }
-
-                            Label {
-                               Text("Height \(imageFile.height ?? 0)")
-                                   .font(.system(size: 11))
-                                   .foregroundStyle(.gray)
-                            } icon: {
-                               Rectangle()
-                                   .fill(.gray)
-                                   .frame(width: 8, height: 8)
-                            }
-
-                            Label {
-                               Text("File Size \(imageFile.fileSize ?? "")")
-                                   .font(.system(size: 11))
-                                   .foregroundStyle(.gray)
-                            } icon: {
-                               Rectangle()
-                                   .fill(.gray)
-                                   .frame(width: 8, height: 8)
-                            }
-                        }
-
-                        ForEach(self.selectedPdfFiles) { pdfFile in
-                            Label(pdfFile.fileName,
-                                  systemImage: "doc.circle.fill")
-                                .labelStyle(.titleAndIcon)
-                                .font(.system(size: 13))
-
-                            Label {
-                                Text("Mime/Type \(pdfFile.mimeType ?? "--")")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(.gray)
-                            } icon: {
-                                Rectangle()
-                                    .fill(.gray)
-                                    .frame(width: 8, height: 8)
-                            }
-
-                            Label {
-                                Text("Format \(pdfFile.formatInfo ?? "--")")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(.gray)
-                            } icon: {
-                                Rectangle()
-                                    .fill(.gray)
-                                    .frame(width: 8, height: 8)
-                            }
-                        }
-
-                        ForEach(self.selectedAudioFiles) { audioFile in
-                            Label(audioFile.fileName,
-                                  systemImage: "waveform.circle")
-                                .labelStyle(.titleAndIcon)
-                                .font(.system(size: 13))
-
-                            if (audioFile.aasmState == "created") {
-                                Text("Processing…")
-                            } else if (audioFile.aasmState == "processed") {
-                                VideoPlayer(player: player)
-                                    .frame(minWidth: 400, maxWidth: .infinity,
-                                           minHeight: 150, maxHeight: .infinity)
-                            }
-
-                            Label {
-                                Text("File Size \(audioFile.fileSize ?? 0)")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(.gray)
-                            } icon: {
-                                Rectangle()
-                                    .fill(.gray)
-                                    .frame(width: 8, height: 8)
-                            }
-
-                            if (audioFile.title != "") {
                                 Label {
-                                    Text("Title \(audioFile.title ?? "--")")
+                                   Text("Mime/Type \(imageFile.mimeType ?? "--")")
+                                       .font(.system(size: 11))
+                                       .foregroundStyle(.gray)
+                                } icon: {
+                                   Rectangle()
+                                       .fill(.gray)
+                                       .frame(width: 8, height: 8)
+                                }
+
+                                Label {
+                                   Text("Format \(imageFile.formatInfo ?? "--")")
+                                       .font(.system(size: 11))
+                                       .foregroundStyle(.gray)
+                                } icon: {
+                                   Rectangle()
+                                       .fill(.gray)
+                                       .frame(width: 8, height: 8)
+                                }
+
+                                Label {
+                                   Text("Dimensions \(imageFile.dimensions ?? "--")")
+                                       .font(.system(size: 11))
+                                       .foregroundStyle(.gray)
+                                } icon: {
+                                   Rectangle()
+                                       .fill(.gray)
+                                       .frame(width: 8, height: 8)
+                                }
+
+                                Label {
+                                   Text("Megapixels \(imageFile.megapixels ?? 0.1)")
+                                       .font(.system(size: 11))
+                                       .foregroundStyle(.gray)
+                                } icon: {
+                                   Rectangle()
+                                       .fill(.gray)
+                                       .frame(width: 8, height: 8)
+                                }
+
+                                Label {
+                                   Text("Width \(imageFile.width ?? 0)")
+                                       .font(.system(size: 11))
+                                       .foregroundStyle(.gray)
+                                } icon: {
+                                   Rectangle()
+                                       .fill(.gray)
+                                       .frame(width: 8, height: 8)
+                                }
+
+                                Label {
+                                   Text("Height \(imageFile.height ?? 0)")
+                                       .font(.system(size: 11))
+                                       .foregroundStyle(.gray)
+                                } icon: {
+                                   Rectangle()
+                                       .fill(.gray)
+                                       .frame(width: 8, height: 8)
+                                }
+
+                                Label {
+                                   Text("File Size \(imageFile.fileSize ?? "")")
+                                       .font(.system(size: 11))
+                                       .foregroundStyle(.gray)
+                                } icon: {
+                                   Rectangle()
+                                       .fill(.gray)
+                                       .frame(width: 8, height: 8)
+                                }
+                            }
+
+                            ForEach(self.selectedPdfFiles) { pdfFile in
+                                Label(pdfFile.fileName,
+                                      systemImage: "doc.circle.fill")
+                                    .labelStyle(.titleAndIcon)
+                                    .font(.system(size: 13))
+
+                                Label {
+                                    Text("Mime/Type \(pdfFile.mimeType ?? "--")")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.gray)
+                                } icon: {
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
+                                }
+
+                                Label {
+                                    Text("Format \(pdfFile.formatInfo ?? "--")")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.gray)
                                 } icon: {
@@ -1824,94 +1791,94 @@ struct ContentView: View {
                                 }
                             }
 
-                            Label {
-                                Text("Mime/Type \(audioFile.mimeType ?? "--")")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(.gray)
-                            } icon: {
-                                Rectangle()
-                                    .fill(.gray)
-                                    .frame(width: 8, height: 8)
-                            }
+                            ForEach(self.selectedAudioFiles) { audioFile in
+                                Label(audioFile.fileName,
+                                      systemImage: "waveform.circle")
+                                    .labelStyle(.titleAndIcon)
+                                    .font(.system(size: 13))
 
-                            Label {
-                                Text("Format \(audioFile.formatInfo ?? "--")")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(.gray)
-                            } icon: {
-                                Rectangle()
-                                    .fill(.gray)
-                                    .frame(width: 8, height: 8)
-                            }
+                                if (audioFile.aasmState == "created") {
+                                    Text("Processing…")
+                                } else if (audioFile.aasmState == "processed") {
+                                    VideoPlayer(player: player)
+                                        .frame(minWidth: 400, maxWidth: .infinity,
+                                               minHeight: 150, maxHeight: .infinity)
+                                }
 
-                            Label {
-                                Text("Bitrate \(audioFile.bitrate ?? 0)")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(.gray)
-                            } icon: {
-                                Rectangle()
-                                    .fill(.gray)
-                                    .frame(width: 8, height: 8)
-                            }
-
-                            Label {
-                                Text("Channels \(audioFile.channels ?? 0)")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(.gray)
-                            } icon: {
-                                Rectangle()
-                                    .fill(.gray)
-                                    .frame(width: 8, height: 8)
-                            }
-
-                            Label {
-                                Text("Length (ms) \(audioFile.length ?? 0)")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(.gray)
-                            } icon: {
-                                Rectangle()
-                                    .fill(.gray)
-                                    .frame(width: 8, height: 8)
-                            }
-
-                            Label {
-                                Text("Sample Rate \(audioFile.sampleRate ?? 0)")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(.gray)
-                            } icon: {
-                                Rectangle()
-                                    .fill(.gray)
-                                    .frame(width: 8, height: 8)
-                            }
-                        }
-
-                        ForEach(self.selectedVideoFiles) { videoFile in
-                            Label(videoFile.fileName,
-                                  systemImage: "video.circle")
-                                .labelStyle(.titleAndIcon)
-                                .font(.system(size: 13))
-
-                            if (videoFile.aasmState == "created") {
-                                Text("Processing…")
-                            } else if (videoFile.aasmState == "processed") {
-                                VideoPlayer(player: player)
-                                    .frame(minWidth: 400, maxWidth: .infinity,
-                                           minHeight: 300, maxHeight: .infinity)
-                            }
-
-                            Label {
-                                Text("File Size \(videoFile.fileSize ?? 0)")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(.gray)
-                            } icon: {
-                                Rectangle()
-                                    .fill(.gray)
-                                    .frame(width: 8, height: 8)
-                            }
-
-                            if (videoFile.title != "") {
                                 Label {
-                                    Text("Title \(videoFile.title ?? "--")")
+                                    Text("File Size \(audioFile.fileSize ?? 0)")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.gray)
+                                } icon: {
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
+                                }
+
+                                if (audioFile.title != "") {
+                                    Label {
+                                        Text("Title \(audioFile.title ?? "--")")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.gray)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+                                }
+
+                                Label {
+                                    Text("Mime/Type \(audioFile.mimeType ?? "--")")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.gray)
+                                } icon: {
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
+                                }
+
+                                Label {
+                                    Text("Format \(audioFile.formatInfo ?? "--")")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.gray)
+                                } icon: {
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
+                                }
+
+                                Label {
+                                    Text("Bitrate \(audioFile.bitrate ?? 0)")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.gray)
+                                } icon: {
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
+                                }
+
+                                Label {
+                                    Text("Channels \(audioFile.channels ?? 0)")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.gray)
+                                } icon: {
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
+                                }
+
+                                Label {
+                                    Text("Length (ms) \(audioFile.length ?? 0)")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.gray)
+                                } icon: {
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
+                                }
+
+                                Label {
+                                    Text("Sample Rate \(audioFile.sampleRate ?? 0)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.gray)
                                 } icon: {
@@ -1921,140 +1888,181 @@ struct ContentView: View {
                                 }
                             }
 
-                            Label {
-                                Text("Mime/Type \(videoFile.mimeType ?? "")")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(.gray)
-                            } icon: {
-                                Rectangle()
-                                    .fill(.gray)
-                                    .frame(width: 8, height: 8)
+                            ForEach(self.selectedVideoFiles) { videoFile in
+                                Label(videoFile.fileName,
+                                      systemImage: "video.circle")
+                                    .labelStyle(.titleAndIcon)
+                                    .font(.system(size: 13))
+
+                                if (videoFile.aasmState == "created") {
+                                    Text("Processing…")
+                                } else if (videoFile.aasmState == "processed") {
+                                    VideoPlayer(player: player)
+                                        .frame(minWidth: 400, maxWidth: .infinity,
+                                               minHeight: 300, maxHeight: .infinity)
+                                }
+
+                                Label {
+                                    Text("File Size \(videoFile.fileSize ?? 0)")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.gray)
+                                } icon: {
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
+                                }
+
+                                if (videoFile.title != "") {
+                                    Label {
+                                        Text("Title \(videoFile.title ?? "--")")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.gray)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+                                }
+
+                                Label {
+                                    Text("Mime/Type \(videoFile.mimeType ?? "")")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.gray)
+                                } icon: {
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
+                                }
+
+                                Label {
+                                    Text("Format \(videoFile.formatInfo ?? "")")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.gray)
+                                } icon: {
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
+                                }
+
+                                Label {
+                                    Text("Bitrate \(videoFile.bitrate ?? 0)")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.gray)
+                                } icon: {
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
+                                }
+
+                                Label {
+                                    Text("FrameRate \(videoFile.frameRate ?? 0)")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.gray)
+                                } icon: {
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
+                                }
+
+                                Label {
+                                    Text("Length (s) \(videoFile.length ?? 0)")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.gray)
+                                } icon: {
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
+                                }
+
+                                Label {
+                                    Text("Width \(videoFile.width ?? 0)")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.gray)
+                                } icon: {
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
+                                }
+
+                                Label {
+                                    Text("Height \(videoFile.height ?? 0)")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.gray)
+                                } icon: {
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
+                                }
+
+                                Label {
+                                    Text("Aspect Ratio: \(videoFile.aspectRatio ?? 0)")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.gray)
+                                } icon: {
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
+                                }
                             }
 
-                            Label {
-                                Text("Format \(videoFile.formatInfo ?? "")")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(.gray)
-                            } icon: {
-                                Rectangle()
-                                    .fill(.gray)
-                                    .frame(width: 8, height: 8)
+                            ForEach(self.selectedTextFiles) { textFile in
+                                Label(textFile.fileName,
+                                      systemImage: "doc.circle")
+                                    .labelStyle(.titleAndIcon)
+                                    .font(.system(size: 13))
+
+    //                            Text("""
+    //                                \(textContent)
+    //                                """)
+
+                                Label {
+                                    Text("Mime/Type \(textFile.mimeType ?? "")")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.gray)
+                                } icon: {
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
+                                }
+
+                                Label {
+                                    Text("Format \(textFile.formatInfo ?? "")")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.gray)
+                                } icon: {
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
+                                }
                             }
 
-                            Label {
-                                Text("Bitrate \(videoFile.bitrate ?? 0)")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(.gray)
-                            } icon: {
-                                Rectangle()
-                                    .fill(.gray)
-                                    .frame(width: 8, height: 8)
+                            Spacer()
+
+                            if (self.selectedImageFiles.count > 0 ||
+                                self.selectedAudioFiles.count > 0 ||
+                                self.selectedPdfFiles.count > 0 ||
+                                self.selectedVideoFiles.count > 0 ||
+                                self.selectedTextFiles.count > 0 ||
+                                self.selectedFolders.count > 0) {
+
+                                Button(action: clearSelection) {
+                                    Image(systemName: "xmark")
+                                        .font(.system(size: 9))
+                                        .foregroundStyle(Color.gray)
+                                    Text("Clear selection")
+                                        .font(.system(size: 9))
+                                        .foregroundStyle(Color.gray)
+                                }.buttonStyle(.bordered)
                             }
-
-                            Label {
-                                Text("FrameRate \(videoFile.frameRate ?? 0)")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(.gray)
-                            } icon: {
-                                Rectangle()
-                                    .fill(.gray)
-                                    .frame(width: 8, height: 8)
-                            }
-
-                            Label {
-                                Text("Length (s) \(videoFile.length ?? 0)")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(.gray)
-                            } icon: {
-                                Rectangle()
-                                    .fill(.gray)
-                                    .frame(width: 8, height: 8)
-                            }
-
-                            Label {
-                                Text("Width \(videoFile.width ?? 0)")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(.gray)
-                            } icon: {
-                                Rectangle()
-                                    .fill(.gray)
-                                    .frame(width: 8, height: 8)
-                            }
-
-                            Label {
-                                Text("Height \(videoFile.height ?? 0)")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(.gray)
-                            } icon: {
-                                Rectangle()
-                                    .fill(.gray)
-                                    .frame(width: 8, height: 8)
-                            }
-
-                            Label {
-                                Text("Aspect Ratio: \(videoFile.aspectRatio ?? 0)")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(.gray)
-                            } icon: {
-                                Rectangle()
-                                    .fill(.gray)
-                                    .frame(width: 8, height: 8)
-                            }
-                        }
-
-                        ForEach(self.selectedTextFiles) { textFile in
-                            Label(textFile.fileName,
-                                  systemImage: "doc.circle")
-                                .labelStyle(.titleAndIcon)
-                                .font(.system(size: 13))
-
-//                            Text("""
-//                                \(textContent)
-//                                """)
-
-                            Label {
-                                Text("Mime/Type \(textFile.mimeType ?? "")")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(.gray)
-                            } icon: {
-                                Rectangle()
-                                    .fill(.gray)
-                                    .frame(width: 8, height: 8)
-                            }
-
-                            Label {
-                                Text("Format \(textFile.formatInfo ?? "")")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(.gray)
-                            } icon: {
-                                Rectangle()
-                                    .fill(.gray)
-                                    .frame(width: 8, height: 8)
-                            }
-                        }
-
-                        Spacer()
-
-                        if (self.selectedImageFiles.count > 0 ||
-                            self.selectedAudioFiles.count > 0 ||
-                            self.selectedPdfFiles.count > 0 ||
-                            self.selectedVideoFiles.count > 0 ||
-                            self.selectedTextFiles.count > 0 ||
-                            self.selectedFolders.count > 0) {
-
-                            Button(action: clearSelection) {
-                                Image(systemName: "xmark")
-                                    .font(.system(size: 9))
-                                    .foregroundStyle(Color.gray)
-                                Text("Clear selection")
-                                    .font(.system(size: 9))
-                                    .foregroundStyle(Color.gray)
-                            }.buttonStyle(.bordered)
                         }
                     }
                 }
+                .padding(.horizontal, 5)
+
+            } else {
+
+                // login panel
             }
-            .padding(.horizontal, 5)
         }.navigationSplitViewStyle(.prominentDetail)
     }
 }

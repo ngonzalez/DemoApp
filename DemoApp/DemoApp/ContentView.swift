@@ -1080,6 +1080,10 @@ struct ContentView: View {
         }
     }
 
+    func editAccount() {
+        //
+    }
+
     var body: some View {
         NavigationSplitView(columnVisibility: $visibility) {
             List(SideBarItem.allCases, selection: $selectedSideBarItem) { item in
@@ -1093,7 +1097,14 @@ struct ContentView: View {
             case .account:
                 if self.identified {
 
-                    Text("\(String(describing: self.signedInUser))")
+                    Image(systemName: "person.circle")
+                        .font(.system(size: 20))
+                        .symbolEffect(.bounce, options: .repeat(1))
+
+                    Button(action: editAccount) {
+                        Text("Edit account")
+                            .foregroundStyle(.blue.gradient)
+                    }.buttonStyle(PlainButtonStyle()).padding(10)
 
                 } else if self.newPassword {
 
@@ -1346,15 +1357,13 @@ struct ContentView: View {
                                 Table(of: ImageFile.self,
                                       selection: $imageFileSelection,
                                       sortOrder: $imageFileSortOrder) {
-                                    TableColumn("id") { imageFile in
-                                        Text("\(imageFile.id)")
-                                    }
+
                                     TableColumn("fileName") { imageFile in
-                                        Label(imageFile.fileName ?? "",
-                                              systemImage: "document")
-                                        .labelStyle(.titleAndIcon)
-                                        .font(.system(size: 11))
+                                        Label((imageFile.fileName ?? ""), systemImage: "doc")
+                                            .labelStyle(.titleAndIcon)
+                                            .font(.system(size: 11))
                                     }
+
                                     TableColumn("fileUrl") { imageFile in
                                         Link(destination: URL(string: imageFile.fileUrl)!, label: {
                                             Image(systemName: "bubble.left")
@@ -1362,11 +1371,11 @@ struct ContentView: View {
                                                 .font(.system(size: 11))
                                         })
                                     }
+
                                     TableColumn("mimeType") { imageFile in
-                                        Label(imageFile.mimeType ?? "",
-                                              systemImage: "document")
-                                        .labelStyle(.titleAndIcon)
-                                        .font(.system(size: 11))
+//                                        Label(imageFile.mimeType ?? "")
+//                                            .labelStyle(.titleAndIcon)
+//                                            .font(.system(size: 11))
                                     }
                                 } rows: {
                                     ForEach(uploadImageFiles) { imageFile in
@@ -1403,14 +1412,11 @@ struct ContentView: View {
                                 Table(of: PdfFile.self,
                                       selection: $pdfFileSelection,
                                       sortOrder: $pdfFileSortOrder) {
-                                    TableColumn("id") { pdfFile in
-                                        Text("\(pdfFile.id)")
-                                    }
+
                                     TableColumn("fileName") { pdfFile in
-                                        Label(pdfFile.fileName ?? "",
-                                              systemImage: "document")
-                                        .labelStyle(.titleAndIcon)
-                                        .font(.system(size: 11))
+                                        Label(pdfFile.fileName ?? "", systemImage: "document")
+                                            .labelStyle(.titleAndIcon)
+                                            .font(.system(size: 11))
                                     }
                                     TableColumn("fileUrl") { pdfFile in
                                         Link(destination: URL(string: pdfFile.fileUrl)!, label: {
@@ -1420,10 +1426,9 @@ struct ContentView: View {
                                         })
                                     }
                                     TableColumn("mimeType") { pdfFile in
-                                        Label(pdfFile.mimeType ?? "",
-                                              systemImage: "document")
-                                        .labelStyle(.titleAndIcon)
-                                        .font(.system(size: 11))
+//                                        Label(pdfFile.mimeType ?? "")
+//                                            .labelStyle(.titleAndIcon)
+//                                            .font(.system(size: 11))
                                     }
                                 } rows: {
                                     ForEach(uploadPdfFiles) { pdfFile in
@@ -1459,15 +1464,13 @@ struct ContentView: View {
                                 Table(of: AudioFile.self,
                                       selection: $audioFileSelection,
                                       sortOrder: $audioFileSortOrder) {
-                                    TableColumn("id") { audioFile in
-                                        Text("\(audioFile.id)")
-                                    }
+
                                     TableColumn("fileName") { audioFile in
-                                        Label(audioFile.fileName ?? "",
-                                              systemImage: "document")
-                                        .labelStyle(.titleAndIcon)
-                                        .font(.system(size: 11))
+                                        Label((audioFile.fileName ?? ""), systemImage: "doc")
+                                            .labelStyle(.titleAndIcon)
+                                            .font(.system(size: 11))
                                     }
+
                                     TableColumn("fileUrl") { audioFile in
                                         Link(destination: URL(string: audioFile.fileUrl)!, label: {
                                             Image(systemName: "bubble.left")
@@ -1475,11 +1478,11 @@ struct ContentView: View {
                                                 .font(.system(size: 11))
                                         })
                                     }
+
                                     TableColumn("mimeType") { audioFile in
-                                        Label(audioFile.mimeType ?? "",
-                                              systemImage: "document")
-                                        .labelStyle(.titleAndIcon)
-                                        .font(.system(size: 11))
+//                                        Label(audioFile.mimeType ?? "")
+//                                            .labelStyle(.titleAndIcon)
+//                                            .font(.system(size: 11))
                                     }
                                 } rows: {
                                     ForEach(uploadAudioFiles) { audioFile in
@@ -1530,15 +1533,13 @@ struct ContentView: View {
                                 Table(of: VideoFile.self,
                                       selection: $videoFileSelection,
                                       sortOrder: $videoFileSortOrder) {
-                                    TableColumn("id") { videoFile in
-                                        Text("\(videoFile.id)")
-                                    }
+
                                     TableColumn("fileName") { videoFile in
-                                        Label(videoFile.fileName ?? "",
-                                              systemImage: "document")
-                                        .labelStyle(.titleAndIcon)
-                                        .font(.system(size: 11))
+                                        Label((videoFile.fileName ?? ""), systemImage: "doc")
+                                            .labelStyle(.titleAndIcon)
+                                            .font(.system(size: 11))
                                     }
+
                                     TableColumn("fileUrl") { videoFile in
                                         Link(destination: URL(string: videoFile.fileUrl)!, label: {
                                             Image(systemName: "bubble.left")
@@ -1546,11 +1547,11 @@ struct ContentView: View {
                                                 .font(.system(size: 11))
                                         })
                                     }
+
                                     TableColumn("mimeType") { videoFile in
-                                        Label(videoFile.mimeType ?? "",
-                                              systemImage: "document")
-                                        .labelStyle(.titleAndIcon)
-                                        .font(.system(size: 11))
+//                                        Label(videoFile.mimeType ?? "")
+//                                            .labelStyle(.titleAndIcon)
+//                                            .font(.system(size: 11))
                                     }
                                 } rows: {
                                     ForEach(uploadVideoFiles) { videoFile in
@@ -1586,14 +1587,11 @@ struct ContentView: View {
                                 Table(of: TextFile.self,
                                       selection: $textFileSelection,
                                       sortOrder: $textFileSortOrder) {
-                                    TableColumn("id") { textFile in
-                                        Text("\(textFile.id)")
-                                    }
+
                                     TableColumn("fileName") { textFile in
-                                        Label(textFile.fileName ?? "",
-                                              systemImage: "document")
-                                        .labelStyle(.titleAndIcon)
-                                        .font(.system(size: 11))
+                                        Label((textFile.fileName ?? ""), systemImage: "doc")
+                                            .labelStyle(.titleAndIcon)
+                                            .font(.system(size: 11))
                                     }
                                     TableColumn("fileUrl") { textFile in
                                         Link(destination: URL(string: textFile.fileUrl)!, label: {
@@ -1603,10 +1601,9 @@ struct ContentView: View {
                                         })
                                     }
                                     TableColumn("mimeType") { textFile in
-                                        Label(textFile.mimeType ?? "",
-                                              systemImage: "document")
-                                        .labelStyle(.titleAndIcon)
-                                        .font(.system(size: 11))
+//                                        Label(textFile.mimeType ?? "")
+//                                            .labelStyle(.titleAndIcon)
+//                                            .font(.system(size: 11))
                                     }
                                 } rows: {
                                     ForEach(uploadTextFiles) { textFile in
@@ -1649,20 +1646,21 @@ struct ContentView: View {
                 }
             }
         } detail: {
+
             if (selectedSideBarItem == .upload) {
 
-                // upload panel
                 HStack {
                     VStack {
                         List {
+
+                            // upload panel
+
                             if (self.selectedFolders.count > 0 &&
                                 (self.selectedImageFiles.count == 0 &&
                                  self.selectedAudioFiles.count == 0 &&
                                  self.selectedPdfFiles.count == 0 &&
                                  self.selectedVideoFiles.count == 0 &&
                                  self.selectedTextFiles.count == 0)) {
-
-                                Text("\(self.loadedFolders)")
 
                                 Button(action: publishSelectedFolders) {
                                     Image(systemName: "newspaper")
@@ -1686,6 +1684,7 @@ struct ContentView: View {
                                      systemImage: "photo.circle")
                                    .labelStyle(.titleAndIcon)
                                    .font(.system(size: 13))
+
                                 AsyncImage(url: URL(string: imageFile.fileUrl)) { result in
                                    result.image?
                                        .resizable()
@@ -1762,6 +1761,8 @@ struct ContentView: View {
                                        .fill(.gray)
                                        .frame(width: 8, height: 8)
                                 }
+
+                                Spacer()
                             }
 
                             ForEach(self.selectedPdfFiles) { pdfFile in
@@ -1789,6 +1790,8 @@ struct ContentView: View {
                                         .fill(.gray)
                                         .frame(width: 8, height: 8)
                                 }
+
+                                Spacer()
                             }
 
                             ForEach(self.selectedAudioFiles) { audioFile in
@@ -1886,6 +1889,8 @@ struct ContentView: View {
                                         .fill(.gray)
                                         .frame(width: 8, height: 8)
                                 }
+
+                                Spacer()
                             }
 
                             ForEach(self.selectedVideoFiles) { videoFile in
@@ -2003,6 +2008,8 @@ struct ContentView: View {
                                         .fill(.gray)
                                         .frame(width: 8, height: 8)
                                 }
+
+                                Spacer()
                             }
 
                             ForEach(self.selectedTextFiles) { textFile in
@@ -2011,9 +2018,9 @@ struct ContentView: View {
                                     .labelStyle(.titleAndIcon)
                                     .font(.system(size: 13))
 
-    //                            Text("""
-    //                                \(textContent)
-    //                                """)
+        //                            Text("""
+        //                                \(textContent)
+        //                                """)
 
                                 Label {
                                     Text("Mime/Type \(textFile.mimeType ?? "")")
@@ -2034,9 +2041,9 @@ struct ContentView: View {
                                         .fill(.gray)
                                         .frame(width: 8, height: 8)
                                 }
-                            }
 
-                            Spacer()
+                                Spacer()
+                            }
 
                             if (self.selectedImageFiles.count > 0 ||
                                 self.selectedAudioFiles.count > 0 ||
@@ -2054,14 +2061,14 @@ struct ContentView: View {
                                         .foregroundStyle(Color.gray)
                                 }.buttonStyle(.bordered)
                             }
-                        }
+                        }.padding(20)
                     }
                 }
-                .padding(.horizontal, 5)
 
             } else {
 
-                // login panel
+                // default login panel
+
             }
         }.navigationSplitViewStyle(.prominentDetail)
     }

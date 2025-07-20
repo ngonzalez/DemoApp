@@ -1197,20 +1197,32 @@ struct ContentView: View {
                                     .font(.system(size: 11))
                                     .foregroundStyle(.gray)
 
-                                TextField(text: $firstNameAccountForm, prompt: Text("John")) {
-                                    Text("First Name")
+                                let firstName = self.signedInUser?.firstName
+                                if (firstName != nil) {
+                                    let firstNameUnWrapped:String = firstName!
+                                    TextField(text: $firstNameAccountForm, prompt: Text(firstNameUnWrapped)) {
+                                        Text("First Name")
+                                    }
+                                    .disableAutocorrection(true)
                                 }
-                                .disableAutocorrection(true)
 
-                                TextField(text: $lastNameAccountForm, prompt: Text("Appleseed")) {
-                                    Text("Last Name")
+                                let lastName = self.signedInUser?.lastName
+                                if (lastName != nil) {
+                                    let lastNameUnWrapped:String = lastName!
+                                    TextField(text: $lastNameAccountForm, prompt: Text(lastNameUnWrapped)) {
+                                        Text("Last Name")
+                                    }
+                                    .disableAutocorrection(true)
                                 }
-                                .disableAutocorrection(true)
 
-                                TextField(text: $emailAddressAccountForm, prompt: Text("johnatan@apple.com")) {
-                                    Text("Email")
+                                let emailAddress = self.signedInUser?.emailAddress
+                                if (emailAddress != nil) {
+                                    let emailAddressUnWrapped:String = emailAddress!
+                                    TextField(text: $emailAddressAccountForm, prompt: Text(emailAddressUnWrapped)) {
+                                        Text("Email Address")
+                                    }
+                                    .disableAutocorrection(true)
                                 }
-                                .disableAutocorrection(true)
 
                                 Button(action: submitAccountForm) {
                                     Text("Submit")
@@ -1233,11 +1245,18 @@ struct ContentView: View {
 
                     } else if !self.editAccount {
 
-                        // default account panel
+                        // account panel
 
                         Image(systemName: "person.circle")
                             .font(.system(size: 20))
                             .symbolEffect(.bounce, options: .repeat(1))
+                            .padding(10)
+
+                        let emailAddress = self.signedInUser?.emailAddress
+                        if (emailAddress != nil) {
+                            let emailAddressUnWrapped:String = emailAddress!
+                            Text(emailAddressUnWrapped)
+                        }
 
                         Button(action: clickEditAccount) {
                             Text("Edit account")
@@ -1784,12 +1803,16 @@ struct ContentView: View {
                 }
             case .account:
                 if self.identified && !self.editAccount {
-                    Text("\(self.signedInUser?.emailAddress)")
-                    Divider()
+
                     Button(action: submitDestroySessionForm) {
                         Image(systemName: "xmark")
-                            .font(.system(size: 15))
-                    }
+                            .font(.system(size: 9))
+                            .foregroundStyle(Color.primary)
+                        Text("Sign-Out")
+                            .font(.system(size: 9))
+                            .foregroundStyle(Color.primary)
+                    }.buttonStyle(.bordered)
+
                 }
             }
         } detail: {
@@ -2244,10 +2267,10 @@ struct ContentView: View {
                                 Button(action: clearSelection) {
                                     Image(systemName: "xmark")
                                         .font(.system(size: 9))
-                                        .foregroundStyle(Color.gray)
+                                        .foregroundStyle(Color.primary)
                                     Text("Clear selection")
                                         .font(.system(size: 9))
-                                        .foregroundStyle(Color.gray)
+                                        .foregroundStyle(Color.primary)
                                 }.buttonStyle(.bordered)
 
                             }

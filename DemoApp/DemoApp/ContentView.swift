@@ -1832,6 +1832,22 @@ struct ContentView: View {
                                  self.selectedVideoFiles.count == 0 &&
                                  self.selectedTextFiles.count == 0)) {
 
+                                ForEach(self.loadedFolders) { folder in
+                                    if (self.selectedFolders.contains(folder.id)) {
+                                        Label {
+                                            let name = folder.name ?? "--"
+                                            Text("\(name)")
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(.gray)
+                                        } icon: {
+                                           Rectangle()
+                                               .fill(.gray)
+                                               .frame(width: 8, height: 8)
+                                        }
+                                    }
+
+                                }
+
                                 Button(action: publishSelectedFolders) {
                                     Image(systemName: "newspaper")
                                         .font(.system(size: 9))

@@ -621,17 +621,40 @@ struct ContentView: View {
 
     @State var newPassword:Bool = Bool(false)
 
-    @State var validationErrors:String = String("")
+    @State var editAccount:Bool = Bool(false)
+
+    @State var newAccountValidationErrors:String = String("")
 
     @State private var signedInUser: User?
 
-    @State private var userName: String = String()
+    @State private var firstNameRegistrationForm: String = String()
 
-    @State private var password: String = String()
+    @State private var lastNameRegistrationForm: String = String()
 
-    @State private var firstName: String = String()
+    @State private var emailAddressRegistrationForm: String = String()
 
-    @State private var lastName: String = String()
+    @State private var passwordRegistrationForm: String = String()
+
+    @State var editAccountValidationErrors:String = String("")
+
+    @State private var firstNameAccountForm: String = String()
+
+    @State private var lastNameAccountForm: String = String()
+
+    @State private var emailAddressAccountForm: String = String()
+
+    @State private var passwordAccountForm: String = String()
+
+    @State private var emailAddressSessionForm: String = String()
+
+    @State private var passwordSessionForm: String = String()
+
+    @State private var emailAddressPasswordForm: String = String()
+
+
+//    @State private var accountURL:String = "https://appshare.site:4040/account"
+    @State private var accountURL:String = "https://link12.ddns.net:4040/account"
+//    @State private var accountURL:String = "https://127.0.0.1:3002/account"
 
 //    @State private var registrationURL:String = "https://appshare.site:4040/registration"
     @State private var registrationURL:String = "https://link12.ddns.net:4040/registration"
@@ -645,10 +668,72 @@ struct ContentView: View {
     @State private var passwordURL:String = "https://link12.ddns.net:4040/password"
 //    @State private var passwordURL:String = "http://127.0.0.1:3002/password"
 
-    func iterateOverErrors(errors: [String?]) {
-        validationErrors = ""
+    func newPutRequest(url: URL, data: Data, postLength: String) -> URLRequest {
+        var request = URLRequest(url: url)
+        request.httpMethod = "PUT"
+        request.httpBody = data
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.addValue(postLength, forHTTPHeaderField: "Content-Length")
+        request.addValue("gzip, deflate", forHTTPHeaderField: "Content-Encoding")
+
+        return request
+    }
+
+    @State var accountFormResponse:Message = Message(message: "")
+
+    func submitAccountForm() {
+        do {
+            let item = User(
+                id: self.signedInUser?.id,
+                uuid: UUID(),
+                firstName: firstNameAccountForm,
+                lastName: lastNameAccountForm,
+                emailAddress: emailAddressAccountForm,
+                password: passwordAccountForm,
+                createdAt: self.signedInUser?.createdAt,
+                updatedAt: self.signedInUser?.updatedAt,
+                errors: nil
+            )
+            let data = try JSONEncoder().encode(item)
+            let url = URL(string: "\(accountURL)")!
+            let delegateClass = NetworkDelegateClass()
+            let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
+            let optimizedData: Data = try! data.gzipped(level: .bestCompression)
+            let postLength = String(format: "%lu", UInt(optimizedData.count))
+            let request = newPutRequest(url: url, data: optimizedData, postLength: postLength)
+            let task = delegateSession.dataTask(with: request) { data, response, error in
+                do {
+
+                    let user = try JSONDecoder().decode(User.self, from: data!)
+
+                    if (user != nil) {
+                        let errorsData = user.errors as! [String]
+                        iterateOverErrorsEditAccount(errors: errorsData)
+                    }
+                } catch let error {
+                    logger.error("[submitAccountForm] Request: \(error)")
+                }
+            }
+
+            task.resume()
+
+        } catch let error {
+            logger.error("[submitAccountForm] Error: \(error)")
+        }
+    }
+
+    func iterateOverErrorsEditAccount(errors: [String?]) {
+        editAccountValidationErrors = ""
         errors.forEach { error in
-            validationErrors += "\n▫️\(error!)"
+            editAccountValidationErrors += "\n▫️\(error!)"
+        }
+    }
+
+    func iterateOverErrorsNewAccount(errors: [String?]) {
+        newAccountValidationErrors = ""
+        errors.forEach { error in
+            newAccountValidationErrors += "\n▫️\(error!)"
         }
     }
 
@@ -657,10 +742,10 @@ struct ContentView: View {
             let item = User(
                 id: nil,
                 uuid: UUID(),
-                firstName: firstName,
-                lastName: lastName,
-                emailAddress: userName,
-                password: password,
+                firstName: firstNameRegistrationForm,
+                lastName: lastNameRegistrationForm,
+                emailAddress: emailAddressRegistrationForm,
+                password: passwordRegistrationForm,
                 createdAt: nil,
                 updatedAt: nil,
                 errors: nil
@@ -679,7 +764,7 @@ struct ContentView: View {
                     self.signedInUser = response
                     if (self.signedInUser != nil) {
                         let errorsData = self.signedInUser?.errors as! [String]
-                        iterateOverErrors(errors: errorsData)
+                        iterateOverErrorsNewAccount(errors: errorsData)
                         self.identified = ((self.signedInUser?.createdAt) != nil)
                     }
 
@@ -706,8 +791,8 @@ struct ContentView: View {
                 uuid: UUID(),
                 firstName: nil,
                 lastName: nil,
-                emailAddress: userName,
-                password: password,
+                emailAddress: emailAddressSessionForm,
+                password: passwordSessionForm,
                 createdAt: nil,
                 updatedAt: nil,
                 errors: nil
@@ -791,7 +876,7 @@ struct ContentView: View {
                 uuid: UUID(),
                 firstName: nil,
                 lastName: nil,
-                emailAddress: userName,
+                emailAddress: emailAddressPasswordForm,
                 password: nil,
                 createdAt: nil,
                 updatedAt: nil,
@@ -832,6 +917,10 @@ struct ContentView: View {
     func clickSigninLink() {
         self.newAccount = false
         self.newPassword = false
+    }
+
+    func clickAccountLink() {
+        self.editAccount = false
     }
 
     /* Navigation */
@@ -1080,8 +1169,8 @@ struct ContentView: View {
         }
     }
 
-    func editAccount() {
-        //
+    func clickEditAccount() {
+        self.editAccount = true
     }
 
     var body: some View {
@@ -1097,19 +1186,71 @@ struct ContentView: View {
             case .account:
                 if self.identified {
 
-                    Image(systemName: "person.circle")
-                        .font(.system(size: 20))
-                        .symbolEffect(.bounce, options: .repeat(1))
+                    if self.editAccount {
 
-                    Button(action: editAccount) {
-                        Text("Edit account")
-                            .foregroundStyle(.blue.gradient)
-                    }.buttonStyle(PlainButtonStyle()).padding(10)
+                        Form {
+                            VStack {
+
+                                Spacer()
+
+                                Text("\(editAccountValidationErrors)\n")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.gray)
+
+                                TextField(text: $firstNameAccountForm, prompt: Text("John")) {
+                                    Text("First Name")
+                                }
+                                .disableAutocorrection(true)
+
+                                TextField(text: $lastNameAccountForm, prompt: Text("Appleseed")) {
+                                    Text("Last Name")
+                                }
+                                .disableAutocorrection(true)
+
+                                TextField(text: $emailAddressAccountForm, prompt: Text("johnatan@apple.com")) {
+                                    Text("Email")
+                                }
+                                .disableAutocorrection(true)
+
+                                Button(action: submitAccountForm) {
+                                    Text("Submit")
+                                }.buttonStyle(PlainButtonStyle())
+
+                                Spacer()
+
+                                Divider()
+
+                                /* Account */
+                                Button(action: clickAccountLink) {
+                                    Image(systemName: "person.text.rectangle")
+                                        .font(.system(size: 20))
+                                    Text("Back to your account panel")
+                                        .foregroundStyle(.blue.gradient)
+                                }.buttonStyle(PlainButtonStyle())
+                            }
+                            .textFieldStyle(.roundedBorder)
+                        }.padding(20)
+
+                    } else if !self.editAccount {
+
+                        // default account panel
+
+                        Image(systemName: "person.circle")
+                            .font(.system(size: 20))
+                            .symbolEffect(.bounce, options: .repeat(1))
+
+                        Button(action: clickEditAccount) {
+                            Text("Edit account")
+                                .foregroundStyle(.blue.gradient)
+                        }.buttonStyle(PlainButtonStyle()).padding(10)
+
+                    }
 
                 } else if self.newPassword {
 
                     Form {
                         VStack {
+
                             Spacer()
 
                             if let message = self.passwordFormResponse.message {
@@ -1118,7 +1259,7 @@ struct ContentView: View {
                                     .foregroundStyle(.gray)
                             }
 
-                            TextField(text: $userName, prompt: Text("johnatan@apple.com")) {
+                            TextField(text: $emailAddressPasswordForm, prompt: Text("johnatan@apple.com")) {
                                 Text("Email")
                             }
                             .disableAutocorrection(true)
@@ -1148,26 +1289,26 @@ struct ContentView: View {
 
                             Spacer()
 
-                            Text("\(validationErrors)\n")
+                            Text("\(newAccountValidationErrors)\n")
                                 .font(.system(size: 11))
                                 .foregroundStyle(.gray)
 
-                            TextField(text: $firstName, prompt: Text("John")) {
+                            TextField(text: $firstNameRegistrationForm, prompt: Text("John")) {
                                 Text("First Name")
                             }
                             .disableAutocorrection(true)
 
-                            TextField(text: $lastName, prompt: Text("Appleseed")) {
+                            TextField(text: $lastNameRegistrationForm, prompt: Text("Appleseed")) {
                                 Text("Last Name")
                             }
                             .disableAutocorrection(true)
 
-                            TextField(text: $userName, prompt: Text("johnatan@apple.com")) {
+                            TextField(text: $emailAddressRegistrationForm, prompt: Text("johnatan@apple.com")) {
                                 Text("Email")
                             }
                             .disableAutocorrection(true)
 
-                            SecureField(text: $password, prompt: Text("Required")) {
+                            SecureField(text: $passwordRegistrationForm, prompt: Text("Required")) {
                                 Text("Password")
                             }
                             .disableAutocorrection(true)
@@ -1177,6 +1318,7 @@ struct ContentView: View {
                             }.buttonStyle(PlainButtonStyle())
 
                             Spacer()
+
                             Divider()
 
                             /* Signin */
@@ -1194,6 +1336,7 @@ struct ContentView: View {
 
                     Form {
                         VStack {
+
                             Spacer()
 
                             if let message = self.destroySessionFormResponse.message {
@@ -1202,28 +1345,31 @@ struct ContentView: View {
                                     .foregroundStyle(.gray)
                             }
 
-                            TextField(text: $userName, prompt: Text("johnatan@apple.com")) {
+                            TextField(text: $emailAddressSessionForm, prompt: Text("johnatan@apple.com")) {
                                 Text("Email")
                             }
                             .disableAutocorrection(true)
 
-                            SecureField(text: $password, prompt: Text("Required")) {
+                            SecureField(text: $passwordSessionForm, prompt: Text("Required")) {
                                 Text("Password")
                             }
                             .disableAutocorrection(true)
 
                             Button(action: submitSessionForm) {
                                 Text("Submit")
-                            }.buttonStyle(PlainButtonStyle())
+                            }
+                            .buttonStyle(PlainButtonStyle())
 
                             /* Register */
                             Button(action: clickRegisterLink) {
                                 Image(systemName: "person.crop.circle.badge.plus")
                                     .font(.system(size: 20))
                                     .symbolEffect(.bounce, options: .repeat(1))
-                                Text("Register a new account")
+                                Text("Register for a new account")
                                     .foregroundStyle(.blue.gradient)
-                            }.buttonStyle(PlainButtonStyle()).padding(10)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .padding(30)
 
                             Spacer()
 
@@ -1238,6 +1384,7 @@ struct ContentView: View {
                             }.buttonStyle(PlainButtonStyle())
                         }
                         .textFieldStyle(.roundedBorder)
+
                     }.padding(20)
                 }
 
@@ -1636,7 +1783,7 @@ struct ContentView: View {
                     .padding(.horizontal, 5)
                 }
             case .account:
-                if self.identified {
+                if self.identified && !self.editAccount {
                     Text("\(self.signedInUser?.emailAddress)")
                     Divider()
                     Button(action: submitDestroySessionForm) {
@@ -1680,12 +1827,15 @@ struct ContentView: View {
                             }
 
                             ForEach(self.selectedImageFiles) { imageFile in
-                                Label(imageFile.fileName,
+
+                                let fileName = imageFile.fileName ?? "--"
+                                Label(fileName,
                                      systemImage: "photo.circle")
                                    .labelStyle(.titleAndIcon)
                                    .font(.system(size: 13))
 
-                                AsyncImage(url: URL(string: imageFile.fileUrl)) { result in
+                                let fileUrl = imageFile.fileUrl ?? "--"
+                                AsyncImage(url: URL(string: fileUrl)) { result in
                                    result.image?
                                        .resizable()
                                        .scaledToFill()
@@ -1693,9 +1843,10 @@ struct ContentView: View {
                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                                 Label {
-                                   Text("Mime/Type \(imageFile.mimeType ?? "--")")
-                                       .font(.system(size: 11))
-                                       .foregroundStyle(.gray)
+                                    let mimeType = imageFile.mimeType ?? "--"
+                                    Text("Mime/Type \(mimeType)")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.gray)
                                 } icon: {
                                    Rectangle()
                                        .fill(.gray)
@@ -1703,9 +1854,10 @@ struct ContentView: View {
                                 }
 
                                 Label {
-                                   Text("Format \(imageFile.formatInfo ?? "--")")
-                                       .font(.system(size: 11))
-                                       .foregroundStyle(.gray)
+                                    let formatInfo = imageFile.formatInfo ?? "--"
+                                    Text("Format \(formatInfo)")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.gray)
                                 } icon: {
                                    Rectangle()
                                        .fill(.gray)
@@ -1713,9 +1865,10 @@ struct ContentView: View {
                                 }
 
                                 Label {
-                                   Text("Dimensions \(imageFile.dimensions ?? "--")")
-                                       .font(.system(size: 11))
-                                       .foregroundStyle(.gray)
+                                    let dimensions = imageFile.dimensions ?? "--"
+                                    Text("Dimensions \(dimensions)")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.gray)
                                 } icon: {
                                    Rectangle()
                                        .fill(.gray)
@@ -1723,9 +1876,10 @@ struct ContentView: View {
                                 }
 
                                 Label {
-                                   Text("Megapixels \(imageFile.megapixels ?? 0.1)")
-                                       .font(.system(size: 11))
-                                       .foregroundStyle(.gray)
+                                    let megapixels = imageFile.megapixels ?? 0.1
+                                    Text("Megapixels \(megapixels)")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.gray)
                                 } icon: {
                                    Rectangle()
                                        .fill(.gray)
@@ -1733,9 +1887,10 @@ struct ContentView: View {
                                 }
 
                                 Label {
-                                   Text("Width \(imageFile.width ?? 0)")
-                                       .font(.system(size: 11))
-                                       .foregroundStyle(.gray)
+                                    let width = imageFile.width ?? 0
+                                    Text("Width \(width)")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.gray)
                                 } icon: {
                                    Rectangle()
                                        .fill(.gray)
@@ -1743,9 +1898,10 @@ struct ContentView: View {
                                 }
 
                                 Label {
-                                   Text("Height \(imageFile.height ?? 0)")
-                                       .font(.system(size: 11))
-                                       .foregroundStyle(.gray)
+                                    let height = imageFile.height ?? 0
+                                    Text("Height \(height)")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.gray)
                                 } icon: {
                                    Rectangle()
                                        .fill(.gray)
@@ -1753,9 +1909,10 @@ struct ContentView: View {
                                 }
 
                                 Label {
-                                   Text("File Size \(imageFile.fileSize ?? "")")
-                                       .font(.system(size: 11))
-                                       .foregroundStyle(.gray)
+                                    let fileSize = imageFile.fileSize ?? ""
+                                    Text("File Size \(fileSize)")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.gray)
                                 } icon: {
                                    Rectangle()
                                        .fill(.gray)
@@ -1763,16 +1920,19 @@ struct ContentView: View {
                                 }
 
                                 Spacer()
+
                             }
 
                             ForEach(self.selectedPdfFiles) { pdfFile in
-                                Label(pdfFile.fileName,
-                                      systemImage: "doc.circle.fill")
+
+                                let fileName = pdfFile.fileName ?? ""
+                                Label(fileName, systemImage: "doc.circle.fill")
                                     .labelStyle(.titleAndIcon)
                                     .font(.system(size: 13))
 
                                 Label {
-                                    Text("Mime/Type \(pdfFile.mimeType ?? "--")")
+                                    let mimeType = pdfFile.mimeType ?? "--"
+                                    Text("Mime/Type \(mimeType)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.gray)
                                 } icon: {
@@ -1782,7 +1942,8 @@ struct ContentView: View {
                                 }
 
                                 Label {
-                                    Text("Format \(pdfFile.formatInfo ?? "--")")
+                                    let formatInfo = pdfFile.formatInfo ?? "--"
+                                    Text("Format \(formatInfo)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.gray)
                                 } icon: {
@@ -1792,46 +1953,29 @@ struct ContentView: View {
                                 }
 
                                 Spacer()
+
                             }
 
                             ForEach(self.selectedAudioFiles) { audioFile in
-                                Label(audioFile.fileName,
-                                      systemImage: "waveform.circle")
+
+                                let fileName = audioFile.fileName ?? "--"
+                                Label(fileName, systemImage: "waveform.circle")
                                     .labelStyle(.titleAndIcon)
                                     .font(.system(size: 13))
 
                                 if (audioFile.aasmState == "created") {
                                     Text("Processing…")
+                                        .padding(10)
                                 } else if (audioFile.aasmState == "processed") {
                                     VideoPlayer(player: player)
                                         .frame(minWidth: 400, maxWidth: .infinity,
                                                minHeight: 150, maxHeight: .infinity)
+                                        .padding(10)
                                 }
 
                                 Label {
-                                    Text("File Size \(audioFile.fileSize ?? 0)")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.gray)
-                                } icon: {
-                                    Rectangle()
-                                        .fill(.gray)
-                                        .frame(width: 8, height: 8)
-                                }
-
-                                if (audioFile.title != "") {
-                                    Label {
-                                        Text("Title \(audioFile.title ?? "--")")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.gray)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-                                }
-
-                                Label {
-                                    Text("Mime/Type \(audioFile.mimeType ?? "--")")
+                                    let fileSize = audioFile.fileSize ?? 0
+                                    Text("File Size \(fileSize)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.gray)
                                 } icon: {
@@ -1841,7 +1985,8 @@ struct ContentView: View {
                                 }
 
                                 Label {
-                                    Text("Format \(audioFile.formatInfo ?? "--")")
+                                    let title = audioFile.title ?? "--"
+                                    Text("Title \(title)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.gray)
                                 } icon: {
@@ -1851,7 +1996,8 @@ struct ContentView: View {
                                 }
 
                                 Label {
-                                    Text("Bitrate \(audioFile.bitrate ?? 0)")
+                                    let mimeType = audioFile.mimeType ?? "--"
+                                    Text("Mime/Type \(mimeType)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.gray)
                                 } icon: {
@@ -1861,7 +2007,8 @@ struct ContentView: View {
                                 }
 
                                 Label {
-                                    Text("Channels \(audioFile.channels ?? 0)")
+                                    let formatInfo = audioFile.formatInfo ?? "--"
+                                    Text("Format \(formatInfo)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.gray)
                                 } icon: {
@@ -1871,7 +2018,8 @@ struct ContentView: View {
                                 }
 
                                 Label {
-                                    Text("Length (ms) \(audioFile.length ?? 0)")
+                                    let bitrate = audioFile.bitrate ?? 0
+                                    Text("Bitrate \(bitrate)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.gray)
                                 } icon: {
@@ -1881,7 +2029,30 @@ struct ContentView: View {
                                 }
 
                                 Label {
-                                    Text("Sample Rate \(audioFile.sampleRate ?? 0)")
+                                    let channels = audioFile.channels ?? 0
+                                    Text("Channels \(channels)")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.gray)
+                                } icon: {
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
+                                }
+
+                                Label {
+                                    let length = audioFile.length ?? 0
+                                    Text("Length (ms) \(length)")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.gray)
+                                } icon: {
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
+                                }
+
+                                Label {
+                                    let sampleRate = audioFile.sampleRate ?? 0
+                                    Text("Sample Rate \(sampleRate)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.gray)
                                 } icon: {
@@ -1891,46 +2062,30 @@ struct ContentView: View {
                                 }
 
                                 Spacer()
+
                             }
 
                             ForEach(self.selectedVideoFiles) { videoFile in
-                                Label(videoFile.fileName,
+
+                                let fileName = videoFile.fileName ?? "--"
+                                Label(fileName,
                                       systemImage: "video.circle")
                                     .labelStyle(.titleAndIcon)
                                     .font(.system(size: 13))
 
                                 if (videoFile.aasmState == "created") {
                                     Text("Processing…")
+                                        .padding(10)
                                 } else if (videoFile.aasmState == "processed") {
                                     VideoPlayer(player: player)
                                         .frame(minWidth: 400, maxWidth: .infinity,
                                                minHeight: 300, maxHeight: .infinity)
+                                        .padding(10)
                                 }
 
                                 Label {
-                                    Text("File Size \(videoFile.fileSize ?? 0)")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.gray)
-                                } icon: {
-                                    Rectangle()
-                                        .fill(.gray)
-                                        .frame(width: 8, height: 8)
-                                }
-
-                                if (videoFile.title != "") {
-                                    Label {
-                                        Text("Title \(videoFile.title ?? "--")")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.gray)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-                                }
-
-                                Label {
-                                    Text("Mime/Type \(videoFile.mimeType ?? "")")
+                                    let fileSize = videoFile.fileSize ?? 0
+                                    Text("File Size \(fileSize)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.gray)
                                 } icon: {
@@ -1940,7 +2095,8 @@ struct ContentView: View {
                                 }
 
                                 Label {
-                                    Text("Format \(videoFile.formatInfo ?? "")")
+                                    let title = videoFile.title ?? "--"
+                                    Text("Title \(title)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.gray)
                                 } icon: {
@@ -1950,7 +2106,8 @@ struct ContentView: View {
                                 }
 
                                 Label {
-                                    Text("Bitrate \(videoFile.bitrate ?? 0)")
+                                    let mimeType = videoFile.mimeType ?? ""
+                                    Text("Mime/Type \(mimeType)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.gray)
                                 } icon: {
@@ -1960,7 +2117,8 @@ struct ContentView: View {
                                 }
 
                                 Label {
-                                    Text("FrameRate \(videoFile.frameRate ?? 0)")
+                                    let formatInfo = videoFile.formatInfo ?? ""
+                                    Text("Format \(formatInfo)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.gray)
                                 } icon: {
@@ -1970,7 +2128,8 @@ struct ContentView: View {
                                 }
 
                                 Label {
-                                    Text("Length (s) \(videoFile.length ?? 0)")
+                                    let bitrate = videoFile.bitrate ?? 0
+                                    Text("Bitrate \(bitrate)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.gray)
                                 } icon: {
@@ -1980,7 +2139,8 @@ struct ContentView: View {
                                 }
 
                                 Label {
-                                    Text("Width \(videoFile.width ?? 0)")
+                                    let frameRate = videoFile.frameRate ?? 0
+                                    Text("FrameRate \(frameRate)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.gray)
                                 } icon: {
@@ -1990,7 +2150,8 @@ struct ContentView: View {
                                 }
 
                                 Label {
-                                    Text("Height \(videoFile.height ?? 0)")
+                                    let length = videoFile.length ?? 0
+                                    Text("Length (s) \(length)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.gray)
                                 } icon: {
@@ -2000,7 +2161,30 @@ struct ContentView: View {
                                 }
 
                                 Label {
-                                    Text("Aspect Ratio: \(videoFile.aspectRatio ?? 0)")
+                                    let width = videoFile.width ?? 0
+                                    Text("Width \(width)")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.gray)
+                                } icon: {
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
+                                }
+
+                                Label {
+                                    let height = videoFile.height ?? 0
+                                    Text("Height \(height)")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.gray)
+                                } icon: {
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
+                                }
+
+                                Label {
+                                    let aspectRatio = videoFile.aspectRatio ?? 0
+                                    Text("Aspect Ratio: \(aspectRatio)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.gray)
                                 } icon: {
@@ -2010,20 +2194,23 @@ struct ContentView: View {
                                 }
 
                                 Spacer()
+
                             }
 
                             ForEach(self.selectedTextFiles) { textFile in
-                                Label(textFile.fileName,
-                                      systemImage: "doc.circle")
+
+                                let fileName = textFile.fileName ?? "--"
+                                Label(fileName, systemImage: "doc.circle")
                                     .labelStyle(.titleAndIcon)
                                     .font(.system(size: 13))
 
-        //                            Text("""
-        //                                \(textContent)
-        //                                """)
+                                Text("""
+                                    \(textContent)
+                                    """).padding(20)
 
                                 Label {
-                                    Text("Mime/Type \(textFile.mimeType ?? "")")
+                                    let mimeType = textFile.mimeType ?? ""
+                                    Text("Mime/Type \(mimeType)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.gray)
                                 } icon: {
@@ -2033,7 +2220,8 @@ struct ContentView: View {
                                 }
 
                                 Label {
-                                    Text("Format \(textFile.formatInfo ?? "")")
+                                    let formatInfo = textFile.formatInfo ?? ""
+                                    Text("Format \(formatInfo)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.gray)
                                 } icon: {
@@ -2043,6 +2231,7 @@ struct ContentView: View {
                                 }
 
                                 Spacer()
+
                             }
 
                             if (self.selectedImageFiles.count > 0 ||
@@ -2060,7 +2249,9 @@ struct ContentView: View {
                                         .font(.system(size: 9))
                                         .foregroundStyle(Color.gray)
                                 }.buttonStyle(.bordered)
+
                             }
+
                         }.padding(20)
                     }
                 }

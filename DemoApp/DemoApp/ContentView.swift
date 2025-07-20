@@ -2257,25 +2257,26 @@ struct ContentView: View {
 
                             }
 
-                            if (self.selectedImageFiles.count > 0 ||
-                                self.selectedAudioFiles.count > 0 ||
-                                self.selectedPdfFiles.count > 0 ||
-                                self.selectedVideoFiles.count > 0 ||
-                                self.selectedTextFiles.count > 0 ||
-                                self.selectedFolders.count > 0) {
-
-                                Button(action: clearSelection) {
-                                    Image(systemName: "xmark")
-                                        .font(.system(size: 9))
-                                        .foregroundStyle(Color.primary)
-                                    Text("Clear selection")
-                                        .font(.system(size: 9))
-                                        .foregroundStyle(Color.primary)
-                                }.buttonStyle(.bordered)
-
-                            }
 
                         }.padding(20)
+
+                        if (self.selectedImageFiles.count > 0 ||
+                            self.selectedAudioFiles.count > 0 ||
+                            self.selectedPdfFiles.count > 0 ||
+                            self.selectedVideoFiles.count > 0 ||
+                            self.selectedTextFiles.count > 0 ||
+                            self.selectedFolders.count > 0) {
+
+                            Button(action: clearSelection) {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 9))
+                                    .foregroundStyle(Color.primary)
+                                Text("Clear selection")
+                                    .font(.system(size: 9))
+                                    .foregroundStyle(Color.primary)
+                            }.buttonStyle(.bordered)
+
+                        }
                     }
                 }
 

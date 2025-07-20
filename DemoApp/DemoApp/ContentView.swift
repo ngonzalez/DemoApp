@@ -112,8 +112,8 @@ struct ContentView: View {
 
     /* Upload Request  */
 //    @State private var backendURL:String = "https://appshare.site:4040/upload"
-    @State private var backendURL:String = "https://link12.ddns.net:4040/upload"
-//    @State private var backendURL:String = "http://127.0.0.1:3002/upload"
+//    @State private var backendURL:String = "https://link12.ddns.net:4040/upload"
+    @State private var backendURL:String = "http://127.0.0.1:3002/upload"
 
     @State private var mimeTypes:[String:String] = [
         /* DOCUMENTS */
@@ -615,17 +615,23 @@ struct ContentView: View {
         let errors: [String]?
     }
 
-    @State var identified:Bool = Bool(false)
-
-    @State var newAccount:Bool = Bool(false)
-
-    @State var newPassword:Bool = Bool(false)
-
-    @State var editAccount:Bool = Bool(false)
-
-    @State var newAccountValidationErrors:String = String("")
+    /* Account */
+    @State var newAccount:Bool = Bool(false)   // Register Account
+                                               //
+    @State var identified:Bool = Bool(false)   // New Session
+                                               //
+    @State var newPassword:Bool = Bool(false)  // Reset Password
+                                               //
+    @State var editAccount:Bool = Bool(false)  // Edit Account
+                                               //
+    @State var editPassword:Bool = Bool(false) // Edit Password
 
     @State private var signedInUser: User?
+
+    /* Register Account */
+    @State var newAccountSuccessMessage:Message = Message(message: String())
+
+    @State var newAccountValidationErrors:String = String()
 
     @State private var firstNameRegistrationForm: String = String()
 
@@ -635,7 +641,25 @@ struct ContentView: View {
 
     @State private var passwordRegistrationForm: String = String()
 
-    @State var editAccountValidationErrors:String = String("")
+    /* New Session */
+    @State private var emailAddressSessionForm: String = String()
+
+    @State private var passwordSessionForm: String = String()
+
+    /* Destroy Session */
+    @State var destroySessionFormResponse:Message = Message(message: String())
+
+    /* New Password */
+    @State private var emailAddressPasswordForm: String = String()
+
+    @State var newPasswordSuccessMessage:Message = Message(message: String())
+
+    @State var newPasswordValidationErrors:String = String()
+
+    /* Edit Account */
+    @State var editAccountSuccessMessage:Message = Message(message: String())
+
+    @State var editAccountValidationErrors:String = String()
 
     @State private var firstNameAccountForm: String = String()
 
@@ -645,28 +669,21 @@ struct ContentView: View {
 
     @State private var passwordAccountForm: String = String()
 
-    @State private var emailAddressSessionForm: String = String()
-
-    @State private var passwordSessionForm: String = String()
-
-    @State private var emailAddressPasswordForm: String = String()
-
-
 //    @State private var accountURL:String = "https://appshare.site:4040/account"
-    @State private var accountURL:String = "https://link12.ddns.net:4040/account"
-//    @State private var accountURL:String = "https://127.0.0.1:3002/account"
+//    @State private var accountURL:String = "https://link12.ddns.net:4040/account"
+    @State private var accountURL:String = "http://127.0.0.1:3002/account"
 
 //    @State private var registrationURL:String = "https://appshare.site:4040/registration"
-    @State private var registrationURL:String = "https://link12.ddns.net:4040/registration"
-//    @State private var registrationURL:String = "http://127.0.0.1:3002/registration"
+//    @State private var registrationURL:String = "https://link12.ddns.net:4040/registration"
+    @State private var registrationURL:String = "http://127.0.0.1:3002/registration"
 
 //    @State private var sessionURL:String = "https://appshare.site:4040/session"
-    @State private var sessionURL:String = "https://link12.ddns.net:4040/session"
-//    @State private var sessionURL:String = "http://127.0.0.1:3002/session"
+//    @State private var sessionURL:String = "https://link12.ddns.net:4040/session"
+    @State private var sessionURL:String = "http://127.0.0.1:3002/session"
 
 //    @State private var passwordURL:String = "https://appshare.site:4040/password"
-    @State private var passwordURL:String = "https://link12.ddns.net:4040/password"
-//    @State private var passwordURL:String = "http://127.0.0.1:3002/password"
+//    @State private var passwordURL:String = "https://link12.ddns.net:4040/password"
+    @State private var passwordURL:String = "http://127.0.0.1:3002/password"
 
     func newPutRequest(url: URL, data: Data, postLength: String) -> URLRequest {
         var request = URLRequest(url: url)
@@ -680,22 +697,21 @@ struct ContentView: View {
         return request
     }
 
-    @State var accountFormResponse:Message = Message(message: "")
-
     func submitAccountForm() {
         do {
-            let item = User(
+            let user = User(
                 id: self.signedInUser?.id,
                 uuid: UUID(),
                 firstName: firstNameAccountForm,
                 lastName: lastNameAccountForm,
                 emailAddress: emailAddressAccountForm,
-                password: passwordAccountForm,
+                password: "",
                 createdAt: self.signedInUser?.createdAt,
                 updatedAt: self.signedInUser?.updatedAt,
                 errors: nil
             )
-            let data = try JSONEncoder().encode(item)
+
+            let data = try JSONEncoder().encode(user)
             let url = URL(string: "\(accountURL)")!
             let delegateClass = NetworkDelegateClass()
             let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
@@ -704,12 +720,27 @@ struct ContentView: View {
             let request = newPutRequest(url: url, data: optimizedData, postLength: postLength)
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 do {
+                    let userResponseWithMessage = try JSONDecoder().decode(UserResponseWithMessage.self, from: data!)
 
-                    let user = try JSONDecoder().decode(User.self, from: data!)
+                    DispatchQueue.main.async {
 
-                    if (user != nil) {
-                        let errorsData = user.errors as! [String]
-                        iterateOverErrorsEditAccount(errors: errorsData)
+                        // validation errors
+                        if (userResponseWithMessage.user != nil) {
+                            let errorsData = userResponseWithMessage.user?.errors!
+                            if (errorsData == []) {
+                                self.signedInUser = userResponseWithMessage.user
+                                resetValuesEditAccount()
+                            } else {
+                                let errorsDataUnwrapped = errorsData!
+                                iterateOverErrorsEditAccount(errors: errorsDataUnwrapped)
+                            }
+                        }
+
+                        // validation message
+                        if (userResponseWithMessage.message != nil) {
+                            let message = Message(message: userResponseWithMessage.message)
+                            self.editAccountSuccessMessage = message
+                        }
                     }
                 } catch let error {
                     logger.error("[submitAccountForm] Request: \(error)")
@@ -724,22 +755,27 @@ struct ContentView: View {
     }
 
     func iterateOverErrorsEditAccount(errors: [String?]) {
-        editAccountValidationErrors = ""
+        self.editAccountValidationErrors = String()
         errors.forEach { error in
             editAccountValidationErrors += "\n▫️\(error!)"
         }
     }
 
     func iterateOverErrorsNewAccount(errors: [String?]) {
-        newAccountValidationErrors = ""
+        self.newAccountValidationErrors = String()
         errors.forEach { error in
             newAccountValidationErrors += "\n▫️\(error!)"
         }
     }
 
+    struct UserResponseWithMessage: Codable {
+        let user: User?
+        let message: String?
+    }
+
     func submitRegistrationForm() {
         do {
-            let item = User(
+            let user = User(
                 id: nil,
                 uuid: UUID(),
                 firstName: firstNameRegistrationForm,
@@ -751,7 +787,7 @@ struct ContentView: View {
                 errors: nil
             )
 
-            let data = try JSONEncoder().encode(item)
+            let data = try JSONEncoder().encode(user)
             let url = URL(string: "\(registrationURL)")!
             let delegateClass = NetworkDelegateClass()
             let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
@@ -760,12 +796,27 @@ struct ContentView: View {
             let request = newPostRequest(url: url, data: optimizedData, postLength: postLength)
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 do {
-                    let response = try JSONDecoder().decode(User.self, from: data!)
-                    self.signedInUser = response
-                    if (self.signedInUser != nil) {
-                        let errorsData = self.signedInUser?.errors as! [String]
-                        iterateOverErrorsNewAccount(errors: errorsData)
-                        self.identified = ((self.signedInUser?.createdAt) != nil)
+                    let userResponseWithMessage = try JSONDecoder().decode(UserResponseWithMessage.self, from: data!)
+                    DispatchQueue.main.async {
+
+                        // validation errors
+                        if (userResponseWithMessage.user != nil) {
+                            let errorsData = userResponseWithMessage.user?.errors!
+                            if (errorsData == []) {
+                                self.signedInUser = userResponseWithMessage.user
+                                self.identified = ((self.signedInUser?.createdAt) != nil)
+                                resetValuesNewAccount()
+                            } else {
+                                let errorsDataUnwrapped = errorsData!
+                                iterateOverErrorsNewAccount(errors: errorsDataUnwrapped)
+                            }
+                        }
+                        
+                        // validation message
+                        if (userResponseWithMessage.message != nil) {
+                            let message = Message(message: userResponseWithMessage.message)
+                            self.newAccountSuccessMessage = message
+                        }
                     }
 
                     DispatchQueue.main.async {
@@ -808,13 +859,16 @@ struct ContentView: View {
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 do {
                     let response = try JSONDecoder().decode(User.self, from: data!)
-                    self.signedInUser = response
-                    self.identified = ((self.signedInUser?.createdAt) != nil)
+                    DispatchQueue.main.async {
+                        self.signedInUser = response
+                        self.identified = ((self.signedInUser?.createdAt) != nil)
+                        resetValuesNewPassword()
+                    }
+                    DispatchQueue.main.async {
+                        getAllUploads()
+                    }
                 } catch let error {
                     logger.error("[submitSessionForm] Request: \(error)")
-                }
-                DispatchQueue.main.async {
-                    getAllUploads()
                 }
             }
 
@@ -838,8 +892,6 @@ struct ContentView: View {
         return request
     }
 
-    @State var destroySessionFormResponse:Message = Message(message: "")
-
     func submitDestroySessionForm() {
         do {
             let data = try JSONEncoder().encode("{}")
@@ -852,9 +904,13 @@ struct ContentView: View {
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 do {
                     let message = try JSONDecoder().decode(Message.self, from: data!)
-                    self.destroySessionFormResponse = message
-                    self.signedInUser = nil
-                    self.identified = false
+
+                    DispatchQueue.main.async {
+                        self.destroySessionFormResponse = message
+                        self.signedInUser = nil
+                        self.identified = false
+                    }
+
                 } catch let error {
                     logger.error("[submitDestroySessionForm] Request: \(error)")
                 }
@@ -867,11 +923,9 @@ struct ContentView: View {
         }
     }
 
-    @State var passwordFormResponse:Message = Message(message: "")
-
     func submitPasswordForm() {
         do {
-            let item = User(
+            let user = User(
                 id: nil,
                 uuid: UUID(),
                 firstName: nil,
@@ -883,17 +937,34 @@ struct ContentView: View {
                 errors: nil
             )
 
-            let data = try JSONEncoder().encode(item)
+            let data = try JSONEncoder().encode(user)
             let url = URL(string: "\(passwordURL)")!
             let delegateClass = NetworkDelegateClass()
             let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
             let optimizedData: Data = try! data.gzipped(level: .bestCompression)
             let postLength = String(format: "%lu", UInt(optimizedData.count))
-            let request = newPostRequest(url: url, data: optimizedData, postLength: postLength)
+            let request = newPutRequest(url: url, data: optimizedData, postLength: postLength)
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 do {
-                    let message = try JSONDecoder().decode(Message.self, from: data!)
-                    self.passwordFormResponse = message
+                    let userResponseWithMessage = try JSONDecoder().decode(UserResponseWithMessage.self, from: data!)
+
+                    DispatchQueue.main.async {
+
+                        // validation errors
+                        if (userResponseWithMessage.user != nil) {
+                            let errorsData = userResponseWithMessage.user?.errors!
+                            if (errorsData == []) {
+                                resetValuesNewPassword()
+                            }
+                        }
+
+                        // validation message
+                        if (userResponseWithMessage.message != nil) {
+                            let message = Message(message: userResponseWithMessage.message)
+                            self.newPasswordSuccessMessage = message
+                        }
+                    }
+
                 } catch let error {
                     logger.error("[submitPasswordForm] Request: \(error)")
                 }
@@ -902,7 +973,7 @@ struct ContentView: View {
             task.resume()
 
         } catch let error {
-            logger.error("[submitRegistrationForm] Error: \(error)")
+            logger.error("[submitPasswordForm] Error: \(error)")
         }
     }
 
@@ -915,12 +986,72 @@ struct ContentView: View {
     }
 
     func clickSigninLink() {
-        self.newAccount = false
-        self.newPassword = false
+        resetValuesNewAccount()
     }
 
-    func clickAccountLink() {
+    func resetValuesNewPassword() {
+        self.newAccount = false
+        self.newPassword = false
         self.editAccount = false
+
+        // reset errors
+        self.newPasswordValidationErrors = String()
+        
+        // reset message
+        self.newPasswordSuccessMessage = Message(message: String())
+
+        // reset values
+        self.emailAddressPasswordForm = String()
+    }
+
+    func resetValuesNewAccount() {
+        self.newAccount = false
+        self.newPassword = false
+        self.editAccount = false
+
+        // reset errors
+        self.newAccountValidationErrors = String()
+        
+        // reset message
+        self.newAccountSuccessMessage = Message(message: String())
+
+        // reset values
+        self.firstNameRegistrationForm = String()
+        self.lastNameRegistrationForm = String()
+        self.emailAddressRegistrationForm = String()
+        self.passwordRegistrationForm = String()
+    }
+
+    func resetValuesEditAccount() {
+        self.newAccount = false
+        self.newPassword = false
+        self.editAccount = false
+
+        // reset errors
+        self.editAccountValidationErrors = String()
+
+        // reset message
+        self.editAccountSuccessMessage = Message(message: String())
+
+        // reset values
+        self.firstNameAccountForm = String()
+        self.lastNameAccountForm = String()
+        self.emailAddressAccountForm = String()
+        self.passwordAccountForm = String()
+    }
+
+    func clickEditAccount() {
+        self.editAccount = true
+
+        let emailAddress = self.signedInUser?.emailAddress
+        if (emailAddress != nil) {
+            let emailAddressUnwrapped = emailAddress!
+            self.emailAddressAccountForm = emailAddressUnwrapped
+        }
+    }
+
+    func clickEditPassword() {
+//        self.editPassword = true
     }
 
     /* Navigation */
@@ -1117,8 +1248,8 @@ struct ContentView: View {
         var id: Array<Int>
     }
 
-    @State private var publishURL:String = "https://link12.ddns.net:4040/publish"
-    //    @State private var publishURL:String = "http://127.0.0.1:3002/publish"
+//    @State private var publishURL:String = "https://link12.ddns.net:4040/publish"
+    @State private var publishURL:String = "http://127.0.0.1:3002/publish"
 
     func publishSelectedFolders() {
         do {
@@ -1143,8 +1274,8 @@ struct ContentView: View {
         }
     }
 
-    @State private var unpublishURL:String = "https://link12.ddns.net:4040/unpublish"
-    //    @State private var unpublishURL:String = "http://127.0.0.1:3002/unpublish"
+//    @State private var unpublishURL:String = "https://link12.ddns.net:4040/unpublish"
+    @State private var unpublishURL:String = "http://127.0.0.1:3002/unpublish"
 
     func unpublishSelectedFolders() {
         do {
@@ -1169,10 +1300,6 @@ struct ContentView: View {
         }
     }
 
-    func clickEditAccount() {
-        self.editAccount = true
-    }
-
     var body: some View {
         NavigationSplitView(columnVisibility: $visibility) {
             List(SideBarItem.allCases, selection: $selectedSideBarItem) { item in
@@ -1192,6 +1319,9 @@ struct ContentView: View {
                             VStack {
 
                                 Spacer()
+
+                                Text("Edit Account")
+                                    .font(.system(size: 15))
 
                                 Text("\(editAccountValidationErrors)\n")
                                     .font(.system(size: 11))
@@ -1222,6 +1352,7 @@ struct ContentView: View {
                                         Text("Email Address")
                                     }
                                     .disableAutocorrection(true)
+                                    .disabled(true)
                                 }
 
                                 Button(action: submitAccountForm) {
@@ -1233,7 +1364,7 @@ struct ContentView: View {
                                 Divider()
 
                                 /* Account */
-                                Button(action: clickAccountLink) {
+                                Button(action: resetValuesEditAccount) {
                                     Image(systemName: "person.text.rectangle")
                                         .font(.system(size: 20))
                                     Text("Back to your account panel")
@@ -1247,22 +1378,37 @@ struct ContentView: View {
 
                         // account panel
 
+                        Text("Your Account")
+                            .font(.system(size: 15))
+
+                        if let message = editAccountSuccessMessage.message {
+                            Text("\(message)")
+                        }
+
                         Image(systemName: "person.circle")
                             .font(.system(size: 20))
                             .symbolEffect(.bounce, options: .repeat(1))
                             .padding(10)
 
+                        /* User Email */
                         let emailAddress = self.signedInUser?.emailAddress
                         if (emailAddress != nil) {
                             let emailAddressUnWrapped:String = emailAddress!
                             Text(emailAddressUnWrapped)
+                                .padding(10)
                         }
 
+                        /* Edit Account */
                         Button(action: clickEditAccount) {
                             Text("Edit account")
                                 .foregroundStyle(.blue.gradient)
-                        }.buttonStyle(PlainButtonStyle()).padding(10)
+                        }.buttonStyle(PlainButtonStyle())
 
+                        /* Reset Password */
+                        Button(action: clickEditPassword) {
+                            Text("Reset password")
+                                .foregroundStyle(.blue.gradient)
+                        }.buttonStyle(PlainButtonStyle())
                     }
 
                 } else if self.newPassword {
@@ -1272,11 +1418,16 @@ struct ContentView: View {
 
                             Spacer()
 
-                            if let message = self.passwordFormResponse.message {
-                                Text("\(message)\n")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(.gray)
+                            Text("Reset Password")
+                                .font(.system(size: 15))
+
+                            if let message = newPasswordSuccessMessage.message {
+                                Text("\(message)")
                             }
+
+                            Text("\(newPasswordValidationErrors)\n")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.gray)
 
                             TextField(text: $emailAddressPasswordForm, prompt: Text("johnatan@apple.com")) {
                                 Text("Email")
@@ -1307,6 +1458,13 @@ struct ContentView: View {
                         VStack {
 
                             Spacer()
+
+                            Text("Register Account")
+                                .font(.system(size: 15))
+
+                            if let message = newAccountSuccessMessage.message {
+                                Text("\(message)")
+                            }
 
                             Text("\(newAccountValidationErrors)\n")
                                 .font(.system(size: 11))
@@ -1358,10 +1516,15 @@ struct ContentView: View {
 
                             Spacer()
 
-                            if let message = self.destroySessionFormResponse.message {
-                                Text("\(message)\n")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(.gray)
+                            Text("New Session")
+                                .font(.system(size: 15))
+
+                            if let message = newPasswordSuccessMessage.message {
+                                Text("\(message)")
+                            }
+
+                            if let message = destroySessionFormResponse.message {
+                                Text("\(message)")
                             }
 
                             TextField(text: $emailAddressSessionForm, prompt: Text("johnatan@apple.com")) {
@@ -1803,7 +1966,6 @@ struct ContentView: View {
                 }
             case .account:
                 if self.identified && !self.editAccount {
-
                     Button(action: submitDestroySessionForm) {
                         Image(systemName: "xmark")
                             .font(.system(size: 9))
@@ -1811,8 +1973,9 @@ struct ContentView: View {
                         Text("Sign-Out")
                             .font(.system(size: 9))
                             .foregroundStyle(Color.primary)
-                    }.buttonStyle(.bordered)
-
+                    }
+                    .buttonStyle(.bordered)
+                    .padding(10)
                 }
             }
         } detail: {
@@ -1833,10 +1996,9 @@ struct ContentView: View {
                                  self.selectedTextFiles.count == 0)) {
 
                                 ForEach(self.loadedFolders) { folder in
-                                    if (self.selectedFolders.contains(folder.id)) {
+                                    if (self.selectedFolders.contains(folder.id) && String(folder.name) != "") {
                                         Label {
-                                            let name = folder.name ?? "--"
-                                            Text("\(name)")
+                                            Text("\(folder.name)")
                                                 .font(.system(size: 11))
                                                 .foregroundStyle(.gray)
                                         } icon: {
@@ -1845,7 +2007,6 @@ struct ContentView: View {
                                                .frame(width: 8, height: 8)
                                         }
                                     }
-
                                 }
 
                                 Button(action: publishSelectedFolders) {

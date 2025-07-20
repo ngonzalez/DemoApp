@@ -11,7 +11,7 @@
     The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
     THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-    OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+    OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLteDERS BE
     LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
     IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
@@ -547,6 +547,7 @@ struct ContentView: View {
         let task = delegateSession.dataTask(with: request) { data, response, error in
             do {
                 let response = try JSONDecoder().decode([UploadWithFiles].self, from: data!)
+
                 DispatchQueue.main.async {
                     setUploads(results: response)
                 }
@@ -579,6 +580,7 @@ struct ContentView: View {
         let task = delegateSession.dataTask(with: request) { data, response, error in
             do {
                 let response = try JSONDecoder().decode([UploadWithFiles].self, from: data!)
+
                 DispatchQueue.main.async {
                     setUploads(results: response)
                 }
@@ -630,6 +632,10 @@ struct ContentView: View {
     @State private var passwordRegistrationForm: String = String()
 
     /* New Session */
+    @State var newSessionSuccessMessage:Message = Message(message: String())
+
+    @State var newSessionValidationErrors:String = String()
+
     @State private var emailAddressSessionForm: String = String()
 
     @State private var passwordSessionForm: String = String()
@@ -663,8 +669,6 @@ struct ContentView: View {
     @State private var lastNameAccountForm: String = String()
 
     @State private var emailAddressAccountForm: String = String()
-
-    @State private var passwordAccountForm: String = String()
 
 //    @State private var accountURL:String = "https://appshare.site:4040/account"
 //    @State private var accountURL:String = "https://link12.ddns.net:4040/account"
@@ -772,6 +776,13 @@ struct ContentView: View {
         }
     }
 
+    func iterateOverErrorsNewSession(errors: [String?]) {
+        self.newSessionValidationErrors = String()
+        errors.forEach { error in
+            newSessionValidationErrors += "\n▫️\(error!)"
+        }
+    }
+
     func iterateOverErrorsEditAccount(errors: [String?]) {
         self.editAccountValidationErrors = String()
         errors.forEach { error in
@@ -783,6 +794,20 @@ struct ContentView: View {
         self.newAccountValidationErrors = String()
         errors.forEach { error in
             newAccountValidationErrors += "\n▫️\(error!)"
+        }
+    }
+
+    func iterateOverErrorsNewPassword(errors: [String?]) {
+        self.newPasswordValidationErrors = String()
+        errors.forEach { error in
+            newPasswordValidationErrors += "\n▫️\(error!)"
+        }
+    }
+
+    func iterateOverErrorsEditPassword(errors: [String?]) {
+        self.editPasswordValidationErrors = String()
+        errors.forEach { error in
+            editPasswordValidationErrors += "\n▫️\(error!)"
         }
     }
 
@@ -859,7 +884,7 @@ struct ContentView: View {
 
     func submitSessionForm() {
         do {
-            let item = User(
+            let user = User(
                 id: nil,
                 uuid: UUID(),
                 firstName: nil,
@@ -871,7 +896,7 @@ struct ContentView: View {
                 errors: nil
             )
 
-            let data = try JSONEncoder().encode(item)
+            let data = try JSONEncoder().encode(user)
             let url = URL(string: "\(sessionURL)")!
             let delegateClass = NetworkDelegateClass()
             let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
@@ -880,15 +905,30 @@ struct ContentView: View {
             let request = newPostRequest(url: url, data: optimizedData, postLength: postLength)
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 do {
-                    let response = try JSONDecoder().decode(User.self, from: data!)
+                    let userResponseWithMessage = try JSONDecoder().decode(UserResponseWithMessage.self, from: data!)
+
                     DispatchQueue.main.async {
-                        self.signedInUser = response
-                        self.identified = ((self.signedInUser?.createdAt) != nil)
-                        resetValuesNewPassword()
+
+                        let httpResponse = response as? HTTPURLResponse
+                        let httpResponseUnwrapped = httpResponse!
+
+                        // validation errors
+                        if (userResponseWithMessage.user != nil) {
+                            if (httpResponseUnwrapped.statusCode == 200) {
+                                resetValuesNewSession()
+                                self.signedInUser = userResponseWithMessage.user
+                                self.identified = (self.signedInUser?.createdAt != nil)
+                                getAllUploads()
+                            }
+                        }
+
+                        // validation message
+                        if (userResponseWithMessage.message != nil) {
+                            let message = Message(message: userResponseWithMessage.message)
+                            self.newSessionSuccessMessage = message
+                        }
                     }
-                    DispatchQueue.main.async {
-                        getAllUploads()
-                    }
+
                 } catch let error {
                     logger.error("[submitSessionForm] Request: \(error)")
                 }
@@ -902,34 +942,31 @@ struct ContentView: View {
     }
 
     func submitDestroySessionForm() {
-        do {
-            let data = try JSONEncoder().encode("{}")
-            let url = URL(string: "\(sessionURL)")!
-            let delegateClass = NetworkDelegateClass()
-            let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
-            let optimizedData: Data = try! data.gzipped(level: .bestCompression)
-            let postLength = String(format: "%lu", UInt(optimizedData.count))
-            let request = newDeleteRequest(url: url)
-            let task = delegateSession.dataTask(with: request) { data, response, error in
-                do {
-                    let message = try JSONDecoder().decode(Message.self, from: data!)
+        let url = URL(string: "\(sessionURL)")!
+        let delegateClass = NetworkDelegateClass()
+        let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
+        let request = newDeleteRequest(url: url)
+        let task = delegateSession.dataTask(with: request) { data, response, error in
+            do {
+                let message = try JSONDecoder().decode(Message.self, from: data!)
 
-                    DispatchQueue.main.async {
+                DispatchQueue.main.async {
+                    let httpResponse = response as? HTTPURLResponse
+                    let httpResponseUnwrapped = httpResponse!
+
+                    if (httpResponseUnwrapped.statusCode == 200) {
                         self.destroySessionFormResponse = message
                         self.signedInUser = nil
                         self.identified = false
                     }
-
-                } catch let error {
-                    logger.error("[submitDestroySessionForm] Request: \(error)")
                 }
+
+            } catch let error {
+                logger.error("[submitDestroySessionForm] Request: \(error)")
             }
-
-            task.resume()
-
-        } catch let error {
-            logger.error("[submitDestroySessionForm] Error: \(error)")
         }
+
+        task.resume()
     }
 
     func submitNewPasswordForm() {
@@ -959,12 +996,18 @@ struct ContentView: View {
 
                     DispatchQueue.main.async {
 
+                        let httpResponse = response as? HTTPURLResponse
+                        let httpResponseUnwrapped = httpResponse!
+                        let errorsData = userResponseWithMessage.user?.errors!
+                        let errorsDataUnwrapped = errorsData!
+
                         // validation errors
                         if (userResponseWithMessage.user != nil) {
-                            let errorsData = userResponseWithMessage.user?.errors!
-                            if (errorsData == []) {
+                            if (errorsData == [] && httpResponseUnwrapped.statusCode == 200) {
                                 resetValuesNewPassword()
                             }
+                        } else {
+                            iterateOverErrorsNewPassword(errors: errorsDataUnwrapped)
                         }
 
                         // validation message
@@ -1018,12 +1061,18 @@ struct ContentView: View {
 
                     DispatchQueue.main.async {
 
+                        let httpResponse = response as? HTTPURLResponse
+                        let httpResponseUnwrapped = httpResponse!
+                        let errorsData = userResponseWithMessage.user?.errors!
+                        let errorsDataUnwrapped = errorsData!
+
                         // validation errors
                         if (userResponseWithMessage.user != nil) {
-                            let errorsData = userResponseWithMessage.user?.errors!
-                            if (errorsData == []) {
+                            if (errorsData == [] && httpResponseUnwrapped.statusCode == 200) {
                                 resetValuesEditPassword()
                             }
+                        } else {
+                            iterateOverErrorsEditPassword(errors: errorsDataUnwrapped)
                         }
 
                         // validation message
@@ -1058,6 +1107,7 @@ struct ContentView: View {
         resetValuesEditAccount()
         resetValuesNewPassword()
         resetValuesEditPassword()
+        resetValuesNewSession()
     }
 
     func clickEditAccount() {
@@ -1080,6 +1130,21 @@ struct ContentView: View {
             self.newPasswordConfirmationEditPasswordForm = passwordUnwrapped
         }
     }
+    func resetValuesNewSession() {
+        self.newAccount = false
+        self.newPassword = false
+        self.editPassword = false
+        self.editAccount = false
+
+        // reset errors
+        self.newSessionValidationErrors = String()
+
+        // reset message
+        self.newPasswordSuccessMessage = Message(message: String())
+
+        // reset values
+        self.emailAddressPasswordForm = String()
+    }
 
     func resetValuesNewPassword() {
         self.newAccount = false
@@ -1089,7 +1154,7 @@ struct ContentView: View {
 
         // reset errors
         self.newPasswordValidationErrors = String()
-        
+
         // reset message
         self.newPasswordSuccessMessage = Message(message: String())
 
@@ -1105,14 +1170,13 @@ struct ContentView: View {
 
         // reset errors
         self.editPasswordValidationErrors = String()
-        
+
         // reset message
         self.editPasswordSuccessMessage = Message(message: String())
 
         // reset values
         self.newPasswordEditPasswordForm = String()
         self.newPasswordConfirmationEditPasswordForm = String()
-
     }
     
     func resetValuesNewAccount() {
@@ -1123,7 +1187,7 @@ struct ContentView: View {
 
         // reset errors
         self.newAccountValidationErrors = String()
-        
+
         // reset message
         self.newAccountSuccessMessage = Message(message: String())
 
@@ -1150,7 +1214,6 @@ struct ContentView: View {
         self.firstNameAccountForm = String()
         self.lastNameAccountForm = String()
         self.emailAddressAccountForm = String()
-        self.passwordAccountForm = String()
     }
 
     /* Navigation */
@@ -1214,56 +1277,51 @@ struct ContentView: View {
 //    @State private var serviceURL:String = "http://127.0.0.1:3001"
 
     func getVideoStream(videoFile: VideoFile) {
-        do {
-            let delegateClass = NetworkDelegateClass()
-            let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
-            let url = URL(string: "\(serviceURL)/video_files/\(videoFile.id).json")!
-            let request = newGetRequest(url: url)
-            let task = delegateSession.dataTask(with: request) { data, response, error in
-                do {
-                    let response = try JSONDecoder().decode(Stream.self, from: data!)
+        let delegateClass = NetworkDelegateClass()
+        let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
+        let url = URL(string: "\(serviceURL)/video_files/\(videoFile.id).json")!
+        let request = newGetRequest(url: url)
+        let task = delegateSession.dataTask(with: request) { data, response, error in
+            do {
+                let response = try JSONDecoder().decode(Stream.self, from: data!)
+
+                DispatchQueue.main.async {
                     if response.m3u8Exists == true {
                         if !self.videoStreams.map({ $0.id }).contains(videoFile.id) {
                             self.videoStreams.append(response)
                         }
                     }
-                } catch let error {
-                    logger.error("[getVideoStream] Request: \(error)")
                 }
+            } catch let error {
+                logger.error("[getVideoStream] Request: \(error)")
             }
-
-            task.resume()
-        } catch let error {
-            logger.error("[getVideoStream] Error: \(error)")
         }
+
+        task.resume()
     }
 
     func getAudioStream(audioFile: AudioFile) {
-        do {
-            let delegateClass = NetworkDelegateClass()
-            let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
-            let url = URL(string: "\(serviceURL)/audio_files/\(audioFile.id).json")!
-            let request = newGetRequest(url: url)
-            let task = delegateSession.dataTask(with: request) { data, response, error in
-                do {
-                    if (data != nil) {
-                        let response = try JSONDecoder().decode(Stream.self, from: data!)
-                        if response.m3u8Exists == true {
-                            if !self.audioStreams.map { $0.id }.contains(audioFile.id) {
-                                self.audioStreams.append(response)
-                            }
+        let delegateClass = NetworkDelegateClass()
+        let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
+        let url = URL(string: "\(serviceURL)/audio_files/\(audioFile.id).json")!
+        let request = newGetRequest(url: url)
+        let task = delegateSession.dataTask(with: request) { data, response, error in
+            do {
+                let response = try JSONDecoder().decode(Stream.self, from: data!)
+
+                DispatchQueue.main.async {
+                    if response.m3u8Exists == true {
+                        if !self.audioStreams.map({ $0.id }).contains(audioFile.id) {
+                            self.audioStreams.append(response)
                         }
                     }
-                } catch let error {
-                    logger.error("[getAudioStream] Request: \(error)")
                 }
+            } catch let error {
+                logger.error("[getAudioStream] Request: \(error)")
             }
-
-            task.resume()
-
-        } catch let error {
-            logger.error("[getAudioStream] Error: \(error)")
         }
+
+        task.resume()
     }
 
     /* Media Player*/
@@ -1422,6 +1480,12 @@ struct ContentView: View {
                                 Text("Change Password")
                                     .font(.system(size: 15))
 
+                                if let message = editPasswordSuccessMessage.message {
+                                    Text("\(message)")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(Color.secondary)
+                                }
+
                                 Text("\(editPasswordValidationErrors)\n")
                                     .font(.system(size: 11))
                                     .foregroundStyle(.gray)
@@ -1444,11 +1508,11 @@ struct ContentView: View {
 
                                 Divider()
 
-                                /* Signin */
-                                Button(action: clickSigninLink) {
+                                /* Account */
+                                Button(action: resetValuesEditAccount) {
                                     Image(systemName: "person.text.rectangle")
                                         .font(.system(size: 20))
-                                    Text("Back to Sign-In")
+                                    Text("Back to your account panel")
                                         .foregroundStyle(.blue.gradient)
                                 }.buttonStyle(PlainButtonStyle())
                             }
@@ -1464,6 +1528,12 @@ struct ContentView: View {
 
                                 Text("Edit Account")
                                     .font(.system(size: 15))
+
+                                if let message = editAccountSuccessMessage.message {
+                                    Text("\(message)")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(Color.secondary)
+                                }
 
                                 Text("\(editAccountValidationErrors)\n")
                                     .font(.system(size: 11))
@@ -1522,14 +1592,6 @@ struct ContentView: View {
 
                         Text("Your Account")
                             .font(.system(size: 15))
-
-                        if let message = editAccountSuccessMessage.message {
-                            Text("\(message)")
-                        }
-
-                        if let message = editPasswordSuccessMessage.message {
-                            Text("\(message)")
-                        }
 
                         Image(systemName: "person.circle")
                             .font(.system(size: 20))
@@ -1666,7 +1728,7 @@ struct ContentView: View {
                             Text("New Session")
                                 .font(.system(size: 15))
 
-                            if let message = newPasswordSuccessMessage.message {
+                            if let message = newSessionSuccessMessage.message {
                                 Text("\(message)")
                             }
 

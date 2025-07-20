@@ -164,18 +164,6 @@ struct ContentView: View {
         var updatedAt: String
     }
 
-    func newPostRequest(url: URL, data: Data, postLength: String) -> URLRequest {
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.httpBody = data
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.addValue(postLength, forHTTPHeaderField: "Content-Length")
-        request.addValue("gzip, deflate", forHTTPHeaderField: "Content-Encoding")
-
-        return request
-    }
-
     func uploadItem(source: String, path: String, mimeType: String, uploadData: Data, createdAt: Date, updatedAt: Date) {
 
         do {
@@ -656,6 +644,15 @@ struct ContentView: View {
 
     @State var newPasswordValidationErrors:String = String()
 
+    /* Edit Password */
+    @State private var newPasswordEditPasswordForm: String = String()
+
+    @State private var newPasswordConfirmationEditPasswordForm: String = String()
+
+    @State var editPasswordSuccessMessage:Message = Message(message: String())
+
+    @State var editPasswordValidationErrors:String = String()
+
     /* Edit Account */
     @State var editAccountSuccessMessage:Message = Message(message: String())
 
@@ -693,6 +690,27 @@ struct ContentView: View {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.addValue(postLength, forHTTPHeaderField: "Content-Length")
         request.addValue("gzip, deflate", forHTTPHeaderField: "Content-Encoding")
+
+        return request
+    }
+
+    func newPostRequest(url: URL, data: Data, postLength: String) -> URLRequest {
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.httpBody = data
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.addValue(postLength, forHTTPHeaderField: "Content-Length")
+        request.addValue("gzip, deflate", forHTTPHeaderField: "Content-Encoding")
+
+        return request
+    }
+
+    func newDeleteRequest(url: URL) -> URLRequest {
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
         return request
     }
@@ -770,6 +788,10 @@ struct ContentView: View {
 
     struct UserResponseWithMessage: Codable {
         let user: User?
+        let message: String?
+    }
+
+    struct Message: Codable {
         let message: String?
     }
 
@@ -879,19 +901,6 @@ struct ContentView: View {
         }
     }
 
-    struct Message: Codable {
-        let message: String?
-    }
-
-    func newDeleteRequest(url: URL) -> URLRequest {
-        var request = URLRequest(url: url)
-        request.httpMethod = "DELETE"
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        return request
-    }
-
     func submitDestroySessionForm() {
         do {
             let data = try JSONEncoder().encode("{}")
@@ -923,7 +932,7 @@ struct ContentView: View {
         }
     }
 
-    func submitPasswordForm() {
+    func submitNewPasswordForm() {
         do {
             let user = User(
                 id: nil,
@@ -943,7 +952,7 @@ struct ContentView: View {
             let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
             let optimizedData: Data = try! data.gzipped(level: .bestCompression)
             let postLength = String(format: "%lu", UInt(optimizedData.count))
-            let request = newPutRequest(url: url, data: optimizedData, postLength: postLength)
+            let request = newPostRequest(url: url, data: optimizedData, postLength: postLength)
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 do {
                     let userResponseWithMessage = try JSONDecoder().decode(UserResponseWithMessage.self, from: data!)
@@ -966,14 +975,73 @@ struct ContentView: View {
                     }
 
                 } catch let error {
-                    logger.error("[submitPasswordForm] Request: \(error)")
+                    logger.error("[submitNewPasswordForm] Request: \(error)")
                 }
             }
 
             task.resume()
 
         } catch let error {
-            logger.error("[submitPasswordForm] Error: \(error)")
+            logger.error("[submitNewPasswordForm] Error: \(error)")
+        }
+    }
+
+    func submitEditPasswordForm() {
+        do {
+            var str:String = String("")
+            if (newPasswordEditPasswordForm == newPasswordConfirmationEditPasswordForm) {
+                str = newPasswordEditPasswordForm
+            }
+
+            let user = User(
+                id: self.signedInUser?.id,
+                uuid: UUID(),
+                firstName: nil,
+                lastName: nil,
+                emailAddress: nil,
+                password: str,
+                createdAt: nil,
+                updatedAt: nil,
+                errors: nil
+            )
+
+            let data = try JSONEncoder().encode(user)
+            let url = URL(string: "\(passwordURL)")!
+            let delegateClass = NetworkDelegateClass()
+            let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
+            let optimizedData: Data = try! data.gzipped(level: .bestCompression)
+            let postLength = String(format: "%lu", UInt(optimizedData.count))
+            let request = newPutRequest(url: url, data: optimizedData, postLength: postLength)
+            let task = delegateSession.dataTask(with: request) { data, response, error in
+                do {
+                    let userResponseWithMessage = try JSONDecoder().decode(UserResponseWithMessage.self, from: data!)
+
+                    DispatchQueue.main.async {
+
+                        // validation errors
+                        if (userResponseWithMessage.user != nil) {
+                            let errorsData = userResponseWithMessage.user?.errors!
+                            if (errorsData == []) {
+                                resetValuesEditPassword()
+                            }
+                        }
+
+                        // validation message
+                        if (userResponseWithMessage.message != nil) {
+                            let message = Message(message: userResponseWithMessage.message)
+                            self.editPasswordSuccessMessage = message
+                        }
+                    }
+
+                } catch let error {
+                    logger.error("[submitEditPasswordForm] Request: \(error)")
+                }
+            }
+
+            task.resume()
+
+        } catch let error {
+            logger.error("[submitEditPasswordForm] Error: \(error)")
         }
     }
 
@@ -987,11 +1055,36 @@ struct ContentView: View {
 
     func clickSigninLink() {
         resetValuesNewAccount()
+        resetValuesEditAccount()
+        resetValuesNewPassword()
+        resetValuesEditPassword()
+    }
+
+    func clickEditAccount() {
+        self.editAccount = true
+
+        let emailAddress = self.signedInUser?.emailAddress
+        if (emailAddress != nil) {
+            let emailAddressUnwrapped = emailAddress!
+            self.emailAddressAccountForm = emailAddressUnwrapped
+        }
+    }
+
+    func clickEditPassword() {
+        self.editPassword = true
+
+        let password = self.signedInUser?.password
+        if (password != nil) {
+            let passwordUnwrapped = password!
+            self.newPasswordEditPasswordForm = passwordUnwrapped
+            self.newPasswordConfirmationEditPasswordForm = passwordUnwrapped
+        }
     }
 
     func resetValuesNewPassword() {
         self.newAccount = false
         self.newPassword = false
+        self.editPassword = false
         self.editAccount = false
 
         // reset errors
@@ -1004,9 +1097,28 @@ struct ContentView: View {
         self.emailAddressPasswordForm = String()
     }
 
+    func resetValuesEditPassword() {
+        self.newAccount = false
+        self.newPassword = false
+        self.editPassword = false
+        self.editAccount = false
+
+        // reset errors
+        self.editPasswordValidationErrors = String()
+        
+        // reset message
+        self.editPasswordSuccessMessage = Message(message: String())
+
+        // reset values
+        self.newPasswordEditPasswordForm = String()
+        self.newPasswordConfirmationEditPasswordForm = String()
+
+    }
+    
     func resetValuesNewAccount() {
         self.newAccount = false
         self.newPassword = false
+        self.editPassword = false
         self.editAccount = false
 
         // reset errors
@@ -1025,6 +1137,7 @@ struct ContentView: View {
     func resetValuesEditAccount() {
         self.newAccount = false
         self.newPassword = false
+        self.editPassword = false
         self.editAccount = false
 
         // reset errors
@@ -1038,20 +1151,6 @@ struct ContentView: View {
         self.lastNameAccountForm = String()
         self.emailAddressAccountForm = String()
         self.passwordAccountForm = String()
-    }
-
-    func clickEditAccount() {
-        self.editAccount = true
-
-        let emailAddress = self.signedInUser?.emailAddress
-        if (emailAddress != nil) {
-            let emailAddressUnwrapped = emailAddress!
-            self.emailAddressAccountForm = emailAddressUnwrapped
-        }
-    }
-
-    func clickEditPassword() {
-//        self.editPassword = true
     }
 
     /* Navigation */
@@ -1313,7 +1412,50 @@ struct ContentView: View {
             case .account:
                 if self.identified {
 
-                    if self.editAccount {
+                    if self.editPassword {
+
+                        Form {
+                            VStack {
+
+                                Spacer()
+
+                                Text("Change Password")
+                                    .font(.system(size: 15))
+
+                                Text("\(editPasswordValidationErrors)\n")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.gray)
+
+                                TextField(text: $newPasswordEditPasswordForm, prompt: Text("Strong password")) {
+                                    Text("Passowrd")
+                                }
+                                .disableAutocorrection(true)
+
+                                TextField(text: $newPasswordConfirmationEditPasswordForm, prompt: Text("Strong password")) {
+                                    Text("Password confirmation")
+                                }
+                                .disableAutocorrection(true)
+
+                                Button(action: submitEditPasswordForm) {
+                                    Text("Submit")
+                                }.buttonStyle(PlainButtonStyle())
+
+                                Spacer()
+
+                                Divider()
+
+                                /* Signin */
+                                Button(action: clickSigninLink) {
+                                    Image(systemName: "person.text.rectangle")
+                                        .font(.system(size: 20))
+                                    Text("Back to Sign-In")
+                                        .foregroundStyle(.blue.gradient)
+                                }.buttonStyle(PlainButtonStyle())
+                            }
+                            .textFieldStyle(.roundedBorder)
+                        }.padding(20)
+
+                    } else if self.editAccount {
 
                         Form {
                             VStack {
@@ -1374,7 +1516,7 @@ struct ContentView: View {
                             .textFieldStyle(.roundedBorder)
                         }.padding(20)
 
-                    } else if !self.editAccount {
+                    } else if !self.editAccount && !self.editPassword {
 
                         // account panel
 
@@ -1382,6 +1524,10 @@ struct ContentView: View {
                             .font(.system(size: 15))
 
                         if let message = editAccountSuccessMessage.message {
+                            Text("\(message)")
+                        }
+
+                        if let message = editPasswordSuccessMessage.message {
                             Text("\(message)")
                         }
 
@@ -1406,7 +1552,7 @@ struct ContentView: View {
 
                         /* Reset Password */
                         Button(action: clickEditPassword) {
-                            Text("Reset password")
+                            Text("Change password")
                                 .foregroundStyle(.blue.gradient)
                         }.buttonStyle(PlainButtonStyle())
                     }
@@ -1434,11 +1580,12 @@ struct ContentView: View {
                             }
                             .disableAutocorrection(true)
 
-                            Button(action: submitPasswordForm) {
+                            Button(action: submitNewPasswordForm) {
                                 Text("Submit")
                             }.buttonStyle(PlainButtonStyle())
 
                             Spacer()
+
                             Divider()
 
                             /* Signin */
@@ -1572,11 +1719,12 @@ struct ContentView: View {
 
             case .upload:
                 if !self.identified {
-                    Text("You need to be identified. Please login.")
+                    Text("You need to be identified. Please sign-in.")
                 } else {
                     HStack {
+
+                        /* Browse Button */
                         VStack {
-                            /* Browse Button */
                             Button(action: syncFolders) {
                                 let folderNames = folders.map { String($0.path().split(separator: "/").last!) }
                                 Image(systemName: "arrow.down.square")
@@ -1584,15 +1732,17 @@ struct ContentView: View {
                                 ProgressView(value: progress)
                             }
                         }
+
+                        /* Clear Button */
                         VStack {
-                            /* Clear Button */
                             Button(action: clearFolders) {
                                 Text("Clear")
                                     .foregroundStyle(.blue.gradient)
                             }.buttonStyle(PlainButtonStyle())
                         }
+
+                        /* Import Button */
                         VStack {
-                            /* Import Button */
                             Button(action: {
                                 isImporting = true
                             }) {
@@ -1965,7 +2115,7 @@ struct ContentView: View {
                     .padding(.horizontal, 5)
                 }
             case .account:
-                if self.identified && !self.editAccount {
+                if self.identified && !self.editAccount && !self.editPassword {
                     Button(action: submitDestroySessionForm) {
                         Image(systemName: "xmark")
                             .font(.system(size: 9))

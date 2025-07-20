@@ -112,8 +112,8 @@ struct ContentView: View {
 
     /* Upload Request  */
 //    @State private var backendURL:String = "https://appshare.site:4040/upload"
-//    @State private var backendURL:String = "https://link12.ddns.net:4040/upload"
-    @State private var backendURL:String = "http://127.0.0.1:3002/upload"
+    @State private var backendURL:String = "https://link12.ddns.net:4040/upload"
+//    @State private var backendURL:String = "http://127.0.0.1:3002/upload"
 
     @State private var mimeTypes:[String:String] = [
         /* DOCUMENTS */
@@ -671,20 +671,20 @@ struct ContentView: View {
     @State private var emailAddressAccountForm: String = String()
 
 //    @State private var accountURL:String = "https://appshare.site:4040/account"
-//    @State private var accountURL:String = "https://link12.ddns.net:4040/account"
-    @State private var accountURL:String = "http://127.0.0.1:3002/account"
+    @State private var accountURL:String = "https://link12.ddns.net:4040/account"
+//    @State private var accountURL:String = "http://127.0.0.1:3002/account"
 
 //    @State private var registrationURL:String = "https://appshare.site:4040/registration"
-//    @State private var registrationURL:String = "https://link12.ddns.net:4040/registration"
-    @State private var registrationURL:String = "http://127.0.0.1:3002/registration"
+    @State private var registrationURL:String = "https://link12.ddns.net:4040/registration"
+//    @State private var registrationURL:String = "http://127.0.0.1:3002/registration"
 
 //    @State private var sessionURL:String = "https://appshare.site:4040/session"
-//    @State private var sessionURL:String = "https://link12.ddns.net:4040/session"
-    @State private var sessionURL:String = "http://127.0.0.1:3002/session"
+    @State private var sessionURL:String = "https://link12.ddns.net:4040/session"
+//    @State private var sessionURL:String = "http://127.0.0.1:3002/session"
 
 //    @State private var passwordURL:String = "https://appshare.site:4040/password"
-//    @State private var passwordURL:String = "https://link12.ddns.net:4040/password"
-    @State private var passwordURL:String = "http://127.0.0.1:3002/password"
+    @State private var passwordURL:String = "https://link12.ddns.net:4040/password"
+//    @State private var passwordURL:String = "http://127.0.0.1:3002/password"
 
     func newPutRequest(url: URL, data: Data, postLength: String) -> URLRequest {
         var request = URLRequest(url: url)
@@ -1126,6 +1126,7 @@ struct ContentView: View {
             self.newPasswordConfirmationEditPasswordForm = passwordUnwrapped
         }
     }
+
     func resetValuesNewSession() {
         self.newAccount = false
         self.newPassword = false
@@ -1136,7 +1137,7 @@ struct ContentView: View {
         self.newSessionValidationErrors = String()
 
         // reset message
-        self.newPasswordSuccessMessage = Message(message: String())
+        self.newSessionSuccessMessage = Message(message: String())
 
         // reset values
         self.emailAddressPasswordForm = String()
@@ -1401,8 +1402,8 @@ struct ContentView: View {
         var id: Array<Int>
     }
 
-//    @State private var publishURL:String = "https://link12.ddns.net:4040/publish"
-    @State private var publishURL:String = "http://127.0.0.1:3002/publish"
+    @State private var publishURL:String = "https://link12.ddns.net:4040/publish"
+//    @State private var publishURL:String = "http://127.0.0.1:3002/publish"
 
     func publishSelectedFolders() {
         do {
@@ -1427,8 +1428,8 @@ struct ContentView: View {
         }
     }
 
-//    @State private var unpublishURL:String = "https://link12.ddns.net:4040/unpublish"
-    @State private var unpublishURL:String = "http://127.0.0.1:3002/unpublish"
+    @State private var unpublishURL:String = "https://link12.ddns.net:4040/unpublish"
+//    @State private var unpublishURL:String = "http://127.0.0.1:3002/unpublish"
 
     func unpublishSelectedFolders() {
         do {
@@ -1728,11 +1729,11 @@ struct ContentView: View {
                             Text("New Session")
                                 .font(.system(size: 15))
 
-//                            if let message = newSessionSuccessMessage.message {
-//                                Text("\(message)")
-//                                    .font(.system(size: 11))
-//                                    .foregroundStyle(Color.secondary)
-//                            }
+                            if let message = newSessionSuccessMessage.message {
+                                Text("\(message)")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(Color.secondary)
+                            }
 
                             if let message = destroySessionFormResponse.message {
                                 Text("\(message)")

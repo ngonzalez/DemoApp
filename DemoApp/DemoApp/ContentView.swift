@@ -651,11 +651,11 @@ struct ContentView: View {
     @State var newPasswordValidationErrors:String = String()
 
     /* Edit Password */
+    @State var editPasswordSuccessMessage:Message = Message(message: String())
+
     @State private var newPasswordEditPasswordForm: String = String()
 
     @State private var newPasswordConfirmationEditPasswordForm: String = String()
-
-    @State var editPasswordSuccessMessage:Message = Message(message: String())
 
     @State var editPasswordValidationErrors:String = String()
 
@@ -717,6 +717,15 @@ struct ContentView: View {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
         return request
+    }
+
+    struct UserResponseWithMessage: Codable {
+        let user: User?
+        let message: String?
+    }
+
+    struct Message: Codable {
+        let message: String?
     }
 
     func submitAccountForm() {
@@ -809,15 +818,6 @@ struct ContentView: View {
         errors.forEach { error in
             editPasswordValidationErrors += "\n▫️\(error!)"
         }
-    }
-
-    struct UserResponseWithMessage: Codable {
-        let user: User?
-        let message: String?
-    }
-
-    struct Message: Codable {
-        let message: String?
     }
 
     func submitRegistrationForm() {
@@ -998,16 +998,12 @@ struct ContentView: View {
 
                         let httpResponse = response as? HTTPURLResponse
                         let httpResponseUnwrapped = httpResponse!
-                        let errorsData = userResponseWithMessage.user?.errors!
-                        let errorsDataUnwrapped = errorsData!
 
                         // validation errors
                         if (userResponseWithMessage.user != nil) {
-                            if (errorsData == [] && httpResponseUnwrapped.statusCode == 200) {
+                            if (httpResponseUnwrapped.statusCode == 200) {
                                 resetValuesNewPassword()
                             }
-                        } else {
-                            iterateOverErrorsNewPassword(errors: errorsDataUnwrapped)
                         }
 
                         // validation message
@@ -1490,12 +1486,12 @@ struct ContentView: View {
                                     .font(.system(size: 11))
                                     .foregroundStyle(.gray)
 
-                                TextField(text: $newPasswordEditPasswordForm, prompt: Text("Strong password")) {
+                                SecureField(text: $newPasswordEditPasswordForm, prompt: Text("Password")) {
                                     Text("Passowrd")
                                 }
                                 .disableAutocorrection(true)
 
-                                TextField(text: $newPasswordConfirmationEditPasswordForm, prompt: Text("Strong password")) {
+                                SecureField(text: $newPasswordConfirmationEditPasswordForm, prompt: Text("Password confirmation")) {
                                     Text("Password confirmation")
                                 }
                                 .disableAutocorrection(true)
@@ -1631,6 +1627,8 @@ struct ContentView: View {
 
                             if let message = newPasswordSuccessMessage.message {
                                 Text("\(message)")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(Color.secondary)
                             }
 
                             Text("\(newPasswordValidationErrors)\n")
@@ -1673,6 +1671,8 @@ struct ContentView: View {
 
                             if let message = newAccountSuccessMessage.message {
                                 Text("\(message)")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(Color.secondary)
                             }
 
                             Text("\(newAccountValidationErrors)\n")
@@ -1728,12 +1728,40 @@ struct ContentView: View {
                             Text("New Session")
                                 .font(.system(size: 15))
 
-                            if let message = newSessionSuccessMessage.message {
-                                Text("\(message)")
-                            }
+//                            if let message = newSessionSuccessMessage.message {
+//                                Text("\(message)")
+//                                    .font(.system(size: 11))
+//                                    .foregroundStyle(Color.secondary)
+//                            }
 
                             if let message = destroySessionFormResponse.message {
                                 Text("\(message)")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(Color.secondary)
+                            }
+
+                            if let message = newPasswordSuccessMessage.message {
+                                Text("\(message)")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(Color.secondary)
+                            }
+
+                            if let message = editPasswordSuccessMessage.message {
+                                Text("\(message)")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(Color.secondary)
+                            }
+
+                            if let message = newAccountSuccessMessage.message {
+                                Text("\(message)")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(Color.secondary)
+                            }
+
+                            if let message = editAccountSuccessMessage.message {
+                                Text("\(message)")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(Color.secondary)
                             }
 
                             TextField(text: $emailAddressSessionForm, prompt: Text("johnatan@apple.com")) {

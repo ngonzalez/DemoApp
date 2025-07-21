@@ -1349,21 +1349,13 @@ struct ContentView: View {
     @State private var textContent:AttributedString = AttributedString()
 
     func displayText(textFile: TextFile) {
-        do {
-            let delegateClass = NetworkDelegateClass()
-            let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
-            let request = newGetRequest(url: URL(string: "\(textFile.fileUrl)")!)
-            let task = delegateSession.dataTask(with: request) { data, response, error in
-                do {
-                    self.textContent = try AttributedString(markdown: data!)
-                } catch let error {
-                    logger.error("[displayText] Request: \(error)")
-                }
+        let delegateClass = NetworkDelegateClass()
+        let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
+        let request = newGetRequest(url: URL(string: "\(textFile.fileUrl)")!)
+        let task = delegateSession.dataTask(with: request) { data, response, error in
+            DispatchQueue.main.async {
+//                    self.textContent = try AttributedString(markdown: data!)
             }
-
-            task.resume()
-        } catch let error {
-            logger.error("[displayText] Error: \(error)")
         }
     }
 
@@ -1862,7 +1854,7 @@ struct ContentView: View {
                         }
                     }
                     .padding(5)
-                    .navigationTitle("DemoApp (\(self.signedInUser?.emailAddress)")
+                    .navigationTitle("DemoApp (\(String(describing: self.signedInUser?.emailAddress))")
                     .toolbar {
                         Button(action: getSelectedUploads) {
                             Image(systemName: "arrow.clockwise")
@@ -1875,7 +1867,7 @@ struct ContentView: View {
                               selection: $folderSelection,
                               sortOrder: $folderSortOrder) {
                             TableColumn("name") { folder in
-                                Label("\(folder.name ?? "")",
+                                Label("\(folder.name)",
                                       systemImage: "folder")
                                 .foregroundStyle(.primary)
                                 .labelStyle(.titleAndIcon)
@@ -1883,7 +1875,7 @@ struct ContentView: View {
                             }
                             TableColumn("state") { folder in
                                 Label {
-                                    Text("\(folder.state)" ?? "")
+                                    Text("\(folder.state)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(folder.state == "published" ? .white : .gray)
                                 } icon: {
@@ -1897,10 +1889,10 @@ struct ContentView: View {
                                 TableRow(folder)
                             }
                         }
-                        .onChange(of: folderSelection) { selectedIds in
+                        .onChange(of: folderSelection) {
                             self.selectedFolders = []
-                            for selectedId in selectedIds {
-                                loadedFolders.map { folder in
+                            for selectedId in folderSelection {
+                                loadedFolders.forEach { folder in
                                     if folder.id == selectedId {
                                         self.selectedFolders.insert(folder.id)
                                     }
@@ -1929,7 +1921,7 @@ struct ContentView: View {
                                       sortOrder: $imageFileSortOrder) {
 
                                     TableColumn("fileName") { imageFile in
-                                        Label((imageFile.fileName ?? ""), systemImage: "doc")
+                                        Label((imageFile.fileName), systemImage: "doc")
                                             .labelStyle(.titleAndIcon)
                                             .font(.system(size: 11))
                                     }
@@ -1943,9 +1935,11 @@ struct ContentView: View {
                                     }
 
                                     TableColumn("mimeType") { imageFile in
-//                                        Label(imageFile.mimeType ?? "")
-//                                            .labelStyle(.titleAndIcon)
-//                                            .font(.system(size: 11))
+                                        let mimeType = imageFile.mimeType
+                                        let mimeTypeUnwrapped = mimeType!
+                                        Text(mimeTypeUnwrapped)
+                                            .labelStyle(.titleAndIcon)
+                                            .font(.system(size: 11))
                                     }
                                 } rows: {
                                     ForEach(uploadImageFiles) { imageFile in
@@ -1957,19 +1951,19 @@ struct ContentView: View {
                             }
                         }
                         .tableStyle(.inset(alternatesRowBackgrounds: false))
-                        .onChange(of: imageFileSelection) { selectedIds in
+                        .onChange(of: imageFileSelection) {
                             self.selectedImageFiles = []
-                            for selectedId in selectedIds {
-                                uploadImageFiles.map { imageFile in
+                            for selectedId in imageFileSelection {
+                                uploadImageFiles.forEach { imageFile in
                                     if imageFile.id == selectedId {
                                         self.selectedImageFiles.append(imageFile)
                                     }
                                 }
                             }
                         }
-                        .onChange(of: imageFileSortOrder) { order in
+                        .onChange(of: imageFileSortOrder) {
                             withAnimation {
-                                uploadImageFiles.sort(using: order)
+                                uploadImageFiles.sort(using: imageFileSortOrder)
                             }
                         }
                         .tabItem {
@@ -1984,7 +1978,7 @@ struct ContentView: View {
                                       sortOrder: $pdfFileSortOrder) {
 
                                     TableColumn("fileName") { pdfFile in
-                                        Label(pdfFile.fileName ?? "", systemImage: "document")
+                                        Label(pdfFile.fileName, systemImage: "document")
                                             .labelStyle(.titleAndIcon)
                                             .font(.system(size: 11))
                                     }
@@ -1996,9 +1990,11 @@ struct ContentView: View {
                                         })
                                     }
                                     TableColumn("mimeType") { pdfFile in
-//                                        Label(pdfFile.mimeType ?? "")
-//                                            .labelStyle(.titleAndIcon)
-//                                            .font(.system(size: 11))
+                                        let mimeType = pdfFile.mimeType
+                                        let mimeTypeUnwrapped = mimeType!
+                                        Text(mimeTypeUnwrapped)
+                                            .labelStyle(.titleAndIcon)
+                                            .font(.system(size: 11))
                                     }
                                 } rows: {
                                     ForEach(uploadPdfFiles) { pdfFile in
@@ -2010,10 +2006,10 @@ struct ContentView: View {
                             }
                         }
                         .tableStyle(.inset(alternatesRowBackgrounds: false))
-                        .onChange(of: pdfFileSelection) { selectedIds in
+                        .onChange(of: pdfFileSelection) {
                             self.selectedPdfFiles = []
-                            for selectedId in selectedIds {
-                                uploadPdfFiles.map { pdfFile in
+                            for selectedId in pdfFileSelection {
+                                uploadPdfFiles.forEach { pdfFile in
                                     if pdfFile.id == selectedId {
                                         self.selectedPdfFiles.append(pdfFile)
 //                                        displayPdf(pdfFile: pdfFile)
@@ -2021,8 +2017,8 @@ struct ContentView: View {
                                 }
                             }
                         }
-                        .onChange(of: pdfFileSortOrder) { order in
-                            uploadPdfFiles.sort(using: order)
+                        .onChange(of: pdfFileSortOrder) {
+                            uploadPdfFiles.sort(using: pdfFileSortOrder)
                         }
                         .tabItem {
                             Text("Pdfs (\(uploadPdfFiles.count))")
@@ -2036,7 +2032,7 @@ struct ContentView: View {
                                       sortOrder: $audioFileSortOrder) {
 
                                     TableColumn("fileName") { audioFile in
-                                        Label((audioFile.fileName ?? ""), systemImage: "doc")
+                                        Label((audioFile.fileName), systemImage: "doc")
                                             .labelStyle(.titleAndIcon)
                                             .font(.system(size: 11))
                                     }
@@ -2050,9 +2046,11 @@ struct ContentView: View {
                                     }
 
                                     TableColumn("mimeType") { audioFile in
-//                                        Label(audioFile.mimeType ?? "")
-//                                            .labelStyle(.titleAndIcon)
-//                                            .font(.system(size: 11))
+                                        let mimeType = audioFile.mimeType
+                                        let mimeTypeUnwrapped = mimeType!
+                                        Text(mimeTypeUnwrapped)
+                                            .labelStyle(.titleAndIcon)
+                                            .font(.system(size: 11))
                                     }
                                 } rows: {
                                     ForEach(uploadAudioFiles) { audioFile in
@@ -2064,10 +2062,10 @@ struct ContentView: View {
                             }
                         }
                         .tableStyle(.inset(alternatesRowBackgrounds: false))
-                        .onChange(of: audioFileSelection) { selectedIds in
+                        .onChange(of: audioFileSelection) {
                             self.selectedAudioFiles = []
-                            for selectedId in selectedIds {
-                                uploadAudioFiles.map { audioFile in
+                            for selectedId in audioFileSelection {
+                                uploadAudioFiles.forEach { audioFile in
                                     if audioFile.id == selectedId {
                                         self.selectedAudioFiles.append(audioFile)
                                         self.player = AVPlayer()
@@ -2079,10 +2077,10 @@ struct ContentView: View {
                                 }
                             }
                         }
-                        .onChange(of: audioFileSelection) { selectedIds in
+                        .onChange(of: audioFileSelection) {
                             self.selectedAudioFiles = []
-                            for selectedId in selectedIds {
-                                uploadAudioFiles.map { audioFile in
+                            for selectedId in audioFileSelection {
+                                uploadAudioFiles.forEach { audioFile in
                                     if audioFile.id == selectedId {
                                         self.selectedAudioFiles.append(audioFile)
                                         displayAudio(audioFile: audioFile)
@@ -2090,8 +2088,8 @@ struct ContentView: View {
                                 }
                             }
                         }
-                        .onChange(of: audioFileSortOrder) { order in
-                            uploadAudioFiles.sort(using: order)
+                        .onChange(of: audioFileSortOrder) {
+                            uploadAudioFiles.sort(using: audioFileSortOrder)
                         }
                         .tabItem {
                             Text("Audio (\(uploadAudioFiles.count))")
@@ -2105,7 +2103,7 @@ struct ContentView: View {
                                       sortOrder: $videoFileSortOrder) {
 
                                     TableColumn("fileName") { videoFile in
-                                        Label((videoFile.fileName ?? ""), systemImage: "doc")
+                                        Label((videoFile.fileName), systemImage: "doc")
                                             .labelStyle(.titleAndIcon)
                                             .font(.system(size: 11))
                                     }
@@ -2119,9 +2117,11 @@ struct ContentView: View {
                                     }
 
                                     TableColumn("mimeType") { videoFile in
-//                                        Label(videoFile.mimeType ?? "")
-//                                            .labelStyle(.titleAndIcon)
-//                                            .font(.system(size: 11))
+                                        let mimeType = videoFile.mimeType
+                                        let mimeTypeUnwrapped = mimeType!
+                                        Text(mimeTypeUnwrapped)
+                                            .labelStyle(.titleAndIcon)
+                                            .font(.system(size: 11))
                                     }
                                 } rows: {
                                     ForEach(uploadVideoFiles) { videoFile in
@@ -2133,10 +2133,10 @@ struct ContentView: View {
                             }
                         }
                         .tableStyle(.inset(alternatesRowBackgrounds: false))
-                        .onChange(of: videoFileSelection) { selectedIds in
+                        .onChange(of: videoFileSelection) {
                             self.selectedVideoFiles = []
-                            for selectedId in selectedIds {
-                                uploadVideoFiles.map { videoFile in
+                            for selectedId in videoFileSelection {
+                                uploadVideoFiles.forEach { videoFile in
                                     if videoFile.id == selectedId {
                                         self.selectedVideoFiles.append(videoFile)
                                         displayVideo(videoFile: videoFile)
@@ -2144,8 +2144,8 @@ struct ContentView: View {
                                 }
                             }
                         }
-                        .onChange(of: videoFileSortOrder) { order in
-                            uploadVideoFiles.sort(using: order)
+                        .onChange(of: videoFileSortOrder) {
+                            uploadVideoFiles.sort(using: videoFileSortOrder)
                         }
                         .tabItem {
                             Text("Video (\(uploadVideoFiles.count))").colorMultiply(.cyan)
@@ -2159,7 +2159,7 @@ struct ContentView: View {
                                       sortOrder: $textFileSortOrder) {
 
                                     TableColumn("fileName") { textFile in
-                                        Label((textFile.fileName ?? ""), systemImage: "doc")
+                                        Label((textFile.fileName), systemImage: "doc")
                                             .labelStyle(.titleAndIcon)
                                             .font(.system(size: 11))
                                     }
@@ -2171,9 +2171,11 @@ struct ContentView: View {
                                         })
                                     }
                                     TableColumn("mimeType") { textFile in
-//                                        Label(textFile.mimeType ?? "")
-//                                            .labelStyle(.titleAndIcon)
-//                                            .font(.system(size: 11))
+                                        let mimeType = textFile.mimeType
+                                        let mimeTypeUnwrapped = mimeType!
+                                        Text(mimeTypeUnwrapped)
+                                            .labelStyle(.titleAndIcon)
+                                            .font(.system(size: 11))
                                     }
                                 } rows: {
                                     ForEach(uploadTextFiles) { textFile in
@@ -2185,10 +2187,10 @@ struct ContentView: View {
                             }
                         }
                         .tableStyle(.inset(alternatesRowBackgrounds: false))
-                        .onChange(of: textFileSelection) { selectedIds in
+                        .onChange(of: textFileSelection) {
                             self.selectedTextFiles = []
-                            for selectedId in selectedIds {
-                                uploadTextFiles.map { textFile in
+                            for selectedId in textFileSelection {
+                                uploadTextFiles.forEach { textFile in
                                     if textFile.id == selectedId {
                                         self.selectedTextFiles.append(textFile)
                                         displayText(textFile: textFile)
@@ -2196,8 +2198,8 @@ struct ContentView: View {
                                 }
                             }
                         }
-                        .onChange(of: textFileSortOrder) { order in
-                            uploadTextFiles.sort(using: order)
+                        .onChange(of: textFileSortOrder) {
+                            uploadTextFiles.sort(using: textFileSortOrder)
                         }
                         .tabItem {
                             Text("Text (\(uploadTextFiles.count))")
@@ -2269,13 +2271,13 @@ struct ContentView: View {
 
                             ForEach(self.selectedImageFiles) { imageFile in
 
-                                let fileName = imageFile.fileName ?? "--"
+                                let fileName = imageFile.fileName
                                 Label(fileName,
                                      systemImage: "photo.circle")
                                    .labelStyle(.titleAndIcon)
                                    .font(.system(size: 13))
 
-                                let fileUrl = imageFile.fileUrl ?? "--"
+                                let fileUrl = imageFile.fileUrl
                                 AsyncImage(url: URL(string: fileUrl)) { result in
                                    result.image?
                                        .resizable()
@@ -2366,7 +2368,7 @@ struct ContentView: View {
 
                             ForEach(self.selectedPdfFiles) { pdfFile in
 
-                                let fileName = pdfFile.fileName ?? ""
+                                let fileName = pdfFile.fileName
                                 Label(fileName, systemImage: "doc.circle.fill")
                                     .labelStyle(.titleAndIcon)
                                     .font(.system(size: 13))
@@ -2399,7 +2401,7 @@ struct ContentView: View {
 
                             ForEach(self.selectedAudioFiles) { audioFile in
 
-                                let fileName = audioFile.fileName ?? "--"
+                                let fileName = audioFile.fileName
                                 Label(fileName, systemImage: "waveform.circle")
                                     .labelStyle(.titleAndIcon)
                                     .font(.system(size: 13))
@@ -2508,7 +2510,7 @@ struct ContentView: View {
 
                             ForEach(self.selectedVideoFiles) { videoFile in
 
-                                let fileName = videoFile.fileName ?? "--"
+                                let fileName = videoFile.fileName
                                 Label(fileName,
                                       systemImage: "video.circle")
                                     .labelStyle(.titleAndIcon)
@@ -2640,7 +2642,7 @@ struct ContentView: View {
 
                             ForEach(self.selectedTextFiles) { textFile in
 
-                                let fileName = textFile.fileName ?? "--"
+                                let fileName = textFile.fileName
                                 Label(fileName, systemImage: "doc.circle")
                                     .labelStyle(.titleAndIcon)
                                     .font(.system(size: 13))

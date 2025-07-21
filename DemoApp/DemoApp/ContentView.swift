@@ -112,8 +112,8 @@ struct ContentView: View {
 
     /* Upload Request  */
 //    @State private var backendURL:String = "https://appshare.site:4040/upload"
-    @State private var backendURL:String = "https://link12.ddns.net:4040/upload"
-//    @State private var backendURL:String = "http://127.0.0.1:3002/upload"
+//    @State private var backendURL:String = "https://link12.ddns.net:4040/upload"
+    @State private var backendURL:String = "http://127.0.0.1:3002/upload"
 
     @State private var mimeTypes:[String:String] = [
         /* DOCUMENTS */
@@ -671,20 +671,20 @@ struct ContentView: View {
     @State private var emailAddressAccountForm: String = String()
 
 //    @State private var accountURL:String = "https://appshare.site:4040/account"
-    @State private var accountURL:String = "https://link12.ddns.net:4040/account"
-//    @State private var accountURL:String = "http://127.0.0.1:3002/account"
+//    @State private var accountURL:String = "https://link12.ddns.net:4040/account"
+    @State private var accountURL:String = "http://127.0.0.1:3002/account"
 
 //    @State private var registrationURL:String = "https://appshare.site:4040/registration"
-    @State private var registrationURL:String = "https://link12.ddns.net:4040/registration"
-//    @State private var registrationURL:String = "http://127.0.0.1:3002/registration"
+//    @State private var registrationURL:String = "https://link12.ddns.net:4040/registration"
+    @State private var registrationURL:String = "http://127.0.0.1:3002/registration"
 
 //    @State private var sessionURL:String = "https://appshare.site:4040/session"
-    @State private var sessionURL:String = "https://link12.ddns.net:4040/session"
-//    @State private var sessionURL:String = "http://127.0.0.1:3002/session"
+//    @State private var sessionURL:String = "https://link12.ddns.net:4040/session"
+    @State private var sessionURL:String = "http://127.0.0.1:3002/session"
 
 //    @State private var passwordURL:String = "https://appshare.site:4040/password"
-    @State private var passwordURL:String = "https://link12.ddns.net:4040/password"
-//    @State private var passwordURL:String = "http://127.0.0.1:3002/password"
+//    @State private var passwordURL:String = "https://link12.ddns.net:4040/password"
+    @State private var passwordURL:String = "http://127.0.0.1:3002/password"
 
     func newPutRequest(url: URL, data: Data, postLength: String) -> URLRequest {
         var request = URLRequest(url: url)
@@ -1270,8 +1270,8 @@ struct ContentView: View {
     @State private var audioStreams:Array<Stream> = Array<Stream>()
 
 //    @State private var serviceURL:String = "https://appshare.site:5050"
-    @State private var serviceURL:String = "https://link12.ddns.net:5050"
-//    @State private var serviceURL:String = "http://127.0.0.1:3001"
+//    @State private var serviceURL:String = "https://link12.ddns.net:5050"
+    @State private var serviceURL:String = "http://127.0.0.1:3001"
 
     func getVideoStream(videoFile: VideoFile) {
         let delegateClass = NetworkDelegateClass()
@@ -1280,12 +1280,15 @@ struct ContentView: View {
         let request = newGetRequest(url: url)
         let task = delegateSession.dataTask(with: request) { data, response, error in
             do {
-                let response = try JSONDecoder().decode(Stream.self, from: data!)
+                if (data != nil) {
+                    let dataUnwrapped = data!
+                    let response = try JSONDecoder().decode(Stream.self, from: dataUnwrapped)
 
-                DispatchQueue.main.async {
-                    if response.m3u8Exists == true {
-                        if !self.videoStreams.map({ $0.id }).contains(videoFile.id) {
-                            self.videoStreams.append(response)
+                    DispatchQueue.main.async {
+                        if response.m3u8Exists == true {
+                            if !self.videoStreams.map({ $0.id }).contains(videoFile.id) {
+                                self.videoStreams.append(response)
+                            }
                         }
                     }
                 }
@@ -1304,12 +1307,15 @@ struct ContentView: View {
         let request = newGetRequest(url: url)
         let task = delegateSession.dataTask(with: request) { data, response, error in
             do {
-                let response = try JSONDecoder().decode(Stream.self, from: data!)
+                if (data != nil) {
+                    let dataUnwrapped = data!
+                    let response = try JSONDecoder().decode(Stream.self, from: dataUnwrapped)
 
-                DispatchQueue.main.async {
-                    if response.m3u8Exists == true {
-                        if !self.audioStreams.map({ $0.id }).contains(audioFile.id) {
-                            self.audioStreams.append(response)
+                    DispatchQueue.main.async {
+                        if response.m3u8Exists == true {
+                            if !self.audioStreams.map({ $0.id }).contains(audioFile.id) {
+                                self.audioStreams.append(response)
+                            }
                         }
                     }
                 }
@@ -1344,47 +1350,6 @@ struct ContentView: View {
         }
     }
 
-    /* Text, Markdown */
-
-//    @State private var textContent:AttributedString = AttributedString()
-//
-//    func displayText(textFile: TextFile) {
-//        let delegateClass = NetworkDelegateClass()
-//        let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
-//        let request = newGetRequest(url: URL(string: "\(textFile.fileUrl)")!)
-//        let task = delegateSession.dataTask(with: request) { data, response, error in
-//            DispatchQueue.main.async {
-////                    self.textContent = try AttributedString(markdown: data!)
-//            }
-//        }
-//    }
-
-    /* Pdf */
-//    @State private var pdfContent:PDFDocument = PDFDocument()
-//
-//    @State private var pdfView:PDFView = PDFView()
-
-//    func displayPdf(pdfFile: PdfFile) {
-//        do {
-//            let delegateClass = NetworkDelegateClass()
-//            let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
-//            let request = newGetRequest(url: URL(string: "\(pdfFile.fileUrl)")!)
-//            let task = delegateSession.dataTask(with: request) { data, response, error in
-//                do {
-////                    self.pdfContent = PDFDocument(data: data!)!
-////                    pdfView.document = self.pdfContent
-//                } catch let error {
-//                    logger.error("[displayText] Request: \(error)")
-//                }
-//            }
-//
-//            task.resume()
-//
-//        } catch let error {
-//            logger.error("[displayText] Error: \(error)")
-//        }
-//    }
-
     func displayImageFileMimeType(imageFile: ImageFile) -> Text {
         Text("Mime/Type: \(imageFile.mimeType!)")
             .font(.system(size: 11))
@@ -1394,8 +1359,8 @@ struct ContentView: View {
         var id: Array<Int>
     }
 
-    @State private var publishURL:String = "https://link12.ddns.net:4040/publish"
-//    @State private var publishURL:String = "http://127.0.0.1:3002/publish"
+//    @State private var publishURL:String = "https://link12.ddns.net:4040/publish"
+    @State private var publishURL:String = "http://127.0.0.1:3002/publish"
 
     func publishSelectedFolders() {
         do {
@@ -1420,8 +1385,8 @@ struct ContentView: View {
         }
     }
 
-    @State private var unpublishURL:String = "https://link12.ddns.net:4040/unpublish"
-//    @State private var unpublishURL:String = "http://127.0.0.1:3002/unpublish"
+//    @State private var unpublishURL:String = "https://link12.ddns.net:4040/unpublish"
+    @State private var unpublishURL:String = "http://127.0.0.1:3002/unpublish"
 
     func unpublishSelectedFolders() {
         do {

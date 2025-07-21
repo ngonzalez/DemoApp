@@ -1346,18 +1346,18 @@ struct ContentView: View {
 
     /* Text, Markdown */
 
-    @State private var textContent:AttributedString = AttributedString()
-
-    func displayText(textFile: TextFile) {
-        let delegateClass = NetworkDelegateClass()
-        let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
-        let request = newGetRequest(url: URL(string: "\(textFile.fileUrl)")!)
-        let task = delegateSession.dataTask(with: request) { data, response, error in
-            DispatchQueue.main.async {
-//                    self.textContent = try AttributedString(markdown: data!)
-            }
-        }
-    }
+//    @State private var textContent:AttributedString = AttributedString()
+//
+//    func displayText(textFile: TextFile) {
+//        let delegateClass = NetworkDelegateClass()
+//        let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
+//        let request = newGetRequest(url: URL(string: "\(textFile.fileUrl)")!)
+//        let task = delegateSession.dataTask(with: request) { data, response, error in
+//            DispatchQueue.main.async {
+////                    self.textContent = try AttributedString(markdown: data!)
+//            }
+//        }
+//    }
 
     /* Pdf */
 //    @State private var pdfContent:PDFDocument = PDFDocument()
@@ -1856,7 +1856,7 @@ struct ContentView: View {
                     .padding(5)
                     .navigationTitle("DemoApp (\(String(describing: self.signedInUser?.emailAddress))")
                     .toolbar {
-                        Button(action: getSelectedUploads) {
+                        Button(action: getAllUploads) {
                             Image(systemName: "arrow.clockwise")
                                 .font(.system(size: 20))
                         }
@@ -2193,7 +2193,7 @@ struct ContentView: View {
                                 uploadTextFiles.forEach { textFile in
                                     if textFile.id == selectedId {
                                         self.selectedTextFiles.append(textFile)
-                                        displayText(textFile: textFile)
+//                                        displayText(textFile: textFile)
                                     }
                                 }
                             }
@@ -2647,9 +2647,9 @@ struct ContentView: View {
                                     .labelStyle(.titleAndIcon)
                                     .font(.system(size: 13))
 
-                                Text("""
-                                    \(textContent)
-                                    """).padding(20)
+//                                Text("""
+//                                    \(textContent)
+//                                    """).padding(20)
 
                                 Label {
                                     let mimeType = textFile.mimeType ?? ""

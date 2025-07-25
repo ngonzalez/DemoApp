@@ -1633,7 +1633,7 @@ struct ContentView: View {
 
                         // account panel
 
-                        Text("Your Account")
+                        Text("My Account")
                             .font(.system(size: 15))
 
                         if let message = newSessionSuccessMessage.message {
@@ -1860,7 +1860,7 @@ struct ContentView: View {
                             Button(action: clickPasswordLink) {
                                 Image(systemName: "mail")
                                     .font(.system(size: 20))
-                                Text("Forgot your password?")
+                                Text("Forgot my password")
                                     .foregroundStyle(.blue.gradient)
                             }.buttonStyle(PlainButtonStyle())
                         }
@@ -2356,12 +2356,13 @@ struct ContentView: View {
                     .padding(.horizontal, 5)
                 }
             case .account:
-                if self.identified && self.myAccount && (!self.editAccount && !self.editPassword && !self.newAccount && !self.newPassword) {
+                if self.identified && self.myAccount {
+
                     Button(action: submitDestroySessionForm) {
                         Image(systemName: "xmark")
                             .font(.system(size: 9))
                             .foregroundStyle(Color.primary)
-                        Text("Sign-Out")
+                        Text("Sign-out")
                             .font(.system(size: 9))
                             .foregroundStyle(Color.primary)
                     }

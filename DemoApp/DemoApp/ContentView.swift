@@ -29,6 +29,8 @@ import OSLog
 
 var logger = Logger()
 
+var formatter = ISO8601DateFormatter()
+
 class NetworkDelegateClass: NSObject, URLSessionDelegate, URLSessionDataDelegate {
     // URLSessionDataDelegate method to handle response data
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
@@ -616,7 +618,12 @@ struct ContentView: View {
 
     /* Account */
     @State var myAccount:Bool = Bool(false)    // My Account
+
+    @State private var signedInUser: User?
+    @State private var identified:Bool = Bool(false)
+
     @State var newSession:Bool = Bool(true)    // Sign-In
+    @State var newSessionComplete:Bool = Bool(false)
 
     @State var newPassword:Bool = Bool(false)  // Reset Password
     @State var newPasswordComplete:Bool = Bool(false)
@@ -629,9 +636,6 @@ struct ContentView: View {
 
     @State var editPassword:Bool = Bool(false) // Edit Password
     @State var editPasswordComplete:Bool = Bool(false)
-
-    @State private var signedInUser: User?
-    @State private var identified:Bool = Bool(false)
 
     /* Register Account */
     @State var newAccountSuccessMessage:Message = Message(message: String())
@@ -684,6 +688,10 @@ struct ContentView: View {
     @State private var lastNameAccountForm: String = String()
 
     @State private var emailAddressAccountForm: String = String()
+
+    @State private var createdAtAccountForm: String = String()
+
+    @State private var updatedAtAccountForm: String = String()
 
 //    @State private var accountURL:String = "https://appshare.site:4040/account"
 //    @State private var accountURL:String = "https://link12.ddns.net:4040/account"
@@ -976,6 +984,7 @@ struct ContentView: View {
                         self.signedInUser = nil
                         self.identified = false
                         self.newSession = true
+                        self.newSessionComplete = false
                     }
                 }
 
@@ -1149,8 +1158,9 @@ struct ContentView: View {
 
     func resetValuesNewSession() {
 //        self.newSession = false
-        self.myAccount = true
+        self.newSessionComplete = true
 
+        self.myAccount = true
         self.newAccount = false
         self.newPassword = false
         self.editPassword = false
@@ -1226,11 +1236,12 @@ struct ContentView: View {
     }
 
     func resetValuesEditAccount() {
+//        self.editAccount = false
+        self.editAccountComplete = true
+
         self.newAccount = false
         self.newPassword = false
         self.editPassword = false
-//        self.editAccount = false
-        self.editAccountComplete = true
 
         // reset errors
         self.editAccountValidationErrors = String()
@@ -1601,6 +1612,28 @@ struct ContentView: View {
                                     .disabled(true)
                                 }
 
+                                let createdAt = self.signedInUser?.createdAt
+                                if (createdAt != nil) {
+                                    let createdAtUnwrapped = createdAt!
+//                                    let createdAtFormatted = formatter.string(from: createdAtUnwrapped)
+                                    TextField(text: $createdAtAccountForm, prompt: Text(createdAtUnwrapped)) {
+                                        Text("Created At")
+                                    }
+                                    .disableAutocorrection(true)
+                                    .disabled(true)
+                                }
+
+                                let updatedAt = self.signedInUser?.updatedAt
+                                if (updatedAt != nil) {
+                                    let updatedAtUnwrapped = updatedAt!
+//                                    let updatedAtFormatted = formatter.string(from: updatedAtUnwrapped)
+                                    TextField(text: $updatedAtAccountForm, prompt: Text(updatedAtUnwrapped)) {
+                                        Text("Updated At")
+                                    }
+                                    .disableAutocorrection(true)
+                                    .disabled(true)
+                                }
+
                                 if (self.editAccountComplete) {
                                     Button(action: submitAccountForm) {
                                         Text("Submit")
@@ -1829,10 +1862,18 @@ struct ContentView: View {
                             }
                             .disableAutocorrection(true)
 
-                            Button(action: submitSessionForm) {
-                                Text("Submit")
+                            if (self.newSessionComplete) {
+                                Button(action: submitSessionForm) {
+                                    Text("Submit")
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                                .disabled(true)
+                            } else {
+                                Button(action: submitSessionForm) {
+                                    Text("Submit")
+                                }
+                                .buttonStyle(PlainButtonStyle())
                             }
-                            .buttonStyle(PlainButtonStyle())
 
                             /* Register */
                             Button(action: clickRegisterLink) {

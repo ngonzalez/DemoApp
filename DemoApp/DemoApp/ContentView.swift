@@ -608,19 +608,26 @@ struct ContentView: View {
         let errors: [String]?
     }
 
+    struct UserWithEmail: Codable, Identifiable {
+        let id: Int?
+        let uuid: UUID
+        let emailAddress: String?
+        let errors: [String]?
+    }
+
+    struct UserWithPasswordAndPasswordConfirmation: Codable, Identifiable {
+        let id: Int?
+        let uuid: UUID
+        let password: String?
+        let passwordConfirmation: String?
+        let errors: [String]?
+    }
+
     struct UserWithEmailAndPassword: Codable, Identifiable {
         let id: Int?
         let uuid: UUID
         let emailAddress: String?
         let password: String?
-        let errors: [String]?
-    }
-
-    struct UserWithpassword: Codable, Identifiable {
-        let id: Int?
-        let uuid: UUID
-        let password: String?
-        let passwordConfirmation: String?
         let errors: [String]?
     }
 
@@ -1011,15 +1018,10 @@ struct ContentView: View {
 
     func submitNewPasswordForm() {
         do {
-            let user = User(
+            let user = UserWithEmail(
                 id: nil,
                 uuid: UUID(),
-                firstName: nil,
-                lastName: nil,
                 emailAddress: emailAddressPasswordForm,
-                password: nil,
-                createdAt: nil,
-                updatedAt: nil,
                 errors: nil
             )
 
@@ -1067,7 +1069,7 @@ struct ContentView: View {
 
     func submitEditPasswordForm() {
         do {
-            let user = UserWithpassword(
+            let user = UserWithPasswordAndPasswordConfirmation(
                 id: self.signedInUser?.id,
                 uuid: UUID(),
                 password: newPasswordEditPasswordForm,

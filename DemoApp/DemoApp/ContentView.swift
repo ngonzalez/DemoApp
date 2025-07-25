@@ -48,6 +48,7 @@ class NetworkDelegateClass: NSObject, URLSessionDelegate, URLSessionDataDelegate
     }
 }
 
+@available(macOS 14, *)
 @MainActor
 struct ContentView: View {
 
@@ -605,18 +606,28 @@ struct ContentView: View {
         let errors: [String]?
     }
 
+    struct UserWithpassword: Codable, Identifiable {
+        let id: Int?
+        let uuid: UUID
+        let password: String?
+        let passwordConfirmation: String?
+        let errors: [String]?
+    }
+
     /* Account */
+    @State var myAccount:Bool = Bool(false)    // My Account
     @State var newAccount:Bool = Bool(false)   // Register Account
-                                               //
-    @State var identified:Bool = Bool(false)   // New Session
-                                               //
+    @State var newSession:Bool = Bool(true)    // Sign-In
     @State var newPassword:Bool = Bool(false)  // Reset Password
                                                //
     @State var editAccount:Bool = Bool(false)  // Edit Account
+    @State var editAccountComplete:Bool = Bool(false)
                                                //
     @State var editPassword:Bool = Bool(false) // Edit Password
+    @State var editPasswordComplete:Bool = Bool(false)
 
     @State private var signedInUser: User?
+    @State private var identified:Bool = Bool(false)
 
     /* Register Account */
     @State var newAccountSuccessMessage:Message = Message(message: String())
@@ -756,9 +767,13 @@ struct ContentView: View {
                     DispatchQueue.main.async {
 
                         // validation errors
+                        let httpResponse = response as? HTTPURLResponse
+                        let httpResponseUnwrapped = httpResponse!
+
+                        // validation errors
                         if (userResponseWithMessage.user != nil) {
                             let errorsData = userResponseWithMessage.user?.errors!
-                            if (errorsData == []) {
+                            if (errorsData == [] && httpResponseUnwrapped.statusCode == 200) {
                                 self.signedInUser = userResponseWithMessage.user
                                 resetValuesEditAccount()
                             } else {
@@ -847,9 +862,13 @@ struct ContentView: View {
                     DispatchQueue.main.async {
 
                         // validation errors
+                        let httpResponse = response as? HTTPURLResponse
+                        let httpResponseUnwrapped = httpResponse!
+
+                        // validation errors
                         if (userResponseWithMessage.user != nil) {
                             let errorsData = userResponseWithMessage.user?.errors!
-                            if (errorsData == []) {
+                            if (errorsData == [] && httpResponseUnwrapped.statusCode == 200) {
                                 self.signedInUser = userResponseWithMessage.user
                                 self.identified = ((self.signedInUser?.createdAt) != nil)
                                 resetValuesNewAccount()
@@ -958,6 +977,7 @@ struct ContentView: View {
                         self.destroySessionFormResponse = message
                         self.signedInUser = nil
                         self.identified = false
+                        self.newSession = true
                     }
                 }
 
@@ -1027,20 +1047,11 @@ struct ContentView: View {
 
     func submitEditPasswordForm() {
         do {
-            var str:String = String("")
-            if (newPasswordEditPasswordForm == newPasswordConfirmationEditPasswordForm) {
-                str = newPasswordEditPasswordForm
-            }
-
-            let user = User(
+            let user = UserWithpassword(
                 id: self.signedInUser?.id,
                 uuid: UUID(),
-                firstName: nil,
-                lastName: nil,
-                emailAddress: nil,
-                password: str,
-                createdAt: nil,
-                updatedAt: nil,
+                password: newPasswordEditPasswordForm,
+                passwordConfirmation: newPasswordConfirmationEditPasswordForm,
                 errors: nil
             )
 
@@ -1059,16 +1070,16 @@ struct ContentView: View {
 
                         let httpResponse = response as? HTTPURLResponse
                         let httpResponseUnwrapped = httpResponse!
-                        let errorsData = userResponseWithMessage.user?.errors!
-                        let errorsDataUnwrapped = errorsData!
 
                         // validation errors
                         if (userResponseWithMessage.user != nil) {
+                            let errorsData = userResponseWithMessage.user?.errors!
                             if (errorsData == [] && httpResponseUnwrapped.statusCode == 200) {
                                 resetValuesEditPassword()
+                            } else {
+                                let errorsDataUnwrapped = errorsData!
+                                iterateOverErrorsEditPassword(errors: errorsDataUnwrapped)
                             }
-                        } else {
-                            iterateOverErrorsEditPassword(errors: errorsDataUnwrapped)
                         }
 
                         // validation message
@@ -1098,11 +1109,22 @@ struct ContentView: View {
         self.newPassword = true
     }
 
+    func clickBackToAccountLink() {
+        backToMyAccount()
+    }
+
     func clickSigninLink() {
-        resetValuesNewAccount()
-        resetValuesEditAccount()
-        resetValuesNewPassword()
-        resetValuesEditPassword()
+        // enable new session
+        self.newSession = true
+
+        // disable other sections
+        self.myAccount = false
+        self.newAccount = false
+        self.newPassword = false
+        self.editPassword = false
+        self.editAccount = false
+
+        // reset forms
         resetValuesNewSession()
     }
 
@@ -1128,16 +1150,20 @@ struct ContentView: View {
     }
 
     func resetValuesNewSession() {
+        self.myAccount = true
+
         self.newAccount = false
         self.newPassword = false
         self.editPassword = false
         self.editAccount = false
+//        self.newSession = false
 
         // reset errors
         self.newSessionValidationErrors = String()
 
         // reset message
         self.newSessionSuccessMessage = Message(message: String())
+        self.destroySessionFormResponse = Message(message: String())
 
         // reset values
         self.emailAddressPasswordForm = String()
@@ -1145,7 +1171,7 @@ struct ContentView: View {
 
     func resetValuesNewPassword() {
         self.newAccount = false
-        self.newPassword = false
+//        self.newPassword = false
         self.editPassword = false
         self.editAccount = false
 
@@ -1162,7 +1188,8 @@ struct ContentView: View {
     func resetValuesEditPassword() {
         self.newAccount = false
         self.newPassword = false
-        self.editPassword = false
+//        self.editPassword = false
+        self.editPasswordComplete = true
         self.editAccount = false
 
         // reset errors
@@ -1177,7 +1204,7 @@ struct ContentView: View {
     }
     
     func resetValuesNewAccount() {
-        self.newAccount = false
+//        self.newAccount = false
         self.newPassword = false
         self.editPassword = false
         self.editAccount = false
@@ -1199,7 +1226,8 @@ struct ContentView: View {
         self.newAccount = false
         self.newPassword = false
         self.editPassword = false
-        self.editAccount = false
+//        self.editAccount = false
+        self.editAccountComplete = true
 
         // reset errors
         self.editAccountValidationErrors = String()
@@ -1211,6 +1239,26 @@ struct ContentView: View {
         self.firstNameAccountForm = String()
         self.lastNameAccountForm = String()
         self.emailAddressAccountForm = String()
+    }
+
+    func backToMyAccount() {
+        // enable my account
+        self.myAccount = true
+
+        // disable other sections
+        self.newAccount = false
+        self.newPassword = false
+        self.editPassword = false
+        self.editAccount = false
+
+        // reset forms
+        resetValuesEditAccount()
+        resetValuesEditPassword()
+        resetValuesNewSession()
+
+        // enable buttons again
+        self.editPasswordComplete = false
+        self.editAccountComplete = false
     }
 
     /* Navigation */
@@ -1245,6 +1293,24 @@ struct ContentView: View {
     func clearSelectedFolders() {
         clearSelectedFiles()
         clearSelection()
+    }
+
+    func deleteSelectedFolders() {
+    }
+
+    func deleteSelectedImages() {
+    }
+
+    func deleteSelectedAudioFiles() {
+    }
+
+    func deleteSelectedVideoFiles() {
+    }
+
+    func deleteSelectedPdfs() {
+    }
+
+    func deleteSelectedTexts() {
     }
 
     func getFolderName(folder: Folder) -> String {
@@ -1359,8 +1425,8 @@ struct ContentView: View {
         var id: Array<Int>
     }
 
-//    @State private var publishURL:String = "https://link12.ddns.net:4040/publish"
-    @State private var publishURL:String = "http://127.0.0.1:3002/publish"
+//    @State private var publishURL:String = "https://link12.ddns.net:4040/folders/publish"
+    @State private var publishURL:String = "http://127.0.0.1:3002/folders/publish"
 
     func publishSelectedFolders() {
         do {
@@ -1385,8 +1451,8 @@ struct ContentView: View {
         }
     }
 
-//    @State private var unpublishURL:String = "https://link12.ddns.net:4040/unpublish"
-    @State private var unpublishURL:String = "http://127.0.0.1:3002/unpublish"
+//    @State private var unpublishURL:String = "https://link12.ddns.net:4040/folders/unpublish"
+    @State private var unpublishURL:String = "http://127.0.0.1:3002/folders/unpublish"
 
     func unpublishSelectedFolders() {
         do {
@@ -1454,19 +1520,21 @@ struct ContentView: View {
                                 }
                                 .disableAutocorrection(true)
 
-                                Button(action: submitEditPasswordForm) {
-                                    Text("Submit")
-                                }.buttonStyle(PlainButtonStyle())
+                                if (!self.editPasswordComplete) {
+                                    Button(action: submitEditPasswordForm) {
+                                        Text("Submit")
+                                    }.buttonStyle(PlainButtonStyle())
+                                }
 
                                 Spacer()
 
                                 Divider()
 
                                 /* Account */
-                                Button(action: resetValuesEditAccount) {
+                                Button(action: clickBackToAccountLink) {
                                     Image(systemName: "person.text.rectangle")
                                         .font(.system(size: 20))
-                                    Text("Back to your account panel")
+                                    Text("Back to my account")
                                         .foregroundStyle(.blue.gradient)
                                 }.buttonStyle(PlainButtonStyle())
                             }
@@ -1521,36 +1589,56 @@ struct ContentView: View {
                                     .disabled(true)
                                 }
 
-                                Button(action: submitAccountForm) {
-                                    Text("Submit")
-                                }.buttonStyle(PlainButtonStyle())
+                                if (!self.editAccountComplete) {
+                                    Button(action: submitAccountForm) {
+                                        Text("Submit")
+                                    }.buttonStyle(PlainButtonStyle())
+                                }
 
                                 Spacer()
 
                                 Divider()
 
                                 /* Account */
-                                Button(action: resetValuesEditAccount) {
+                                Button(action: clickBackToAccountLink) {
                                     Image(systemName: "person.text.rectangle")
                                         .font(.system(size: 20))
-                                    Text("Back to your account panel")
+                                    Text("Back to my account")
                                         .foregroundStyle(.blue.gradient)
                                 }.buttonStyle(PlainButtonStyle())
                             }
                             .textFieldStyle(.roundedBorder)
                         }.padding(20)
 
-                    } else if !self.editAccount && !self.editPassword {
+                    } else if self.myAccount {
 
                         // account panel
 
                         Text("Your Account")
                             .font(.system(size: 15))
 
-                        Image(systemName: "person.circle")
-                            .font(.system(size: 20))
-                            .symbolEffect(.bounce, options: .repeat(1))
-                            .padding(10)
+                        if let message = newSessionSuccessMessage.message {
+                            Text("\(message)")
+                                .font(.system(size: 11))
+                                .foregroundStyle(Color.secondary)
+                        }
+
+                        if let message = destroySessionFormResponse.message {
+                            Text("\(message)")
+                                .font(.system(size: 11))
+                                .foregroundStyle(Color.secondary)
+                        }
+
+                        if #available(macOS 15.0, *) {
+                            Image(systemName: "person.circle")
+                                .font(.system(size: 20))
+                                .symbolEffect(.bounce, options: .repeat(1))
+                                .padding(10)
+                        } else {
+                            Image(systemName: "person.circle")
+                                .font(.system(size: 20))
+                                .padding(10)
+                        }
 
                         /* User Email */
                         let emailAddress = self.signedInUser?.emailAddress
@@ -1676,7 +1764,7 @@ struct ContentView: View {
                         .textFieldStyle(.roundedBorder)
                     }.padding(20)
 
-                } else {
+                } else if self.newSession {
 
                     Form {
                         VStack {
@@ -1691,32 +1779,7 @@ struct ContentView: View {
                                     .font(.system(size: 11))
                                     .foregroundStyle(Color.secondary)
                             }
-
                             if let message = destroySessionFormResponse.message {
-                                Text("\(message)")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(Color.secondary)
-                            }
-
-                            if let message = newPasswordSuccessMessage.message {
-                                Text("\(message)")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(Color.secondary)
-                            }
-
-                            if let message = editPasswordSuccessMessage.message {
-                                Text("\(message)")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(Color.secondary)
-                            }
-
-                            if let message = newAccountSuccessMessage.message {
-                                Text("\(message)")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(Color.secondary)
-                            }
-
-                            if let message = editAccountSuccessMessage.message {
                                 Text("\(message)")
                                     .font(.system(size: 11))
                                     .foregroundStyle(Color.secondary)
@@ -1739,9 +1802,16 @@ struct ContentView: View {
 
                             /* Register */
                             Button(action: clickRegisterLink) {
-                                Image(systemName: "person.crop.circle.badge.plus")
-                                    .font(.system(size: 20))
-                                    .symbolEffect(.bounce, options: .repeat(1))
+                                if #available(macOS 15.0, *) {
+                                    Image(systemName: "person.crop.circle.badge.plus")
+                                        .font(.system(size: 20))
+                                        .symbolEffect(.bounce, options: .repeat(1))
+                                        .padding(10)
+                                } else {
+                                    Image(systemName: "person.crop.circle.badge.plus")
+                                        .font(.system(size: 20))
+                                        .padding(10)
+                                }
                                 Text("Register for a new account")
                                     .foregroundStyle(.blue.gradient)
                             }
@@ -1794,9 +1864,16 @@ struct ContentView: View {
                             Button(action: {
                                 isImporting = true
                             }) {
-                                Image(systemName: "square.grid.3x1.folder.badge.plus")
-                                    .font(.system(size: 20))
-                                    .symbolEffect(.bounce, options: .repeat(1))
+                                if #available(macOS 15.0, *) {
+                                    Image(systemName: "square.grid.3x1.folder.badge.plus")
+                                        .font(.system(size: 20))
+                                        .symbolEffect(.bounce, options: .repeat(1))
+                                        .padding(10)
+                                } else {
+                                    Image(systemName: "square.grid.3x1.folder.badge.plus")
+                                        .font(.system(size: 20))
+                                        .padding(10)
+                                }
                             }
                             .fileImporter(
                                 isPresented: $isImporting,
@@ -1831,6 +1908,7 @@ struct ContentView: View {
                         Table(of: Folder.self,
                               selection: $folderSelection,
                               sortOrder: $folderSortOrder) {
+
                             TableColumn("name") { folder in
                                 Label("\(folder.name)",
                                       systemImage: "folder")
@@ -1838,6 +1916,7 @@ struct ContentView: View {
                                 .labelStyle(.titleAndIcon)
                                 .font(.system(size: 11))
                             }
+
                             TableColumn("state") { folder in
                                 Label {
                                     Text("\(folder.state)")
@@ -1912,7 +1991,21 @@ struct ContentView: View {
                                     }
                                 }
                             } header: {
-                                Text("Image")
+                                HStack {
+                                    VStack {
+                                        Text("Image")
+                                    }
+                                    VStack {
+                                        if (selectedImageFiles.count > 0) {
+                                            Button(action: deleteSelectedImages) {
+                                                Text("Delete selected \(selectedImageFiles.count) images")
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(Color.gray)
+                                            }
+                                            .buttonStyle(.accessoryBarAction)
+                                        }
+                                    }
+                                }
                             }
                         }
                         .tableStyle(.inset(alternatesRowBackgrounds: false))
@@ -1926,7 +2019,7 @@ struct ContentView: View {
                                 }
                             }
                         }
-                        .onChange(of: imageFileSortOrder) {
+                        .onChange(of: imageFileSortOrder) { _, imageFileSortOrder in
                             withAnimation {
                                 uploadImageFiles.sort(using: imageFileSortOrder)
                             }
@@ -1967,7 +2060,21 @@ struct ContentView: View {
                                     }
                                 }
                             } header: {
-                                Text("Pdf")
+                                HStack {
+                                    VStack {
+                                        Text("Pdf")
+                                    }
+                                    VStack {
+                                        if (selectedPdfFiles.count > 0) {
+                                            Button(action: deleteSelectedPdfs) {
+                                                Text("Delete selected \(selectedPdfFiles.count) pdf files")
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(Color.gray)
+                                            }
+                                            .buttonStyle(.accessoryBarAction)
+                                        }
+                                    }
+                                }
                             }
                         }
                         .tableStyle(.inset(alternatesRowBackgrounds: false))
@@ -1982,7 +2089,7 @@ struct ContentView: View {
                                 }
                             }
                         }
-                        .onChange(of: pdfFileSortOrder) {
+                        .onChange(of: pdfFileSortOrder) { _, pdfFileSortOrder in
                             uploadPdfFiles.sort(using: pdfFileSortOrder)
                         }
                         .tabItem {
@@ -2023,11 +2130,25 @@ struct ContentView: View {
                                     }
                                 }
                             } header: {
-                                Text("Audio")
+                                HStack {
+                                    VStack {
+                                        Text("Audio")
+                                    }
+                                    VStack {
+                                        if (selectedAudioFiles.count > 0) {
+                                            Button(action: deleteSelectedAudioFiles) {
+                                                Text("Delete selected \(selectedAudioFiles.count) audio files")
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(Color.gray)
+                                            }
+                                            .buttonStyle(.accessoryBarAction)
+                                        }
+                                    }
+                                }
                             }
                         }
                         .tableStyle(.inset(alternatesRowBackgrounds: false))
-                        .onChange(of: audioFileSelection) {
+                        .onChange(of: audioFileSelection) { _, audioFileSelection in
                             self.selectedAudioFiles = []
                             for selectedId in audioFileSelection {
                                 uploadAudioFiles.forEach { audioFile in
@@ -2053,7 +2174,7 @@ struct ContentView: View {
                                 }
                             }
                         }
-                        .onChange(of: audioFileSortOrder) {
+                        .onChange(of: audioFileSortOrder) { _, audioFileSortOrder in
                             uploadAudioFiles.sort(using: audioFileSortOrder)
                         }
                         .tabItem {
@@ -2094,7 +2215,21 @@ struct ContentView: View {
                                     }
                                 }
                             } header: {
-                                Text("Video")
+                                HStack {
+                                    VStack {
+                                        Text("Video")
+                                    }
+                                    VStack {
+                                        if (selectedVideoFiles.count > 0) {
+                                            Button(action: deleteSelectedVideoFiles) {
+                                                Text("Delete selected \(selectedVideoFiles.count) video files")
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(Color.gray)
+                                            }
+                                            .buttonStyle(.accessoryBarAction)
+                                        }
+                                    }
+                                }
                             }
                         }
                         .tableStyle(.inset(alternatesRowBackgrounds: false))
@@ -2109,7 +2244,7 @@ struct ContentView: View {
                                 }
                             }
                         }
-                        .onChange(of: videoFileSortOrder) {
+                        .onChange(of: videoFileSortOrder) { _, videoFileSortOrder in
                             uploadVideoFiles.sort(using: videoFileSortOrder)
                         }
                         .tabItem {
@@ -2148,7 +2283,21 @@ struct ContentView: View {
                                     }
                                 }
                             } header: {
-                                Text("Text")
+                                HStack {
+                                    VStack {
+                                        Text("Text")
+                                    }
+                                    VStack {
+                                        if (selectedTextFiles.count > 0) {
+                                            Button(action: deleteSelectedTexts) {
+                                                Text("Delete selected \(selectedTextFiles.count) text files")
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(Color.gray)
+                                            }
+                                            .buttonStyle(.accessoryBarAction)
+                                        }
+                                    }
+                                }
                             }
                         }
                         .tableStyle(.inset(alternatesRowBackgrounds: false))
@@ -2163,7 +2312,7 @@ struct ContentView: View {
                                 }
                             }
                         }
-                        .onChange(of: textFileSortOrder) {
+                        .onChange(of: textFileSortOrder) { _, textFileSortOrder in
                             uploadTextFiles.sort(using: textFileSortOrder)
                         }
                         .tabItem {
@@ -2173,7 +2322,7 @@ struct ContentView: View {
                     .padding(.horizontal, 5)
                 }
             case .account:
-                if self.identified && !self.editAccount && !self.editPassword {
+                if self.identified && self.myAccount && (!self.editAccount && !self.editPassword && !self.newAccount && !self.newPassword) {
                     Button(action: submitDestroySessionForm) {
                         Image(systemName: "xmark")
                             .font(.system(size: 9))
@@ -2219,19 +2368,26 @@ struct ContentView: View {
 
                                 Button(action: publishSelectedFolders) {
                                     Image(systemName: "newspaper")
-                                        .font(.system(size: 9))
-                                    Text("Publish \(self.selectedFolders.count) selected folders")
-                                        .font(.system(size: 9))
+                                        .font(.system(size: 11))
+                                    Text("Publish selected \(self.selectedFolders.count) Folders")
+                                        .font(.system(size: 11))
                                         .foregroundStyle(Color.white)
-                                }.buttonStyle(.bordered)
+                                }
+                                .buttonStyle(.accessoryBarAction)
 
                                 Button(action: unpublishSelectedFolders) {
-                                    Image(systemName: "barcode")
-                                        .font(.system(size: 9))
-                                    Text("Unpublish \(self.selectedFolders.count) selected folders")
-                                        .font(.system(size: 9))
+                                    Text("Unpublish selected \(self.selectedFolders.count) Folders")
+                                        .font(.system(size: 11))
                                         .foregroundStyle(Color.gray)
-                                }.buttonStyle(.bordered)
+                                }
+                                .buttonStyle(.accessoryBarAction)
+
+                                Button(action: deleteSelectedFolders) {
+                                    Text("Delete selected \(self.selectedFolders.count) Folders")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(Color.gray)
+                                }
+                                .buttonStyle(.accessoryBarAction)
                             }
 
                             ForEach(self.selectedImageFiles) { imageFile in
@@ -2660,7 +2816,6 @@ struct ContentView: View {
                                     .font(.system(size: 9))
                                     .foregroundStyle(Color.primary)
                             }.buttonStyle(.bordered)
-
                         }
                     }
                 }

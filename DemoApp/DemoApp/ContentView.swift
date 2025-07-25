@@ -934,17 +934,22 @@ struct ContentView: View {
 
                     DispatchQueue.main.async {
 
+                        // validation errors
                         let httpResponse = response as? HTTPURLResponse
                         let httpResponseUnwrapped = httpResponse!
 
                         // validation errors
-                        if (userResponseWithMessage.user != nil) {
-                            if (httpResponseUnwrapped.statusCode == 200) {
-                                resetValuesNewSession()
-                                self.signedInUser = userResponseWithMessage.user
-                                self.identified = (self.signedInUser?.createdAt != nil)
-                                getAllUploads()
-                            }
+                        let errorsData = userResponseWithMessage.user?.errors!
+                        if (errorsData == [] && httpResponseUnwrapped.statusCode == 200) {
+
+                            // set current user
+                            self.signedInUser = userResponseWithMessage.user
+                            self.identified = (self.signedInUser?.createdAt != nil)
+
+                            resetValuesNewSession()
+                        } else if errorsData != nil {
+                            let errorsDataUnwrapped = errorsData!
+                            iterateOverErrorsNewSession(errors: errorsDataUnwrapped)
                         }
 
                         // validation message
@@ -952,6 +957,10 @@ struct ContentView: View {
                             let message = Message(message: userResponseWithMessage.message)
                             self.newSessionSuccessMessage = message
                         }
+                    }
+
+                    DispatchQueue.main.async {
+                        getAllUploads()
                     }
 
                 } catch let error {
@@ -1672,16 +1681,6 @@ struct ContentView: View {
                         Text("My Account")
                             .font(.system(size: 15))
 
-                        if let message = newSessionSuccessMessage.message {
-                            Text("\(message)")
-                                .font(.system(size: 11))
-                                .foregroundStyle(Color.secondary)
-                        } else if let message = destroySessionFormResponse.message {
-                            Text("\(message)")
-                                .font(.system(size: 11))
-                                .foregroundStyle(Color.secondary)
-                        }
-
                         if #available(macOS 15.0, *) {
                             Image(systemName: "person.circle")
                                 .font(.system(size: 20))
@@ -1845,15 +1844,9 @@ struct ContentView: View {
                             Text("New Session")
                                 .font(.system(size: 15))
 
-                            if let message = newSessionSuccessMessage.message {
-                                Text("\(message)")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(Color.secondary)
-                            } else if let message = destroySessionFormResponse.message {
-                                Text("\(message)")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(Color.secondary)
-                            }
+                            Text("\(newSessionValidationErrors)\n")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.gray)
 
                             TextField(text: $emailAddressSessionForm, prompt: Text("johnatan@apple.com")) {
                                 Text("Email")

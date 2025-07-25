@@ -2356,7 +2356,7 @@ struct ContentView: View {
                     .padding(.horizontal, 5)
                 }
             case .account:
-                if self.identified && self.myAccount {
+                if self.identified && self.myAccount && (!self.newPassword && !self.editPassword && !self.newAccount && !self.editAccount) {
 
                     Button(action: submitDestroySessionForm) {
                         Image(systemName: "xmark")

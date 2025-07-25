@@ -608,6 +608,14 @@ struct ContentView: View {
         let errors: [String]?
     }
 
+    struct UserWithEmailAndPassword: Codable, Identifiable {
+        let id: Int?
+        let uuid: UUID
+        let emailAddress: String?
+        let password: String?
+        let errors: [String]?
+    }
+
     struct UserWithpassword: Codable, Identifiable {
         let id: Int?
         let uuid: UUID
@@ -909,15 +917,11 @@ struct ContentView: View {
 
     func submitSessionForm() {
         do {
-            let user = User(
+            let user = UserWithEmailAndPassword(
                 id: nil,
                 uuid: UUID(),
-                firstName: nil,
-                lastName: nil,
                 emailAddress: emailAddressSessionForm,
                 password: passwordSessionForm,
-                createdAt: nil,
-                updatedAt: nil,
                 errors: nil
             )
 

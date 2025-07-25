@@ -616,13 +616,17 @@ struct ContentView: View {
 
     /* Account */
     @State var myAccount:Bool = Bool(false)    // My Account
-    @State var newAccount:Bool = Bool(false)   // Register Account
     @State var newSession:Bool = Bool(true)    // Sign-In
+
     @State var newPassword:Bool = Bool(false)  // Reset Password
-                                               //
+    @State var newPasswordComplete:Bool = Bool(false)
+
+    @State var newAccount:Bool = Bool(false)   // Register Account
+    @State var newAccountComplete:Bool = Bool(false)
+
     @State var editAccount:Bool = Bool(false)  // Edit Account
     @State var editAccountComplete:Bool = Bool(false)
-                                               //
+
     @State var editPassword:Bool = Bool(false) // Edit Password
     @State var editPasswordComplete:Bool = Bool(false)
 
@@ -869,24 +873,18 @@ struct ContentView: View {
                         if (userResponseWithMessage.user != nil) {
                             let errorsData = userResponseWithMessage.user?.errors!
                             if (errorsData == [] && httpResponseUnwrapped.statusCode == 200) {
-                                self.signedInUser = userResponseWithMessage.user
-                                self.identified = ((self.signedInUser?.createdAt) != nil)
                                 resetValuesNewAccount()
                             } else {
                                 let errorsDataUnwrapped = errorsData!
                                 iterateOverErrorsNewAccount(errors: errorsDataUnwrapped)
                             }
                         }
-                        
+
                         // validation message
                         if (userResponseWithMessage.message != nil) {
                             let message = Message(message: userResponseWithMessage.message)
                             self.newAccountSuccessMessage = message
                         }
-                    }
-
-                    DispatchQueue.main.async {
-                        getAllUploads()
                     }
 
                 } catch let error {
@@ -1150,13 +1148,13 @@ struct ContentView: View {
     }
 
     func resetValuesNewSession() {
+//        self.newSession = false
         self.myAccount = true
 
         self.newAccount = false
         self.newPassword = false
         self.editPassword = false
         self.editAccount = false
-//        self.newSession = false
 
         // reset errors
         self.newSessionValidationErrors = String()
@@ -1170,8 +1168,10 @@ struct ContentView: View {
     }
 
     func resetValuesNewPassword() {
-        self.newAccount = false
 //        self.newPassword = false
+        self.newPasswordComplete = true
+
+        self.newAccount = false
         self.editPassword = false
         self.editAccount = false
 
@@ -1186,10 +1186,11 @@ struct ContentView: View {
     }
 
     func resetValuesEditPassword() {
-        self.newAccount = false
-        self.newPassword = false
 //        self.editPassword = false
         self.editPasswordComplete = true
+
+        self.newAccount = false
+        self.newPassword = false
         self.editAccount = false
 
         // reset errors
@@ -1202,9 +1203,11 @@ struct ContentView: View {
         self.newPasswordEditPasswordForm = String()
         self.newPasswordConfirmationEditPasswordForm = String()
     }
-    
+
     func resetValuesNewAccount() {
 //        self.newAccount = false
+        self.newAccountComplete = true
+
         self.newPassword = false
         self.editPassword = false
         self.editAccount = false
@@ -1257,7 +1260,9 @@ struct ContentView: View {
         resetValuesNewSession()
 
         // enable buttons again
+        self.newPasswordComplete = false
         self.editPasswordComplete = false
+        self.newAccountComplete = false
         self.editAccountComplete = false
     }
 
@@ -1520,10 +1525,17 @@ struct ContentView: View {
                                 }
                                 .disableAutocorrection(true)
 
-                                if (!self.editPasswordComplete) {
+                                if (self.editPasswordComplete) {
                                     Button(action: submitEditPasswordForm) {
                                         Text("Submit")
-                                    }.buttonStyle(PlainButtonStyle())
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                    .disabled(true)
+                                } else {
+                                    Button(action: submitEditPasswordForm) {
+                                        Text("Submit")
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
                                 }
 
                                 Spacer()
@@ -1589,10 +1601,17 @@ struct ContentView: View {
                                     .disabled(true)
                                 }
 
-                                if (!self.editAccountComplete) {
+                                if (self.editAccountComplete) {
                                     Button(action: submitAccountForm) {
                                         Text("Submit")
-                                    }.buttonStyle(PlainButtonStyle())
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                    .disabled(true)
+                                } else {
+                                    Button(action: submitAccountForm) {
+                                        Text("Submit")
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
                                 }
 
                                 Spacer()
@@ -1621,9 +1640,7 @@ struct ContentView: View {
                             Text("\(message)")
                                 .font(.system(size: 11))
                                 .foregroundStyle(Color.secondary)
-                        }
-
-                        if let message = destroySessionFormResponse.message {
+                        } else if let message = destroySessionFormResponse.message {
                             Text("\(message)")
                                 .font(.system(size: 11))
                                 .foregroundStyle(Color.secondary)
@@ -1686,9 +1703,18 @@ struct ContentView: View {
                             }
                             .disableAutocorrection(true)
 
-                            Button(action: submitNewPasswordForm) {
-                                Text("Submit")
-                            }.buttonStyle(PlainButtonStyle())
+                            if (self.newPasswordComplete) {
+                                Button(action: submitNewPasswordForm) {
+                                    Text("Submit")
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                                .disabled(true)
+                            } else {
+                                Button(action: submitNewPasswordForm) {
+                                    Text("Submit")
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
 
                             Spacer()
 
@@ -1745,9 +1771,18 @@ struct ContentView: View {
                             }
                             .disableAutocorrection(true)
 
-                            Button(action: submitRegistrationForm) {
-                                Text("Submit")
-                            }.buttonStyle(PlainButtonStyle())
+                            if (self.newAccountComplete) {
+                                Button(action: submitRegistrationForm) {
+                                    Text("Submit")
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                                .disabled(true)
+                            } else {
+                                Button(action: submitRegistrationForm) {
+                                    Text("Submit")
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
 
                             Spacer()
 
@@ -1778,8 +1813,7 @@ struct ContentView: View {
                                 Text("\(message)")
                                     .font(.system(size: 11))
                                     .foregroundStyle(Color.secondary)
-                            }
-                            if let message = destroySessionFormResponse.message {
+                            } else if let message = destroySessionFormResponse.message {
                                 Text("\(message)")
                                     .font(.system(size: 11))
                                     .foregroundStyle(Color.secondary)

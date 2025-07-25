@@ -1133,6 +1133,9 @@ struct ContentView: View {
 
         // reset forms
         resetValuesNewSession()
+
+        // enable buttons
+        self.newSessionComplete = false
     }
 
     func clickEditAccount() {

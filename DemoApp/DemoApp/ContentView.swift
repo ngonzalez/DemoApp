@@ -704,6 +704,8 @@ struct ContentView: View {
 
     @State private var emailAddressAccountForm: String = String()
 
+    @State private var uuidAccountForm: String = String()
+
     @State private var createdAtAccountForm: String = String()
 
     @State private var updatedAtAccountForm: String = String()
@@ -1545,27 +1547,22 @@ struct ContentView: View {
                                     .foregroundStyle(.gray)
 
                                 SecureField(text: $newPasswordEditPasswordForm, prompt: Text("Password")) {
-                                    Text("Passowrd")
+                                    Text("Password")
                                 }
                                 .disableAutocorrection(true)
+                                .disabled(self.editPasswordComplete)
 
                                 SecureField(text: $newPasswordConfirmationEditPasswordForm, prompt: Text("Password confirmation")) {
                                     Text("Password confirmation")
                                 }
                                 .disableAutocorrection(true)
+                                .disabled(self.editPasswordComplete)
 
-                                if (self.editPasswordComplete) {
-                                    Button(action: submitEditPasswordForm) {
-                                        Text("Submit")
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
-                                    .disabled(true)
-                                } else {
-                                    Button(action: submitEditPasswordForm) {
-                                        Text("Submit")
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
+                                Button(action: submitEditPasswordForm) {
+                                    Text("Submit")
                                 }
+                                .buttonStyle(PlainButtonStyle())
+                                .disabled(self.editPasswordComplete)
 
                                 Spacer()
 
@@ -1609,6 +1606,7 @@ struct ContentView: View {
                                         Text("First Name")
                                     }
                                     .disableAutocorrection(true)
+                                    .disabled(self.editAccountComplete)
                                 }
 
                                 let lastName = self.signedInUser?.lastName
@@ -1618,6 +1616,7 @@ struct ContentView: View {
                                         Text("Last Name")
                                     }
                                     .disableAutocorrection(true)
+                                    .disabled(self.editAccountComplete)
                                 }
 
                                 let emailAddress = self.signedInUser?.emailAddress
@@ -1630,21 +1629,29 @@ struct ContentView: View {
                                     .disabled(true)
                                 }
 
+                                let uuid = self.signedInUser?.uuid.uuidString
+                                if (uuid != nil) {
+                                    let uuidUnwrapped = uuid!
+                                    TextField(text: $uuidAccountForm, prompt: Text(uuidUnwrapped)) {
+                                        Text("UUID")
+                                    }
+                                    .disableAutocorrection(true)
+                                    .disabled(true)
+                                }
+
                                 let createdAt = self.signedInUser?.createdAt
                                 if (createdAt != nil) {
                                     let createdAtUnwrapped = createdAt!
-//                                    let createdAtFormatted = formatter.string(from: createdAtUnwrapped)
                                     TextField(text: $createdAtAccountForm, prompt: Text(createdAtUnwrapped)) {
                                         Text("Created At")
                                     }
                                     .disableAutocorrection(true)
                                     .disabled(true)
                                 }
-
+//
                                 let updatedAt = self.signedInUser?.updatedAt
                                 if (updatedAt != nil) {
                                     let updatedAtUnwrapped = updatedAt!
-//                                    let updatedAtFormatted = formatter.string(from: updatedAtUnwrapped)
                                     TextField(text: $updatedAtAccountForm, prompt: Text(updatedAtUnwrapped)) {
                                         Text("Updated At")
                                     }
@@ -1652,18 +1659,11 @@ struct ContentView: View {
                                     .disabled(true)
                                 }
 
-                                if (self.editAccountComplete) {
-                                    Button(action: submitAccountForm) {
-                                        Text("Submit")
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
-                                    .disabled(true)
-                                } else {
-                                    Button(action: submitAccountForm) {
-                                        Text("Submit")
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
+                                Button(action: submitAccountForm) {
+                                    Text("Submit")
                                 }
+                                .buttonStyle(PlainButtonStyle())
+                                .disabled(self.editAccountComplete)
 
                                 Spacer()
 
@@ -1744,18 +1744,11 @@ struct ContentView: View {
                             }
                             .disableAutocorrection(true)
 
-                            if (self.newPasswordComplete) {
-                                Button(action: submitNewPasswordForm) {
-                                    Text("Submit")
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                                .disabled(true)
-                            } else {
-                                Button(action: submitNewPasswordForm) {
-                                    Text("Submit")
-                                }
-                                .buttonStyle(PlainButtonStyle())
+                            Button(action: submitNewPasswordForm) {
+                                Text("Submit")
                             }
+                            .buttonStyle(PlainButtonStyle())
+                            .disabled(self.newPasswordComplete)
 
                             Spacer()
 
@@ -1812,18 +1805,11 @@ struct ContentView: View {
                             }
                             .disableAutocorrection(true)
 
-                            if (self.newAccountComplete) {
-                                Button(action: submitRegistrationForm) {
-                                    Text("Submit")
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                                .disabled(true)
-                            } else {
-                                Button(action: submitRegistrationForm) {
-                                    Text("Submit")
-                                }
-                                .buttonStyle(PlainButtonStyle())
+                            Button(action: submitRegistrationForm) {
+                                Text("Submit")
                             }
+                            .buttonStyle(PlainButtonStyle())
+                            .disabled(self.newAccountComplete)
 
                             Spacer()
 
@@ -1858,24 +1844,19 @@ struct ContentView: View {
                                 Text("Email")
                             }
                             .disableAutocorrection(true)
+                            .disabled(self.newSessionComplete)
 
                             SecureField(text: $passwordSessionForm, prompt: Text("Required")) {
                                 Text("Password")
                             }
                             .disableAutocorrection(true)
+                            .disabled(self.newSessionComplete)
 
-                            if (self.newSessionComplete) {
-                                Button(action: submitSessionForm) {
-                                    Text("Submit")
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                                .disabled(true)
-                            } else {
-                                Button(action: submitSessionForm) {
-                                    Text("Submit")
-                                }
-                                .buttonStyle(PlainButtonStyle())
+                            Button(action: submitSessionForm) {
+                                Text("Submit")
                             }
+                            .buttonStyle(PlainButtonStyle())
+                            .disabled(self.newSessionComplete)
 
                             /* Register */
                             Button(action: clickRegisterLink) {

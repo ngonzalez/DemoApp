@@ -1743,6 +1743,7 @@ struct ContentView: View {
                                 Text("Email")
                             }
                             .disableAutocorrection(true)
+                            .disabled(self.newPasswordComplete)
 
                             Button(action: submitNewPasswordForm) {
                                 Text("Submit")
@@ -1789,21 +1790,25 @@ struct ContentView: View {
                                 Text("First Name")
                             }
                             .disableAutocorrection(true)
+                            .disabled(self.newAccountComplete)
 
                             TextField(text: $lastNameRegistrationForm, prompt: Text("Appleseed")) {
                                 Text("Last Name")
                             }
                             .disableAutocorrection(true)
+                            .disabled(self.newAccountComplete)
 
                             TextField(text: $emailAddressRegistrationForm, prompt: Text("johnatan@apple.com")) {
                                 Text("Email")
                             }
                             .disableAutocorrection(true)
+                            .disabled(self.newAccountComplete)
 
                             SecureField(text: $passwordRegistrationForm, prompt: Text("Required")) {
                                 Text("Password")
                             }
                             .disableAutocorrection(true)
+                            .disabled(self.newAccountComplete)
 
                             Button(action: submitRegistrationForm) {
                                 Text("Submit")

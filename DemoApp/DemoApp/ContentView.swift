@@ -115,8 +115,8 @@ struct ContentView: View {
 
     /* Upload Request  */
 //    @State private var backendURL:String = "https://appshare.site:4040/upload"
-//    @State private var backendURL:String = "https://link12.ddns.net:4040/upload"
-    @State private var backendURL:String = "http://127.0.0.1:3002/upload"
+    @State private var backendURL:String = "https://link12.ddns.net:4040/upload"
+//    @State private var backendURL:String = "http://127.0.0.1:3002/upload"
 
     @State private var mimeTypes:[String:String] = [
         /* DOCUMENTS */
@@ -711,20 +711,20 @@ struct ContentView: View {
     @State private var updatedAtAccountForm: String = String()
 
 //    @State private var accountURL:String = "https://appshare.site:4040/account"
-//    @State private var accountURL:String = "https://link12.ddns.net:4040/account"
-    @State private var accountURL:String = "http://127.0.0.1:3002/account"
+    @State private var accountURL:String = "https://link12.ddns.net:4040/account"
+//    @State private var accountURL:String = "http://127.0.0.1:3002/account"
 
 //    @State private var registrationURL:String = "https://appshare.site:4040/registration"
-//    @State private var registrationURL:String = "https://link12.ddns.net:4040/registration"
-    @State private var registrationURL:String = "http://127.0.0.1:3002/registration"
+    @State private var registrationURL:String = "https://link12.ddns.net:4040/registration"
+//    @State private var registrationURL:String = "http://127.0.0.1:3002/registration"
 
 //    @State private var sessionURL:String = "https://appshare.site:4040/session"
-//    @State private var sessionURL:String = "https://link12.ddns.net:4040/session"
-    @State private var sessionURL:String = "http://127.0.0.1:3002/session"
+    @State private var sessionURL:String = "https://link12.ddns.net:4040/session"
+//    @State private var sessionURL:String = "http://127.0.0.1:3002/session"
 
 //    @State private var passwordURL:String = "https://appshare.site:4040/password"
-//    @State private var passwordURL:String = "https://link12.ddns.net:4040/password"
-    @State private var passwordURL:String = "http://127.0.0.1:3002/password"
+    @State private var passwordURL:String = "https://link12.ddns.net:4040/password"
+//    @State private var passwordURL:String = "http://127.0.0.1:3002/password"
 
     func newPutRequest(url: URL, data: Data, postLength: String) -> URLRequest {
         var request = URLRequest(url: url)
@@ -1372,8 +1372,8 @@ struct ContentView: View {
     @State private var audioStreams:Array<Stream> = Array<Stream>()
 
 //    @State private var serviceURL:String = "https://appshare.site:5050"
-//    @State private var serviceURL:String = "https://link12.ddns.net:5050"
-    @State private var serviceURL:String = "http://127.0.0.1:3001"
+    @State private var serviceURL:String = "https://link12.ddns.net:5050"
+//    @State private var serviceURL:String = "http://127.0.0.1:3001"
 
     func getVideoStream(videoFile: VideoFile) {
         let delegateClass = NetworkDelegateClass()
@@ -1461,8 +1461,8 @@ struct ContentView: View {
         var id: Array<Int>
     }
 
-//    @State private var publishURL:String = "https://link12.ddns.net:4040/folders/publish"
-    @State private var publishURL:String = "http://127.0.0.1:3002/folders/publish"
+    @State private var publishURL:String = "https://link12.ddns.net:4040/folders/publish"
+//    @State private var publishURL:String = "http://127.0.0.1:3002/folders/publish"
 
     func publishSelectedFolders() {
         do {
@@ -1487,8 +1487,8 @@ struct ContentView: View {
         }
     }
 
-//    @State private var unpublishURL:String = "https://link12.ddns.net:4040/folders/unpublish"
-    @State private var unpublishURL:String = "http://127.0.0.1:3002/folders/unpublish"
+    @State private var unpublishURL:String = "https://link12.ddns.net:4040/folders/unpublish"
+//    @State private var unpublishURL:String = "http://127.0.0.1:3002/folders/unpublish"
 
     func unpublishSelectedFolders() {
         do {

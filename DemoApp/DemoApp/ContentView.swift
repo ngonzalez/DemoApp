@@ -16,6 +16,7 @@
     IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+/* SwiftUI*/
 import SwiftUI
 
 /* VideoPlayer */
@@ -112,11 +113,6 @@ struct ContentView: View {
     @State private var selectedTextFiles:Array<TextFile> = Array<TextFile>()
 
     @State private var selectedFolders = Set<Folder.ID>()
-
-    /* Upload Request  */
-//    @State private var backendURL:String = "https://appshare.site:4040/upload"
-    @State private var backendURL:String = "https://link12.ddns.net:4040/upload"
-//    @State private var backendURL:String = "http://127.0.0.1:3002/upload"
 
     @State private var mimeTypes:[String:String] = [
         /* DOCUMENTS */
@@ -603,6 +599,8 @@ struct ContentView: View {
         let lastName: String?
         let emailAddress: String?
         let password: String?
+        let deliverNotificationsSignIn: Bool?
+        let deliverNotificationsAccountUpdate: Bool?
         let createdAt: String?
         let updatedAt: String?
         let errors: [String]?
@@ -620,6 +618,20 @@ struct ContentView: View {
         let uuid: UUID
         let password: String?
         let passwordConfirmation: String?
+        let errors: [String]?
+    }
+
+    struct UserCredentialsWithEmailAndPassword: Codable, Identifiable {
+        let id: Int?
+        let uuid: UUID
+        let firstName: String?
+        let lastName: String?
+        let emailAddress: String?
+        let password: String?
+        let deliverNotificationsSignIn: Bool?
+        let deliverNotificationsAccountUpdate: Bool?
+        let createdAt: String?
+        let updatedAt: String?
         let errors: [String]?
     }
 
@@ -704,27 +716,46 @@ struct ContentView: View {
 
     @State private var emailAddressAccountForm: String = String()
 
+    @State private var notifyOnSignInAccountForm: Bool = false
+
+    @State private var notifyOnAccountUpdateAccountForm: Bool = false
+
     @State private var uuidAccountForm: String = String()
 
     @State private var createdAtAccountForm: String = String()
 
     @State private var updatedAtAccountForm: String = String()
 
+    /* Destroy Attachment */
+    @State var destroyAttachmentResponse:Message = Message(message: String())
+
 //    @State private var accountURL:String = "https://appshare.site:4040/account"
-    @State private var accountURL:String = "https://link12.ddns.net:4040/account"
-//    @State private var accountURL:String = "http://127.0.0.1:3002/account"
+//    @State private var accountURL:String = "https://link12.ddns.net:4040/account"
+    @State private var accountURL:String = "http://127.0.0.1:3002/account"
 
 //    @State private var registrationURL:String = "https://appshare.site:4040/registration"
-    @State private var registrationURL:String = "https://link12.ddns.net:4040/registration"
-//    @State private var registrationURL:String = "http://127.0.0.1:3002/registration"
+//    @State private var registrationURL:String = "https://link12.ddns.net:4040/registration"
+    @State private var registrationURL:String = "http://127.0.0.1:3002/registration"
 
 //    @State private var sessionURL:String = "https://appshare.site:4040/session"
-    @State private var sessionURL:String = "https://link12.ddns.net:4040/session"
-//    @State private var sessionURL:String = "http://127.0.0.1:3002/session"
+//    @State private var sessionURL:String = "https://link12.ddns.net:4040/session"
+    @State private var sessionURL:String = "http://127.0.0.1:3002/session"
 
 //    @State private var passwordURL:String = "https://appshare.site:4040/password"
-    @State private var passwordURL:String = "https://link12.ddns.net:4040/password"
-//    @State private var passwordURL:String = "http://127.0.0.1:3002/password"
+//    @State private var passwordURL:String = "https://link12.ddns.net:4040/password"
+    @State private var passwordURL:String = "http://127.0.0.1:3002/password"
+
+//    @State private var backendURL:String = "https://appshare.site:4040/upload"
+//    @State private var backendURL:String = "https://link12.ddns.net:4040/upload"
+    @State private var backendURL:String = "http://127.0.0.1:3002/upload"
+
+//    @State private var publishURL:String = "https://appshare.site:4040/olders/publish"
+//    @State private var publishURL:String = "https://link12.ddns.net:4040/folders/publish"
+    @State private var publishURL:String = "http://127.0.0.1:3002/folders/publish"
+
+//    @State private var unpublishURL:String = "https://appshare.site:4040/olders/unpublish"
+//    @State private var unpublishURL:String = "https://link12.ddns.net:4040/folders/unpublish"
+    @State private var unpublishURL:String = "http://127.0.0.1:3002/folders/unpublish"
 
     func newPutRequest(url: URL, data: Data, postLength: String) -> URLRequest {
         var request = URLRequest(url: url)
@@ -759,6 +790,18 @@ struct ContentView: View {
         return request
     }
 
+    func newDeleteRequestWithContent(url: URL, data: Data, postLength: String) -> URLRequest {
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.httpBody = data
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.addValue(postLength, forHTTPHeaderField: "Content-Length")
+        request.addValue("gzip, deflate", forHTTPHeaderField: "Content-Encoding")
+
+        return request
+    }
+
     struct UserResponseWithMessage: Codable {
         let user: User?
         let message: String?
@@ -770,13 +813,15 @@ struct ContentView: View {
 
     func submitAccountForm() {
         do {
-            let user = User(
+            let user = UserCredentialsWithEmailAndPassword(
                 id: self.signedInUser?.id,
                 uuid: UUID(),
                 firstName: firstNameAccountForm,
                 lastName: lastNameAccountForm,
                 emailAddress: emailAddressAccountForm,
                 password: "",
+                deliverNotificationsSignIn: notifyOnSignInAccountForm,
+                deliverNotificationsAccountUpdate: notifyOnAccountUpdateAccountForm,
                 createdAt: self.signedInUser?.createdAt,
                 updatedAt: self.signedInUser?.updatedAt,
                 errors: nil
@@ -873,6 +918,8 @@ struct ContentView: View {
                 lastName: lastNameRegistrationForm,
                 emailAddress: emailAddressRegistrationForm,
                 password: passwordRegistrationForm,
+                deliverNotificationsSignIn: false,
+                deliverNotificationsAccountUpdate: false,
                 createdAt: nil,
                 updatedAt: nil,
                 errors: nil
@@ -1158,10 +1205,30 @@ struct ContentView: View {
     func clickEditAccount() {
         self.editAccount = true
 
+        let firstName = self.signedInUser?.firstName
+        if (firstName != nil) {
+            let firstNameUnWrapped = firstName!
+            self.firstNameAccountForm = firstNameUnWrapped
+        }
+        let lastName = self.signedInUser?.lastName
+        if (lastName != nil) {
+            let lastNameUnWrapped = lastName!
+            self.lastNameAccountForm = lastNameUnWrapped
+        }
         let emailAddress = self.signedInUser?.emailAddress
         if (emailAddress != nil) {
-            let emailAddressUnwrapped = emailAddress!
-            self.emailAddressAccountForm = emailAddressUnwrapped
+            let emailAddressUnWrapped = emailAddress!
+            self.emailAddressAccountForm = emailAddressUnWrapped
+        }
+        let notifyOnSignIn = self.signedInUser?.deliverNotificationsSignIn
+        if (notifyOnSignIn != nil) {
+            let notifyOnSignInUnWrapped = notifyOnSignIn!
+            self.notifyOnSignInAccountForm = notifyOnSignInUnWrapped
+        }
+        let notifyOnAccountUpdate = self.signedInUser?.deliverNotificationsAccountUpdate
+        if (notifyOnAccountUpdate != nil) {
+            let notifyOnAccountUpdateUnWrapped = notifyOnAccountUpdate!
+            self.notifyOnAccountUpdateAccountForm = notifyOnAccountUpdateUnWrapped
         }
     }
 
@@ -1273,6 +1340,8 @@ struct ContentView: View {
         self.firstNameAccountForm = String()
         self.lastNameAccountForm = String()
         self.emailAddressAccountForm = String()
+//        self.notifyOnSignInAccountForm = false
+//        self.notifyOnAccountUpdateAccountForm = false
     }
 
     func backToMyAccount() {
@@ -1335,6 +1404,56 @@ struct ContentView: View {
     }
 
     func deleteSelectedImages() {
+        submitDestroyImageForm();
+    }
+
+//        @State private var destroyAttachmentURL:String = "https://appshare.site:4040/attachments"
+//        @State private var destroyAttachmentURL:String = "https://link12.ddns.net:4040/attachments"
+        @State private var destroyAttachmentURL:String = "http://127.0.0.1:3002/attachments"
+
+    struct AttachmentIds: Codable {
+        var id: Array<Int>
+        var type: String
+    }
+
+    func submitDestroyImageForm() {
+        do {
+            let ids = AttachmentIds(id: self.selectedImageFiles.map { $0.id }, type: "Image")
+            let data = try JSONEncoder().encode(ids)
+            let url = URL(string: "\(destroyAttachmentURL)")!
+            let delegateClass = NetworkDelegateClass()
+            let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
+            let optimizedData: Data = try! data.gzipped(level: .bestCompression)
+            let postLength = String(format: "%lu", UInt(optimizedData.count))
+            let request = newDeleteRequestWithContent(url: url, data: optimizedData, postLength: postLength)
+            let task = delegateSession.dataTask(with: request) { data, response, error in
+                do {
+                    let message = try JSONDecoder().decode(Message.self, from: data!)
+
+                    DispatchQueue.main.async {
+                        let httpResponse = response as? HTTPURLResponse
+                        let httpResponseUnwrapped = httpResponse!
+
+                        if (httpResponseUnwrapped.statusCode == 200) {
+                            self.destroyAttachmentResponse = message
+                            clearSelectedFiles()
+                        }
+                    }
+
+                    DispatchQueue.main.async {
+                        getAllUploads()
+                    }
+
+                } catch let error {
+                    logger.error("[submitDestroyImageForm] Request: \(error)")
+                }
+            }
+
+            task.resume()
+
+        } catch let error {
+            logger.error("[submitDestroyImageForm] Request: \(error)")
+        }
     }
 
     func deleteSelectedAudioFiles() {
@@ -1349,6 +1468,7 @@ struct ContentView: View {
     func deleteSelectedTexts() {
     }
 
+    
     func getFolderName(folder: Folder) -> String {
         var folderNames:[String] = []
         folderNames += [folder.name]
@@ -1461,9 +1581,6 @@ struct ContentView: View {
         var id: Array<Int>
     }
 
-    @State private var publishURL:String = "https://link12.ddns.net:4040/folders/publish"
-//    @State private var publishURL:String = "http://127.0.0.1:3002/folders/publish"
-
     func publishSelectedFolders() {
         do {
             let item = FolderIds(id: self.selectedFolders.map { $0 })
@@ -1486,9 +1603,6 @@ struct ContentView: View {
             logger.error("[publishSelectedFolders] \(error)")
         }
     }
-
-    @State private var unpublishURL:String = "https://link12.ddns.net:4040/folders/unpublish"
-//    @State private var unpublishURL:String = "http://127.0.0.1:3002/folders/unpublish"
 
     func unpublishSelectedFolders() {
         do {
@@ -1626,7 +1740,8 @@ struct ContentView: View {
                                         Text("Email Address")
                                     }
                                     .disableAutocorrection(true)
-                                    .disabled(true)
+                                    .disabled(self.editAccountComplete)
+//                                    .disabled(true)
                                 }
 
                                 let uuid = self.signedInUser?.uuid.uuidString
@@ -1658,6 +1773,32 @@ struct ContentView: View {
                                     .disableAutocorrection(true)
                                     .disabled(true)
                                 }
+
+                                Spacer()
+
+                                let notifyOnSignIn = self.signedInUser?.deliverNotificationsSignIn
+                                if (notifyOnSignIn != nil) {
+                                    Toggle(
+                                        "Notify me when I sign-in",
+                                        isOn: $notifyOnSignInAccountForm
+                                    )
+                                    .buttonStyle(.plain)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .disabled(self.editAccountComplete)
+                                }
+
+                                let notifyOnAccountUpdate = self.signedInUser?.deliverNotificationsAccountUpdate
+                                if (notifyOnAccountUpdate != nil) {
+                                    Toggle(
+                                        "Notify me when my account is updated",
+                                        isOn: $notifyOnAccountUpdateAccountForm
+                                    )
+                                    .buttonStyle(.plain)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .disabled(self.editAccountComplete)
+                                }
+
+                                Spacer()
 
                                 Button(action: submitAccountForm) {
                                     Text("Submit")

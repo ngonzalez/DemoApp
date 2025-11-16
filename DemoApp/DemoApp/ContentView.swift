@@ -1799,13 +1799,16 @@ struct ContentView: View {
                                     .font(.system(size: 11))
                                     .foregroundStyle(.gray)
 
-                                TextField(text: $emailAddressEditEmailAddressForm, prompt: Text("Email Address")) {
-                                    Text("Email Address")
+                                let emailAddress = self.signedInUser?.emailAddress
+                                let emailAddressUnwrapped = emailAddress!
+                                TextField(text: $emailAddressEditEmailAddressForm, prompt: Text("\(emailAddressUnwrapped)")) {
+                                    Text("Current Email Address")
                                 }
                                 .disableAutocorrection(true)
-                                .disabled(self.editEmailAddressComplete)
+//                                .disabled(self.editEmailAddressComplete)
+                                .disabled(true)
 
-                                TextField(text: $newEmailAddressEditEmailAddressForm, prompt: Text("Password confirmation")) {
+                                TextField(text: $newEmailAddressEditEmailAddressForm) {
                                     Text("New Email Address")
                                 }
                                 .disableAutocorrection(true)
@@ -2671,7 +2674,7 @@ struct ContentView: View {
                     .padding(.horizontal, 5)
                 }
             case .account:
-                if self.identified && self.myAccount && (!self.newPassword && !self.editPassword && !self.newAccount && !self.editAccount) {
+                if self.identified && self.myAccount && (!self.newPassword && !self.editPassword && !self.editEmailAddress && !self.newAccount && !self.editAccount) {
 
                     Button(action: submitDestroySessionForm) {
                         Image(systemName: "xmark")

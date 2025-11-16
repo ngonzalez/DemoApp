@@ -350,7 +350,6 @@ struct ContentView: View {
         let folder: Folder
         let fileName: String
         let fileUrl: String
-        let thumbUrl: String
         let dataUrl: String?
         let mimeType: String?
         let formatInfo: String?
@@ -621,6 +620,14 @@ struct ContentView: View {
         let errors: [String]?
     }
 
+    struct UserWithEmailAddressAndNewEmailAddress: Codable, Identifiable {
+        let id: Int?
+        let uuid: UUID
+        let emailAddress: String?
+        let newEmailAddress: String?
+        let errors: [String]?
+    }
+
     struct UserCredentialsWithEmailAndPassword: Codable, Identifiable {
         let id: Int?
         let uuid: UUID
@@ -646,36 +653,26 @@ struct ContentView: View {
     /* Account */
     @State var myAccount:Bool = Bool(false)    // My Account
 
-    @State private var signedInUser: User?
+    @State private var signedInUser:User?
     @State private var identified:Bool = Bool(false)
 
-    @State var newSession:Bool = Bool(true)    // Sign-In
+    @State var newSession:Bool = Bool(true)             // New Session
     @State var newSessionComplete:Bool = Bool(false)
 
-    @State var newPassword:Bool = Bool(false)  // Reset Password
+    @State var newPassword:Bool = Bool(false)           // New Password
     @State var newPasswordComplete:Bool = Bool(false)
 
-    @State var newAccount:Bool = Bool(false)   // Register Account
+    @State var newAccount:Bool = Bool(false)            // New Account
     @State var newAccountComplete:Bool = Bool(false)
 
-    @State var editAccount:Bool = Bool(false)  // Edit Account
+    @State var editAccount:Bool = Bool(false)           // Edit Account
     @State var editAccountComplete:Bool = Bool(false)
 
-    @State var editPassword:Bool = Bool(false) // Edit Password
+    @State var editPassword:Bool = Bool(false)          // Edit Password
     @State var editPasswordComplete:Bool = Bool(false)
 
-    /* Register Account */
-    @State var newAccountSuccessMessage:Message = Message(message: String())
-
-    @State var newAccountValidationErrors:String = String()
-
-    @State private var firstNameRegistrationForm: String = String()
-
-    @State private var lastNameRegistrationForm: String = String()
-
-    @State private var emailAddressRegistrationForm: String = String()
-
-    @State private var passwordRegistrationForm: String = String()
+    @State var editEmailAddress:Bool = Bool(false)             // Edit Email
+    @State var editEmailAddressComplete:Bool = Bool(false)
 
     /* New Session */
     @State var newSessionSuccessMessage:Message = Message(message: String())
@@ -689,21 +686,18 @@ struct ContentView: View {
     /* Destroy Session */
     @State var destroySessionFormResponse:Message = Message(message: String())
 
-    /* New Password */
-    @State private var emailAddressPasswordForm: String = String()
+    /* New Account */
+    @State var newAccountSuccessMessage:Message = Message(message: String())
 
-    @State var newPasswordSuccessMessage:Message = Message(message: String())
+    @State var newAccountValidationErrors:String = String()
 
-    @State var newPasswordValidationErrors:String = String()
+    @State private var firstNameRegistrationForm: String = String()
 
-    /* Edit Password */
-    @State var editPasswordSuccessMessage:Message = Message(message: String())
+    @State private var lastNameRegistrationForm: String = String()
 
-    @State private var newPasswordEditPasswordForm: String = String()
+    @State private var emailAddressRegistrationForm: String = String()
 
-    @State private var newPasswordConfirmationEditPasswordForm: String = String()
-
-    @State var editPasswordValidationErrors:String = String()
+    @State private var passwordRegistrationForm: String = String()
 
     /* Edit Account */
     @State var editAccountSuccessMessage:Message = Message(message: String())
@@ -726,40 +720,92 @@ struct ContentView: View {
 
     @State private var updatedAtAccountForm: String = String()
 
+    /* New Password */
+    @State private var emailAddressPasswordForm: String = String()
+
+    @State var newPasswordSuccessMessage:Message = Message(message: String())
+
+    @State var newPasswordValidationErrors:String = String()
+
+    /* Edit Password */
+    @State var editPasswordSuccessMessage:Message = Message(message: String())
+
+    @State private var newPasswordEditPasswordForm: String = String()
+
+    @State private var newPasswordConfirmationEditPasswordForm: String = String()
+
+    @State var editPasswordValidationErrors:String = String()
+
+    /* Edit Email */
+    @State var editEmailAddressSuccessMessage:Message = Message(message: String())
+
+    @State private var emailAddressEditEmailAddressForm: String = String()
+
+    @State private var newEmailAddressEditEmailAddressForm: String = String()
+
+    @State var editEmailAddressValidationErrors:String = String()
+
     /* Destroy Attachment */
     @State var destroyAttachmentResponse:Message = Message(message: String())
 
+    /*
+        Backend URLs
+     */
+
 //    @State private var accountURL:String = "https://appshare.site:4040/account"
-//    @State private var accountURL:String = "https://link12.ddns.net:4040/account"
-    @State private var accountURL:String = "http://127.0.0.1:3002/account"
+    @State private var accountURL:String = "https://link12.ddns.net:4040/account"
+//    @State private var accountURL:String = "http://192.168.1.11:3000/account"
 
 //    @State private var registrationURL:String = "https://appshare.site:4040/registration"
-//    @State private var registrationURL:String = "https://link12.ddns.net:4040/registration"
-    @State private var registrationURL:String = "http://127.0.0.1:3002/registration"
+    @State private var registrationURL:String = "https://link12.ddns.net:4040/registration"
+//    @State private var registrationURL:String = "http://192.168.1.11:3000/registration"
 
 //    @State private var sessionURL:String = "https://appshare.site:4040/session"
-//    @State private var sessionURL:String = "https://link12.ddns.net:4040/session"
-    @State private var sessionURL:String = "http://127.0.0.1:3002/session"
+    @State private var sessionURL:String = "https://link12.ddns.net:4040/session"
+//    @State private var sessionURL:String = "http://192.168.1.11:3000/session"
 
 //    @State private var passwordURL:String = "https://appshare.site:4040/password"
-//    @State private var passwordURL:String = "https://link12.ddns.net:4040/password"
-    @State private var passwordURL:String = "http://127.0.0.1:3002/password"
+    @State private var passwordURL:String = "https://link12.ddns.net:4040/password"
+//    @State private var passwordURL:String = "http://192.168.1.11:3000/password"
 
 //    @State private var backendURL:String = "https://appshare.site:4040/upload"
-//    @State private var backendURL:String = "https://link12.ddns.net:4040/upload"
-    @State private var backendURL:String = "http://127.0.0.1:3002/upload"
+    @State private var backendURL:String = "https://link12.ddns.net:4040/upload"
+//    @State private var backendURL:String = "http://192.168.1.11:3000/upload"
 
 //    @State private var publishURL:String = "https://appshare.site:4040/olders/publish"
-//    @State private var publishURL:String = "https://link12.ddns.net:4040/folders/publish"
-    @State private var publishURL:String = "http://127.0.0.1:3002/folders/publish"
+    @State private var publishURL:String = "https://link12.ddns.net:4040/folders/publish"
+//    @State private var publishURL:String = "http://192.168.1.11:3000/folders/publish"
 
 //    @State private var unpublishURL:String = "https://appshare.site:4040/olders/unpublish"
-//    @State private var unpublishURL:String = "https://link12.ddns.net:4040/folders/unpublish"
-    @State private var unpublishURL:String = "http://127.0.0.1:3002/folders/unpublish"
+    @State private var unpublishURL:String = "https://link12.ddns.net:4040/folders/unpublish"
+//    @State private var unpublishURL:String = "http://192.168.1.11:3000/folders/unpublish"
+
+//    @State private var destroyAttachmentURL:String = "https://appshare.site:4040/attachments"
+    @State private var destroyAttachmentURL:String = "https://link12.ddns.net:4040/attachments"
+//    @State private var destroyAttachmentURL:String = "http://192.168.1.11:3000/attachments"
+
+//    @State private var serviceURL:String = "https://appshare.site:5050"
+    @State private var serviceURL:String = "https://link12.ddns.net:5050"
+//    @State private var serviceURL:String = "http://192.168.1.11:3001"
+
+    /*
+        Backend Requests
+     */
 
     func newPutRequest(url: URL, data: Data, postLength: String) -> URLRequest {
         var request = URLRequest(url: url)
         request.httpMethod = "PUT"
+        request.httpBody = data
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.addValue(postLength, forHTTPHeaderField: "Content-Length")
+
+        return request
+    }
+
+    func newPostRequestGzip(url: URL, data: Data, postLength: String) -> URLRequest {
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
         request.httpBody = data
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -776,7 +822,6 @@ struct ContentView: View {
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.addValue(postLength, forHTTPHeaderField: "Content-Length")
-        request.addValue("gzip, deflate", forHTTPHeaderField: "Content-Encoding")
 
         return request
     }
@@ -1172,6 +1217,19 @@ struct ContentView: View {
         }
     }
 
+    func submitEditEmailAddressForm() {
+        do {
+            let user = UserWithEmailAddressAndNewEmailAddress(
+                id: self.signedInUser?.id,
+                uuid: UUID(),
+                emailAddress: emailAddressEditEmailAddressForm,
+                newEmailAddress: newEmailAddressEditEmailAddressForm,
+                errors: nil
+            )
+            print(user)
+        }
+    }
+
     func clickRegisterLink() {
         self.newAccount = true
     }
@@ -1243,6 +1301,16 @@ struct ContentView: View {
         }
     }
 
+    func clickEditEmailAddress() {
+        self.editEmailAddress = true
+
+        let emailAddress = self.signedInUser?.emailAddress
+        if (emailAddress != nil) {
+            let emailAddressUnwrapped = emailAddress!
+            self.emailAddressEditEmailAddressForm = emailAddressUnwrapped
+        }
+    }
+
     func resetValuesNewSession() {
 //        self.newSession = false
         self.newSessionComplete = true
@@ -1252,6 +1320,7 @@ struct ContentView: View {
         self.newPassword = false
         self.editPassword = false
         self.editAccount = false
+        self.editEmailAddress = false
 
         // reset errors
         self.newSessionValidationErrors = String()
@@ -1271,6 +1340,7 @@ struct ContentView: View {
         self.newAccount = false
         self.editPassword = false
         self.editAccount = false
+        self.editEmailAddress = false
 
         // reset errors
         self.newPasswordValidationErrors = String()
@@ -1289,6 +1359,7 @@ struct ContentView: View {
         self.newAccount = false
         self.newPassword = false
         self.editAccount = false
+        self.editEmailAddress = false
 
         // reset errors
         self.editPasswordValidationErrors = String()
@@ -1308,6 +1379,7 @@ struct ContentView: View {
         self.newPassword = false
         self.editPassword = false
         self.editAccount = false
+        self.editEmailAddress = false
 
         // reset errors
         self.newAccountValidationErrors = String()
@@ -1329,6 +1401,7 @@ struct ContentView: View {
         self.newAccount = false
         self.newPassword = false
         self.editPassword = false
+        self.editEmailAddress = false
 
         // reset errors
         self.editAccountValidationErrors = String()
@@ -1344,6 +1417,26 @@ struct ContentView: View {
 //        self.notifyOnAccountUpdateAccountForm = false
     }
 
+    func resetValuesEditEmailAddress() {
+//        self.editEmailAddress = false
+        self.editEmailAddressComplete = true
+
+        self.editAccount = false
+        self.newAccount = false
+        self.newPassword = false
+        self.editPassword = false
+
+        // reset errors
+        self.editEmailAddressValidationErrors = String()
+
+        // reset message
+        self.editEmailAddressSuccessMessage = Message(message: String())
+
+        // reset values
+        self.emailAddressEditEmailAddressForm = String()
+        self.newEmailAddressEditEmailAddressForm = String()
+    }
+
     func backToMyAccount() {
         // enable my account
         self.myAccount = true
@@ -1353,6 +1446,7 @@ struct ContentView: View {
         self.newPassword = false
         self.editPassword = false
         self.editAccount = false
+        self.editEmailAddress = false
 
         // reset forms
         resetValuesEditAccount()
@@ -1406,10 +1500,6 @@ struct ContentView: View {
     func deleteSelectedImages() {
         submitDestroyImageForm();
     }
-
-//        @State private var destroyAttachmentURL:String = "https://appshare.site:4040/attachments"
-//        @State private var destroyAttachmentURL:String = "https://link12.ddns.net:4040/attachments"
-        @State private var destroyAttachmentURL:String = "http://127.0.0.1:3002/attachments"
 
     struct AttachmentIds: Codable {
         var id: Array<Int>
@@ -1490,10 +1580,6 @@ struct ContentView: View {
     @State private var videoStreams:Array<Stream> = Array<Stream>()
 
     @State private var audioStreams:Array<Stream> = Array<Stream>()
-
-//    @State private var serviceURL:String = "https://appshare.site:5050"
-    @State private var serviceURL:String = "https://link12.ddns.net:5050"
-//    @State private var serviceURL:String = "http://127.0.0.1:3001"
 
     func getVideoStream(videoFile: VideoFile) {
         let delegateClass = NetworkDelegateClass()
@@ -1590,7 +1676,7 @@ struct ContentView: View {
             let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
             let optimizedData: Data = try! data.gzipped(level: .bestCompression)
             let postLength = String(format: "%lu", UInt(optimizedData.count))
-            let request = newPostRequest(url: url, data: optimizedData, postLength: postLength)
+            let request = newPostRequestGzip(url: url, data: optimizedData, postLength: postLength)
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 DispatchQueue.main.async {
                     getSelectedUploads()
@@ -1641,42 +1727,95 @@ struct ContentView: View {
                 if self.identified {
 
                     if self.editPassword {
+                        
+                        Form {
+                            VStack {
+                                
+                                Spacer()
+                                
+                                Text("Change Password")
+                                    .font(.system(size: 15))
+                                
+                                if let message = editPasswordSuccessMessage.message {
+                                    Text("\(message)")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(Color.secondary)
+                                }
+                                
+                                Text("\(editPasswordValidationErrors)\n")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.gray)
+                                
+                                SecureField(text: $newPasswordEditPasswordForm, prompt: Text("Password")) {
+                                    Text("Password")
+                                }
+                                .disableAutocorrection(true)
+                                .disabled(self.editPasswordComplete)
+                                
+                                SecureField(text: $newPasswordConfirmationEditPasswordForm, prompt: Text("Password confirmation")) {
+                                    Text("Password confirmation")
+                                }
+                                .disableAutocorrection(true)
+                                .disabled(self.editPasswordComplete)
+                                
+                                Button(action: submitEditPasswordForm) {
+                                    Text("Submit")
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                                .disabled(self.editPasswordComplete)
+                                
+                                Spacer()
+                                
+                                Divider()
+                                
+                                /* Account */
+                                Button(action: clickBackToAccountLink) {
+                                    Image(systemName: "person.text.rectangle")
+                                        .font(.system(size: 20))
+                                    Text("Back to my account")
+                                        .foregroundStyle(.blue.gradient)
+                                }.buttonStyle(PlainButtonStyle())
+                            }
+                            .textFieldStyle(.roundedBorder)
+                        }.padding(20)
+
+                    } else if self.editEmailAddress {
 
                         Form {
                             VStack {
 
                                 Spacer()
 
-                                Text("Change Password")
+                                Text("Change Email Address")
                                     .font(.system(size: 15))
 
-                                if let message = editPasswordSuccessMessage.message {
+                                if let message = editEmailAddressSuccessMessage.message {
                                     Text("\(message)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(Color.secondary)
                                 }
 
-                                Text("\(editPasswordValidationErrors)\n")
+                                Text("\(editEmailAddressValidationErrors)\n")
                                     .font(.system(size: 11))
                                     .foregroundStyle(.gray)
 
-                                SecureField(text: $newPasswordEditPasswordForm, prompt: Text("Password")) {
-                                    Text("Password")
+                                TextField(text: $emailAddressEditEmailAddressForm, prompt: Text("Email Address")) {
+                                    Text("Email Address")
                                 }
                                 .disableAutocorrection(true)
-                                .disabled(self.editPasswordComplete)
+                                .disabled(self.editEmailAddressComplete)
 
-                                SecureField(text: $newPasswordConfirmationEditPasswordForm, prompt: Text("Password confirmation")) {
-                                    Text("Password confirmation")
+                                TextField(text: $newEmailAddressEditEmailAddressForm, prompt: Text("Password confirmation")) {
+                                    Text("New Email Address")
                                 }
                                 .disableAutocorrection(true)
-                                .disabled(self.editPasswordComplete)
+                                .disabled(self.editEmailAddressComplete)
 
-                                Button(action: submitEditPasswordForm) {
+                                Button(action: submitEditEmailAddressForm) {
                                     Text("Submit")
                                 }
                                 .buttonStyle(PlainButtonStyle())
-                                .disabled(self.editPasswordComplete)
+                                .disabled(self.editEmailAddressComplete)
 
                                 Spacer()
 
@@ -1740,8 +1879,8 @@ struct ContentView: View {
                                         Text("Email Address")
                                     }
                                     .disableAutocorrection(true)
-                                    .disabled(self.editAccountComplete)
-//                                    .disabled(true)
+//                                    .disabled(self.editAccountComplete)
+                                    .disabled(true)
                                 }
 
                                 let uuid = self.signedInUser?.uuid.uuidString
@@ -1856,6 +1995,12 @@ struct ContentView: View {
                         /* Reset Password */
                         Button(action: clickEditPassword) {
                             Text("Change password")
+                                .foregroundStyle(.blue.gradient)
+                        }.buttonStyle(PlainButtonStyle())
+
+                        /* Edit Email Address */
+                        Button(action: clickEditEmailAddress) {
+                            Text("Change Email Address")
                                 .foregroundStyle(.blue.gradient)
                         }.buttonStyle(PlainButtonStyle())
                     }

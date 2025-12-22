@@ -2884,24 +2884,23 @@ struct ContentView: View {
                                                 .frame(width: 8, height: 8)
                                         }
                                     }
-                                    if (folder.state == "created") {
-                                        Button(action: publishSelectedFolders) {
-                                            Image(systemName: "newspaper")
-                                                .font(.system(size: 11))
-                                            Text("Publish selected \(self.selectedFolders.count) Folders")
-                                                .font(.system(size: 11))
-                                                .foregroundStyle(Color.white)
-                                        }
-                                        .buttonStyle(.accessoryBarAction)
-                                    } else if (folder.state == "published") {
-                                        Button(action: unpublishSelectedFolders) {
-                                            Text("Unpublish selected \(self.selectedFolders.count) Folders")
-                                                .font(.system(size: 11))
-                                                .foregroundStyle(Color.gray)
-                                        }
-                                        .buttonStyle(.accessoryBarAction)
-                                    }
                                 }
+
+                                Button(action: publishSelectedFolders) {
+                                    Image(systemName: "newspaper")
+                                        .font(.system(size: 11))
+                                    Text("Publish selected \(self.selectedFolders.count) Folders")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(Color.white)
+                                }
+                                .buttonStyle(.accessoryBarAction)
+
+                                Button(action: unpublishSelectedFolders) {
+                                    Text("Unpublish selected \(self.selectedFolders.count) Folders")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(Color.gray)
+                                }
+                                .buttonStyle(.accessoryBarAction)
 
                                 Button(action: deleteSelectedFolders) {
                                     Text("Delete selected \(self.selectedFolders.count) Folders")

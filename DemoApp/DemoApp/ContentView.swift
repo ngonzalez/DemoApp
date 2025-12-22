@@ -25,6 +25,8 @@ import AVKit
 /* GzipSwift */
 import Gzip
 
+import Zip
+
 /* Logger */
 import OSLog
 
@@ -163,8 +165,7 @@ struct ContentView: View {
         var updatedAt: String
     }
 
-    func uploadItem(source: String, path: String, mimeType: String, uploadData: Data, createdAt: Date, updatedAt: Date) {
-
+    func newUploadRequest(source: String, path: String, mimeType: String, uploadData: Data, createdAt: Date, updatedAt: Date) {
         do {
             let dateFormatter = DateFormatter()
             dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZZZZZ"
@@ -192,30 +193,94 @@ struct ContentView: View {
             task.resume()
 
         } catch let error {
-            logger.error("[uploadItem] Error: \(error)")
+            logger.error("[newUploadRequest] Error: \(error)")
+        }
+    }
+
+    func uploadItem(source: String, path: String, mimeType: String, data: Data, createdAt: Date, updatedAt: Date, zipFile: Bool) {
+        if (zipFile) {
+            data.withUnsafeBytes { (u8Ptr: UnsafePointer<UInt8>) in
+                let mutRawPointer = UnsafeMutableRawPointer(mutating: u8Ptr)
+                let totalSize = data.count
+                let chunkSize = 104857600 // 100MB
+                var offset = 0
+                var i = 0
+
+                while offset < totalSize {
+                    let chunkSize = offset + chunkSize > totalSize ? totalSize - offset : chunkSize
+                    let chunk = Data(bytesNoCopy: mutRawPointer+offset, count: chunkSize, deallocator: Data.Deallocator.none)
+
+                    newUploadRequest(
+                        source: source,
+                        path: "\(path).\(i).block",
+                        mimeType: "application/octet-stream",
+                        uploadData: chunk,
+                        createdAt: createdAt,
+                        updatedAt: updatedAt
+                    )
+
+                    i += 1
+                    offset += chunkSize
+                }
+            }
+        } else {
+            newUploadRequest(
+                source: source,
+                path: path,
+                mimeType: mimeType,
+                uploadData: data,
+                createdAt: createdAt,
+                updatedAt: updatedAt
+            )
         }
     }
 
     func importItem(itemPath: String, createdAt: Date, updatedAt: Date, source: String) {
         do {
-            let fileData = try Data(contentsOf: URL(fileURLWithPath: itemPath))
             let fileExt = URL(fileURLWithPath: itemPath).pathExtension
             let allowedMimeTypes = mimeTypes.map { (key, value) in return key }
 
             if allowedMimeTypes.contains(fileExt) {
                 let mimeType = String(mimeTypes[fileExt]!).lowercased()
+                let data = try Data(contentsOf: URL(fileURLWithPath: itemPath))
+                let chunkSize = 104857600 // 100MB
 
-                DispatchQueue.main.async {
-                    uploadItem(
-                        source: source,
-                        path: itemPath,
-                        mimeType: mimeType,
-                        uploadData: fileData,
-                        createdAt: createdAt,
-                        updatedAt: updatedAt
-                    )
+                if (data.count > chunkSize) {
+                    let zipFilePath = try Zip.quickZipFiles([URL(fileURLWithPath: itemPath)], fileName: "archive") // Zip
+                    let fileData = try Data(contentsOf: zipFilePath)
+
+                    DispatchQueue.main.async {
+                        uploadItem(
+                            source: source,
+                            path: itemPath,
+                            mimeType: mimeType,
+                            data: fileData,
+                            createdAt: createdAt,
+                            updatedAt: updatedAt,
+                            zipFile: true
+                        )
+                    }
+                } else {
+                    let fileData = try Data(contentsOf: URL(fileURLWithPath: itemPath))
+
+                    if allowedMimeTypes.contains(fileExt) {
+                        let mimeType = String(mimeTypes[fileExt]!).lowercased()
+
+                        DispatchQueue.main.async {
+                            uploadItem(
+                                source: source,
+                                path: itemPath,
+                                mimeType: mimeType,
+                                data: fileData,
+                                createdAt: createdAt,
+                                updatedAt: updatedAt,
+                                zipFile: false
+                            )
+                        }
+                    }
                 }
             }
+
         } catch let error {
             logger.error("[importItem] Error \(error)")
         }
@@ -524,24 +589,10 @@ struct ContentView: View {
         return request
     }
 
-    func getAllUploadsRequest() -> URL {
-        if (loadedFolders.count > 0) {
-            var str:String = ""
-            for folderId in (loadedFolders.map { $0.id }) {
-                str += ",\(folderId)"
-            }
-            let strData:Data = str.data(using: .utf8)!
-            let base64str:String = strData.base64EncodedString()
-            return URL(string: "\(backendURL)" + "?folderIds=\(base64str)")!
-        } else {
-            return URL(string: "\(backendURL)")!
-        }
-    }
-
     func getAllUploads() {
         let delegateClass = NetworkDelegateClass()
         let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
-        let request = newGetRequest(url: getAllUploadsRequest())
+        let request = newGetRequest(url: URL(string: "\(backendURL)")!)
         let task = delegateSession.dataTask(with: request) { data, response, error in
             do {
                 let response = try JSONDecoder().decode([UploadWithFiles].self, from: data!)
@@ -803,7 +854,7 @@ struct ContentView: View {
         return request
     }
 
-    func newPostRequestGzip(url: URL, data: Data, postLength: String) -> URLRequest {
+    func newPostRequestWithContent(url: URL, data: Data, postLength: String) -> URLRequest {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.httpBody = data
@@ -1099,6 +1150,12 @@ struct ContentView: View {
                         self.identified = false
                         self.newSession = true
                         self.newSessionComplete = false
+
+                        clearSelectedFiles()
+                        clearSelectedFolders()
+
+                        self.loadedFolders = Array<Folder>()
+                        self.selectedFolders = Set()
                     }
                 }
 
@@ -1226,7 +1283,6 @@ struct ContentView: View {
                 newEmailAddress: newEmailAddressEditEmailAddressForm,
                 errors: nil
             )
-            print(user)
         }
     }
 
@@ -1676,7 +1732,7 @@ struct ContentView: View {
             let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
             let optimizedData: Data = try! data.gzipped(level: .bestCompression)
             let postLength = String(format: "%lu", UInt(optimizedData.count))
-            let request = newPostRequestGzip(url: url, data: optimizedData, postLength: postLength)
+            let request = newPostRequestWithContent(url: url, data: optimizedData, postLength: postLength)
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 DispatchQueue.main.async {
                     getSelectedUploads()
@@ -1746,14 +1802,14 @@ struct ContentView: View {
                                     .font(.system(size: 11))
                                     .foregroundStyle(.gray)
                                 
-                                SecureField(text: $newPasswordEditPasswordForm, prompt: Text("Password")) {
-                                    Text("Password")
+                                SecureField(text: $newPasswordEditPasswordForm, prompt: Text("New Password")) {
+                                    Text("New Password")
                                 }
                                 .disableAutocorrection(true)
                                 .disabled(self.editPasswordComplete)
                                 
-                                SecureField(text: $newPasswordConfirmationEditPasswordForm, prompt: Text("Password confirmation")) {
-                                    Text("Password confirmation")
+                                SecureField(text: $newPasswordConfirmationEditPasswordForm, prompt: Text("New Password confirmation")) {
+                                    Text("New Password confirmation")
                                 }
                                 .disableAutocorrection(true)
                                 .disabled(self.editPasswordComplete)

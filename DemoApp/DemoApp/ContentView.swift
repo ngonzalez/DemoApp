@@ -25,6 +25,7 @@ import AVKit
 /* GzipSwift */
 import Gzip
 
+/* Zip */
 import Zip
 
 /* Logger */
@@ -160,28 +161,30 @@ struct ContentView: View {
         var filePath: String
         var mimeType: String
         var source: String
+        var uploadFileUuid: UUID?
         var itemData: Data
         var createdAt: String
         var updatedAt: String
     }
 
-    func newUploadRequest(source: String, path: String, mimeType: String, uploadData: Data, createdAt: Date, updatedAt: Date) {
+    func newUploadRequest(uuid: UUID, source: String, path: String, mimeType: String, uploadData: Data, uploadFileUuid: UUID?, createdAt: Date, updatedAt: Date) {
         do {
             let dateFormatter = DateFormatter()
             dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZZZZZ"
             let createdAtFormatted = dateFormatter.string(from: createdAt)
             let updatedAtFormatted = dateFormatter.string(from: updatedAt)
-            let item = UploadItem(
-                uuid: UUID(),
+            let uploadItem = UploadItem(
+                uuid: uuid,
                 filePath: path,
                 mimeType: mimeType,
                 source: source,
+                uploadFileUuid: uploadFileUuid,
                 itemData: uploadData,
                 createdAt: createdAtFormatted,
                 updatedAt: updatedAtFormatted
             )
 
-            let data = try JSONEncoder().encode(item)
+            let data = try JSONEncoder().encode(uploadItem)
             let url = URL(string: backendURL)!
             let delegateClass = NetworkDelegateClass()
             let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
@@ -197,87 +200,81 @@ struct ContentView: View {
         }
     }
 
-    func uploadItem(source: String, path: String, mimeType: String, data: Data, createdAt: Date, updatedAt: Date, zipFile: Bool) {
-        if (zipFile) {
-            data.withUnsafeBytes { (u8Ptr: UnsafePointer<UInt8>) in
-                let mutRawPointer = UnsafeMutableRawPointer(mutating: u8Ptr)
-                let totalSize = data.count
-                let chunkSize = 104857600 // 100MB
-                var offset = 0
-                var i = 0
-
-                while offset < totalSize {
-                    let chunkSize = offset + chunkSize > totalSize ? totalSize - offset : chunkSize
-                    let chunk = Data(bytesNoCopy: mutRawPointer+offset, count: chunkSize, deallocator: Data.Deallocator.none)
-
-                    newUploadRequest(
-                        source: source,
-                        path: "\(path).\(i).block",
-                        mimeType: "application/octet-stream",
-                        uploadData: chunk,
-                        createdAt: createdAt,
-                        updatedAt: updatedAt
-                    )
-
-                    i += 1
-                    offset += chunkSize
-                }
-            }
-        } else {
-            newUploadRequest(
-                source: source,
-                path: path,
-                mimeType: mimeType,
-                uploadData: data,
-                createdAt: createdAt,
-                updatedAt: updatedAt
-            )
-        }
-    }
-
-    func importItem(itemPath: String, createdAt: Date, updatedAt: Date, source: String) {
+    func importItem(itemPath: String, createdAt: Date, updatedAt: Date, uuid: UUID, source: String) {
         do {
             let fileExt = URL(fileURLWithPath: itemPath).pathExtension
             let allowedMimeTypes = mimeTypes.map { (key, value) in return key }
 
             if allowedMimeTypes.contains(fileExt) {
-                let mimeType = String(mimeTypes[fileExt]!).lowercased()
-                let data = try Data(contentsOf: URL(fileURLWithPath: itemPath))
-                let chunkSize = 104857600 // 100MB
+               let mimeType = String(mimeTypes[fileExt]!).lowercased()
+               let data = try Data(contentsOf: URL(fileURLWithPath: itemPath))
+               let chunkSize = 104857600 // 100MB
 
-                if (data.count > chunkSize) {
-                    let zipFilePath = try Zip.quickZipFiles([URL(fileURLWithPath: itemPath)], fileName: "archive") // Zip
-                    let fileData = try Data(contentsOf: zipFilePath)
+               if (data.count > chunkSize) {
+                   let zipFilePath = try Zip.quickZipFiles([URL(fileURLWithPath: itemPath)], fileName: "archive")
 
-                    DispatchQueue.main.async {
-                        uploadItem(
+                   let tempDir = FileManager.default.temporaryDirectory
+                   let tempFileURL = tempDir.appendingPathComponent("sample")
+
+                   let chunker = FileChunker.init(input: zipFilePath, outputDirectory: tempFileURL, chunkSize: chunkSize)
+                   let _ = try chunker.chunk()
+
+                   let directoryContents = try
+                      FileManager.default.contentsOfDirectory(at: tempFileURL,
+                             includingPropertiesForKeys:[.contentModificationDateKey],
+                             options: [.skipsHiddenFiles, .skipsSubdirectoryDescendants])
+                          .filter { $0.lastPathComponent.hasSuffix(".block") }
+                          .sorted(by: {
+                              let date0 = try $0.promisedItemResourceValues(forKeys:[.contentModificationDateKey]).contentModificationDate!
+                              let date1 = try $1.promisedItemResourceValues(forKeys:[.contentModificationDateKey]).contentModificationDate!
+                              return date0.compare(date1) == .orderedAscending
+                           })
+
+                   let FilePaths = directoryContents.map{ $0.path() }
+                   var i = 0
+
+                    for counter in 0..<FilePaths.count {
+                        let fileData = try Data(contentsOf: URL(fileURLWithPath: FilePaths[counter]))
+
+                        newUploadRequest(
+                            uuid: UUID(),
                             source: source,
-                            path: itemPath,
-                            mimeType: mimeType,
-                            data: fileData,
+                            path: "\(itemPath).\(i).block",
+                            mimeType: "application/octet-stream",
+                            uploadData: fileData,
+                            uploadFileUuid: uuid,
                             createdAt: createdAt,
-                            updatedAt: updatedAt,
-                            zipFile: true
+                            updatedAt: updatedAt
                         )
+                        i += 1
                     }
-                } else {
+
+                    try FileManager.default.removeItem(at: tempFileURL)
+
+                    newUploadRequest(
+                        uuid: uuid,
+                        source: source,
+                        path: itemPath,
+                        mimeType: mimeType,
+                        uploadData: Data(),
+                        uploadFileUuid: nil,
+                        createdAt: createdAt,
+                        updatedAt: updatedAt
+                    )
+
+               } else {
                     let fileData = try Data(contentsOf: URL(fileURLWithPath: itemPath))
 
-                    if allowedMimeTypes.contains(fileExt) {
-                        let mimeType = String(mimeTypes[fileExt]!).lowercased()
-
-                        DispatchQueue.main.async {
-                            uploadItem(
-                                source: source,
-                                path: itemPath,
-                                mimeType: mimeType,
-                                data: fileData,
-                                createdAt: createdAt,
-                                updatedAt: updatedAt,
-                                zipFile: false
-                            )
-                        }
-                    }
+                    newUploadRequest(
+                        uuid: UUID(),
+                        source: source,
+                        path: itemPath,
+                        mimeType: mimeType,
+                        uploadData: fileData,
+                        uploadFileUuid: nil,
+                        createdAt: createdAt,
+                        updatedAt: updatedAt
+                    )
                 }
             }
 
@@ -302,10 +299,11 @@ struct ContentView: View {
               let fsFileType:String = attributes[FileAttributeKey.type] as! String
               let itemCreatedAt:Date = attributes[FileAttributeKey.creationDate] as! Date
               let itemUpdatedAt:Date = attributes[FileAttributeKey.modificationDate] as! Date
+              let uuid = UUID()
 
               if (fsFileType == "NSFileTypeRegular") {
 
-                  importItem(itemPath: itemPath, createdAt: itemCreatedAt, updatedAt: itemUpdatedAt, source: "root")
+                  importItem(itemPath: itemPath, createdAt: itemCreatedAt, updatedAt: itemUpdatedAt, uuid: uuid, source: "root")
 
               } else if (fsFileType == "NSFileTypeDirectory") {
 
@@ -320,10 +318,11 @@ struct ContentView: View {
                       let folderFsFileType:String = folderItemAttributes[FileAttributeKey.type] as! String
                       let folderItemCreatedAt:Date = folderItemAttributes[FileAttributeKey.creationDate] as! Date
                       let folderItemUpdatedAt:Date = folderItemAttributes[FileAttributeKey.modificationDate] as! Date
+                      let uuid = UUID()
 
                       if (folderFsFileType == "NSFileTypeRegular") {
 
-                          importItem(itemPath: folderItemPath, createdAt: folderItemCreatedAt, updatedAt: folderItemUpdatedAt, source: "folder")
+                          importItem(itemPath: folderItemPath, createdAt: folderItemCreatedAt, updatedAt: folderItemUpdatedAt, uuid: uuid, source: "folder")
 
                       }
 
@@ -340,10 +339,11 @@ struct ContentView: View {
                               let subfolderFsFileType:String = subfolderItemAttributes[FileAttributeKey.type] as! String
                               let subfolderItemCreatedAt:Date = subfolderItemAttributes[FileAttributeKey.creationDate] as! Date
                               let subfolderItemUpdatedAt:Date = subfolderItemAttributes[FileAttributeKey.modificationDate] as! Date
+                              let uuid = UUID()
 
                               if (subfolderFsFileType == "NSFileTypeRegular") {
 
-                                  importItem(itemPath: subfolderItemPath, createdAt: subfolderItemCreatedAt, updatedAt: subfolderItemUpdatedAt, source: "subfolder")
+                                  importItem(itemPath: subfolderItemPath, createdAt: subfolderItemCreatedAt, updatedAt: subfolderItemUpdatedAt, uuid: uuid, source: "subfolder")
 
                               }
                           }
@@ -1068,6 +1068,7 @@ struct ContentView: View {
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 do {
                     let userResponseWithMessage = try JSONDecoder().decode(UserResponseWithMessage.self, from: data!)
+                    print(userResponseWithMessage)
 
                     DispatchQueue.main.async {
 
@@ -1274,7 +1275,6 @@ struct ContentView: View {
         let id: Int?
         let uuid: UUID
         let emailAddress: String?
-        let newEmailAddress: String?
         let errors: [String]?
     }
 
@@ -1283,8 +1283,7 @@ struct ContentView: View {
             let user = UserWithEmailAddressAndNewEmailAddress(
                 id: self.signedInUser?.id,
                 uuid: UUID(),
-                emailAddress: emailAddressEditEmailAddressForm,
-                newEmailAddress: newEmailAddressEditEmailAddressForm,
+                emailAddress: newEmailAddressEditEmailAddressForm,
                 errors: nil
             )
 
@@ -2520,6 +2519,7 @@ struct ContentView: View {
                                                 Text("Delete selected \(selectedImageFiles.count) images")
                                                     .font(.system(size: 11))
                                                     .foregroundStyle(Color.gray)
+                                                    .buttonStyle(.plain)
                                             }
                                             .buttonStyle(.accessoryBarAction)
                                         }
@@ -2589,6 +2589,7 @@ struct ContentView: View {
                                                 Text("Delete selected \(selectedPdfFiles.count) pdf files")
                                                     .font(.system(size: 11))
                                                     .foregroundStyle(Color.gray)
+                                                    .buttonStyle(.plain)
                                             }
                                             .buttonStyle(.accessoryBarAction)
                                         }
@@ -2659,6 +2660,7 @@ struct ContentView: View {
                                                 Text("Delete selected \(selectedAudioFiles.count) audio files")
                                                     .font(.system(size: 11))
                                                     .foregroundStyle(Color.gray)
+                                                    .buttonStyle(.plain)
                                             }
                                             .buttonStyle(.accessoryBarAction)
                                         }
@@ -2744,6 +2746,7 @@ struct ContentView: View {
                                                 Text("Delete selected \(selectedVideoFiles.count) video files")
                                                     .font(.system(size: 11))
                                                     .foregroundStyle(Color.gray)
+                                                    .buttonStyle(.plain)
                                             }
                                             .buttonStyle(.accessoryBarAction)
                                         }
@@ -2812,6 +2815,7 @@ struct ContentView: View {
                                                 Text("Delete selected \(selectedTextFiles.count) text files")
                                                     .font(.system(size: 11))
                                                     .foregroundStyle(Color.gray)
+                                                    .buttonStyle(.plain)
                                             }
                                             .buttonStyle(.accessoryBarAction)
                                         }
@@ -2856,22 +2860,11 @@ struct ContentView: View {
                 }
             }
         } detail: {
-
             if (selectedSideBarItem == .upload) {
-
                 HStack {
                     VStack {
                         List {
-
-                            // upload panel
-
-                            if (self.selectedFolders.count > 0 &&
-                                (self.selectedImageFiles.count == 0 &&
-                                 self.selectedAudioFiles.count == 0 &&
-                                 self.selectedPdfFiles.count == 0 &&
-                                 self.selectedVideoFiles.count == 0 &&
-                                 self.selectedTextFiles.count == 0)) {
-
+                            if (self.selectedFolders.count > 0) {
                                 ForEach(self.loadedFolders) { folder in
                                     if (self.selectedFolders.contains(folder.id) && String(folder.name) != "") {
                                         Label {
@@ -2884,33 +2877,36 @@ struct ContentView: View {
                                                 .frame(width: 8, height: 8)
                                         }
                                     }
-                                    if (folder.state == "created") {
-                                        Button(action: publishSelectedFolders) {
-                                            Image(systemName: "newspaper")
-                                                .font(.system(size: 11))
-                                            Text("Publish selected \(self.selectedFolders.count) Folders")
-                                                .font(.system(size: 11))
-                                                .foregroundStyle(Color.white)
-                                        }
-                                        .buttonStyle(.accessoryBarAction)
-                                    } else if (folder.state == "published") {
-                                        Button(action: unpublishSelectedFolders) {
-                                            Text("Unpublish selected \(self.selectedFolders.count) Folders")
-                                                .font(.system(size: 11))
-                                                .foregroundStyle(Color.gray)
-                                        }
-                                        .buttonStyle(.accessoryBarAction)
+                                }
+                                HStack {
+                                    Button(action: publishSelectedFolders) {
+                                        Image(systemName: "newspaper.fill")
+                                            .font(.system(size: 11))
+                                        Text("Publish selected \(self.selectedFolders.count) Folders")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(Color.white)
+                                            .buttonStyle(.plain)
+                                    }
+                                    Button(action: unpublishSelectedFolders) {
+                                        Image(systemName: "newspaper")
+                                            .font(.system(size: 11))
+                                        Text("Unpublish selected \(self.selectedFolders.count) Folders")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(Color.gray)
+                                            .buttonStyle(.plain)
+                                    }
+                                    Button(action: deleteSelectedFolders) {
+                                        Image(systemName: "delete.forward")
+                                            .font(.system(size: 11))
+                                        Text("Delete selected \(self.selectedFolders.count) Folders")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(Color.gray)
+                                            .buttonStyle(.plain)
                                     }
                                 }
-
-                                Button(action: deleteSelectedFolders) {
-                                    Text("Delete selected \(self.selectedFolders.count) Folders")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(Color.gray)
-                                }
-                                .buttonStyle(.accessoryBarAction)
                             }
-
+                        }.frame(height: 70)
+                        List {
                             ForEach(self.selectedImageFiles) { imageFile in
 
                                 let fileName = imageFile.fileName

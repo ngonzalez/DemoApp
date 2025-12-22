@@ -504,6 +504,7 @@ struct ContentView: View {
         self.uploadAudioFiles = []
         self.uploadVideoFiles = []
         self.uploadTextFiles = []
+        self.loadedFolders = []
 
         for upload in self.uploadsWithFiles {
             self.uploadImageFiles += upload.imageFiles
@@ -641,66 +642,6 @@ struct ContentView: View {
         task.resume()
     }
 
-    /* Users */
-    struct User: Codable, Identifiable {
-        let id: Int?
-        let uuid: UUID
-        let firstName: String?
-        let lastName: String?
-        let emailAddress: String?
-        let password: String?
-        let deliverNotificationsSignIn: Bool?
-        let deliverNotificationsAccountUpdate: Bool?
-        let createdAt: String?
-        let updatedAt: String?
-        let errors: [String]?
-    }
-
-    struct UserWithEmail: Codable, Identifiable {
-        let id: Int?
-        let uuid: UUID
-        let emailAddress: String?
-        let errors: [String]?
-    }
-
-    struct UserWithPasswordAndPasswordConfirmation: Codable, Identifiable {
-        let id: Int?
-        let uuid: UUID
-        let password: String?
-        let passwordConfirmation: String?
-        let errors: [String]?
-    }
-
-    struct UserWithEmailAddressAndNewEmailAddress: Codable, Identifiable {
-        let id: Int?
-        let uuid: UUID
-        let emailAddress: String?
-        let newEmailAddress: String?
-        let errors: [String]?
-    }
-
-    struct UserCredentialsWithEmailAndPassword: Codable, Identifiable {
-        let id: Int?
-        let uuid: UUID
-        let firstName: String?
-        let lastName: String?
-        let emailAddress: String?
-        let password: String?
-        let deliverNotificationsSignIn: Bool?
-        let deliverNotificationsAccountUpdate: Bool?
-        let createdAt: String?
-        let updatedAt: String?
-        let errors: [String]?
-    }
-
-    struct UserWithEmailAndPassword: Codable, Identifiable {
-        let id: Int?
-        let uuid: UUID
-        let emailAddress: String?
-        let password: String?
-        let errors: [String]?
-    }
-
     /* Account */
     @State var myAccount:Bool = Bool(false)    // My Account
 
@@ -799,6 +740,9 @@ struct ContentView: View {
     /* Destroy Attachment */
     @State var destroyAttachmentResponse:Message = Message(message: String())
 
+    /* Destroy Folder  */
+    @State var destroyFolderResponse:Message = Message(message: String())
+
     /*
         Backend URLs
      */
@@ -819,6 +763,10 @@ struct ContentView: View {
     @State private var passwordURL:String = "https://link12.ddns.net:4040/password"
 //    @State private var passwordURL:String = "http://192.168.1.11:3000/password"
 
+//    @State private var emailURL:String = "https://appshare.site:4040/email"
+    @State private var emailURL:String = "https://link12.ddns.net:4040/email"
+//    @State private var emailURL:String = "http://192.168.1.11:3000/email"
+
 //    @State private var backendURL:String = "https://appshare.site:4040/upload"
     @State private var backendURL:String = "https://link12.ddns.net:4040/upload"
 //    @State private var backendURL:String = "http://192.168.1.11:3000/upload"
@@ -834,6 +782,10 @@ struct ContentView: View {
 //    @State private var destroyAttachmentURL:String = "https://appshare.site:4040/attachments"
     @State private var destroyAttachmentURL:String = "https://link12.ddns.net:4040/attachments"
 //    @State private var destroyAttachmentURL:String = "http://192.168.1.11:3000/attachments"
+
+//    @State private var foldersURL:String = "https://appshare.site:4040/folders"
+    @State private var foldersURL:String = "https://link12.ddns.net:4040/folders"
+//    @State private var foldersURL:String = "http://192.168.1.11:3000/folders"
 
 //    @State private var serviceURL:String = "https://appshare.site:5050"
     @State private var serviceURL:String = "https://link12.ddns.net:5050"
@@ -909,7 +861,7 @@ struct ContentView: View {
 
     func submitAccountForm() {
         do {
-            let user = UserCredentialsWithEmailAndPassword(
+            let user = User(
                 id: self.signedInUser?.id,
                 uuid: UUID(),
                 firstName: firstNameAccountForm,
@@ -1005,6 +957,27 @@ struct ContentView: View {
         }
     }
 
+    func iterateOverErrorsEditEmailAddress(errors: [String?]) {
+        self.editEmailAddressValidationErrors = String()
+        errors.forEach { error in
+            editEmailAddressValidationErrors += "\n▫️\(error!)"
+        }
+    }
+
+    struct User: Codable, Identifiable {
+        let id: Int?
+        let uuid: UUID
+        let firstName: String?
+        let lastName: String?
+        let emailAddress: String?
+        let password: String?
+        let deliverNotificationsSignIn: Bool?
+        let deliverNotificationsAccountUpdate: Bool?
+        let createdAt: String?
+        let updatedAt: String?
+        let errors: [String]?
+    }
+
     func submitRegistrationForm() {
         do {
             let user = User(
@@ -1067,9 +1040,17 @@ struct ContentView: View {
         }
     }
 
+    struct UserWithEmailAddressAndPassword: Codable, Identifiable {
+        let id: Int?
+        let uuid: UUID
+        let emailAddress: String?
+        let password: String?
+        let errors: [String]?
+    }
+
     func submitSessionForm() {
         do {
-            let user = UserWithEmailAndPassword(
+            let user = UserWithEmailAddressAndPassword(
                 id: nil,
                 uuid: UUID(),
                 emailAddress: emailAddressSessionForm,
@@ -1167,9 +1148,16 @@ struct ContentView: View {
         task.resume()
     }
 
+    struct UserWithEmailAddress: Codable, Identifiable {
+        let id: Int?
+        let uuid: UUID
+        let emailAddress: String?
+        let errors: [String]?
+    }
+
     func submitNewPasswordForm() {
         do {
-            let user = UserWithEmail(
+            let user = UserWithEmailAddress(
                 id: nil,
                 uuid: UUID(),
                 emailAddress: emailAddressPasswordForm,
@@ -1216,6 +1204,14 @@ struct ContentView: View {
         } catch let error {
             logger.error("[submitNewPasswordForm] Error: \(error)")
         }
+    }
+
+    struct UserWithPasswordAndPasswordConfirmation: Codable, Identifiable {
+        let id: Int?
+        let uuid: UUID
+        let password: String?
+        let passwordConfirmation: String?
+        let errors: [String]?
     }
 
     func submitEditPasswordForm() {
@@ -1274,6 +1270,14 @@ struct ContentView: View {
         }
     }
 
+    struct UserWithEmailAddressAndNewEmailAddress: Codable, Identifiable {
+        let id: Int?
+        let uuid: UUID
+        let emailAddress: String?
+        let newEmailAddress: String?
+        let errors: [String]?
+    }
+
     func submitEditEmailAddressForm() {
         do {
             let user = UserWithEmailAddressAndNewEmailAddress(
@@ -1283,6 +1287,50 @@ struct ContentView: View {
                 newEmailAddress: newEmailAddressEditEmailAddressForm,
                 errors: nil
             )
+
+            let data = try JSONEncoder().encode(user)
+            let url = URL(string: "\(emailURL)")!
+            let delegateClass = NetworkDelegateClass()
+            let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
+            let optimizedData: Data = try! data.gzipped(level: .bestCompression)
+            let postLength = String(format: "%lu", UInt(optimizedData.count))
+            let request = newPutRequest(url: url, data: optimizedData, postLength: postLength)
+            let task = delegateSession.dataTask(with: request) { data, response, error in
+                do {
+                    let userResponseWithMessage = try JSONDecoder().decode(UserResponseWithMessage.self, from: data!)
+
+                    DispatchQueue.main.async {
+
+                        let httpResponse = response as? HTTPURLResponse
+                        let httpResponseUnwrapped = httpResponse!
+
+                        // validation errors
+                        if (userResponseWithMessage.user != nil) {
+                            let errorsData = userResponseWithMessage.user?.errors!
+                            if (errorsData == [] && httpResponseUnwrapped.statusCode == 200) {
+                                resetValuesEditEmailAddress()
+                            } else {
+                                let errorsDataUnwrapped = errorsData!
+                                iterateOverErrorsEditEmailAddress(errors: errorsDataUnwrapped)
+                            }
+                        }
+
+                        // validation message
+                        if (userResponseWithMessage.message != nil) {
+                            let message = Message(message: userResponseWithMessage.message)
+                            self.editEmailAddressSuccessMessage = message
+                        }
+                    }
+
+                } catch let error {
+                    logger.error("[submitEditPasswordForm] Request: \(error)")
+                }
+            }
+
+            task.resume()
+
+        } catch let error {
+            logger.error("[submitEditPasswordForm] Error: \(error)")
         }
     }
 
@@ -1308,6 +1356,7 @@ struct ContentView: View {
         self.newPassword = false
         self.editPassword = false
         self.editAccount = false
+        self.editEmailAddress = false
 
         // reset forms
         resetValuesNewSession()
@@ -1508,12 +1557,14 @@ struct ContentView: View {
         resetValuesEditAccount()
         resetValuesEditPassword()
         resetValuesNewSession()
+        resetValuesEditEmailAddress()
 
         // enable buttons again
         self.newPasswordComplete = false
         self.editPasswordComplete = false
         self.newAccountComplete = false
         self.editAccountComplete = false
+        self.editEmailAddressComplete = false
     }
 
     /* Navigation */
@@ -1551,10 +1602,48 @@ struct ContentView: View {
     }
 
     func deleteSelectedFolders() {
+        submitDestroyFolderForm()
     }
 
-    func deleteSelectedImages() {
-        submitDestroyImageForm();
+    func submitDestroyFolderForm() {
+        do {
+            let item = FolderIds(id: self.selectedFolders.map { $0 })
+            let data = try JSONEncoder().encode(item)
+            let url = URL(string: "\(foldersURL)")!
+            let delegateClass = NetworkDelegateClass()
+            let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
+            let optimizedData: Data = try! data.gzipped(level: .bestCompression)
+            let postLength = String(format: "%lu", UInt(optimizedData.count))
+            let request = newDeleteRequestWithContent(url: url, data: optimizedData, postLength: postLength)
+            let task = delegateSession.dataTask(with: request) { data, response, error in
+                do {
+                    let message = try JSONDecoder().decode(Message.self, from: data!)
+
+                    DispatchQueue.main.async {
+                        let httpResponse = response as? HTTPURLResponse
+                        let httpResponseUnwrapped = httpResponse!
+
+                        if (httpResponseUnwrapped.statusCode == 200) {
+                            self.destroyFolderResponse = message
+                            clearSelectedFolders()
+                            clearSelectedFiles()
+                        }
+                    }
+
+                    DispatchQueue.main.async {
+                        getAllUploads()
+                    }
+
+                } catch let error {
+                    logger.error("[submitDestroyImageForm] Request: \(error)")
+                }
+            }
+
+            task.resume()
+
+        } catch let error {
+            logger.error("[submitDestroyImageForm] Request: \(error)")
+        }
     }
 
     struct AttachmentIds: Codable {
@@ -1562,9 +1651,9 @@ struct ContentView: View {
         var type: String
     }
 
-    func submitDestroyImageForm() {
+    func submitDestroyAttachments(ids: Array<Int>, type: String) {
         do {
-            let ids = AttachmentIds(id: self.selectedImageFiles.map { $0.id }, type: "Image")
+            let ids = AttachmentIds(id: ids, type: type)
             let data = try JSONEncoder().encode(ids)
             let url = URL(string: "\(destroyAttachmentURL)")!
             let delegateClass = NetworkDelegateClass()
@@ -1602,19 +1691,41 @@ struct ContentView: View {
         }
     }
 
+    func deleteSelectedImages() {
+        submitDestroyAttachments(
+            ids: self.selectedImageFiles.map { $0.id },
+            type: "ImageFile"
+        )
+    }
+
     func deleteSelectedAudioFiles() {
+        submitDestroyAttachments(
+            ids: self.selectedAudioFiles.map { $0.id },
+            type: "AudioFile"
+        )
     }
 
     func deleteSelectedVideoFiles() {
+        submitDestroyAttachments(
+            ids: self.selectedVideoFiles.map { $0.id },
+            type: "VideoFile"
+        )
     }
 
     func deleteSelectedPdfs() {
+        submitDestroyAttachments(
+            ids: self.selectedPdfFiles.map { $0.id },
+            type: "PdfFile"
+        )
     }
 
-    func deleteSelectedTexts() {
+    func deleteSelectedTextFiles() {
+        submitDestroyAttachments(
+            ids: self.selectedTextFiles.map { $0.id },
+            type: "TextFile"
+        )
     }
 
-    
     func getFolderName(folder: Folder) -> String {
         var folderNames:[String] = []
         folderNames += [folder.name]
@@ -1791,13 +1902,13 @@ struct ContentView: View {
                                 
                                 Text("Change Password")
                                     .font(.system(size: 15))
-                                
+
                                 if let message = editPasswordSuccessMessage.message {
                                     Text("\(message)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(Color.secondary)
                                 }
-                                
+
                                 Text("\(editPasswordValidationErrors)\n")
                                     .font(.system(size: 11))
                                     .foregroundStyle(.gray)
@@ -2697,7 +2808,7 @@ struct ContentView: View {
                                     }
                                     VStack {
                                         if (selectedTextFiles.count > 0) {
-                                            Button(action: deleteSelectedTexts) {
+                                            Button(action: deleteSelectedTextFiles) {
                                                 Text("Delete selected \(selectedTextFiles.count) text files")
                                                     .font(.system(size: 11))
                                                     .foregroundStyle(Color.gray)
@@ -2768,28 +2879,29 @@ struct ContentView: View {
                                                 .font(.system(size: 11))
                                                 .foregroundStyle(.gray)
                                         } icon: {
-                                           Rectangle()
-                                               .fill(.gray)
-                                               .frame(width: 8, height: 8)
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
                                         }
                                     }
+                                    if (folder.state == "created") {
+                                        Button(action: publishSelectedFolders) {
+                                            Image(systemName: "newspaper")
+                                                .font(.system(size: 11))
+                                            Text("Publish selected \(self.selectedFolders.count) Folders")
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(Color.white)
+                                        }
+                                        .buttonStyle(.accessoryBarAction)
+                                    } else if (folder.state == "published") {
+                                        Button(action: unpublishSelectedFolders) {
+                                            Text("Unpublish selected \(self.selectedFolders.count) Folders")
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(Color.gray)
+                                        }
+                                        .buttonStyle(.accessoryBarAction)
+                                    }
                                 }
-
-                                Button(action: publishSelectedFolders) {
-                                    Image(systemName: "newspaper")
-                                        .font(.system(size: 11))
-                                    Text("Publish selected \(self.selectedFolders.count) Folders")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(Color.white)
-                                }
-                                .buttonStyle(.accessoryBarAction)
-
-                                Button(action: unpublishSelectedFolders) {
-                                    Text("Unpublish selected \(self.selectedFolders.count) Folders")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(Color.gray)
-                                }
-                                .buttonStyle(.accessoryBarAction)
 
                                 Button(action: deleteSelectedFolders) {
                                     Text("Delete selected \(self.selectedFolders.count) Folders")

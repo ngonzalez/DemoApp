@@ -819,6 +819,10 @@ struct ContentView: View {
     @State private var passwordURL:String = "https://link12.ddns.net:4040/password"
 //    @State private var passwordURL:String = "http://192.168.1.11:3000/password"
 
+//    @State private var emailURL:String = "https://appshare.site:4040/email"
+    @State private var emailURL:String = "https://link12.ddns.net:4040/email"
+//    @State private var emailURL:String = "http://192.168.1.11:3000/email"
+
 //    @State private var backendURL:String = "https://appshare.site:4040/upload"
     @State private var backendURL:String = "https://link12.ddns.net:4040/upload"
 //    @State private var backendURL:String = "http://192.168.1.11:3000/upload"
@@ -1002,6 +1006,13 @@ struct ContentView: View {
         self.editPasswordValidationErrors = String()
         errors.forEach { error in
             editPasswordValidationErrors += "\n▫️\(error!)"
+        }
+    }
+
+    func iterateOverErrorsEditEmailAddress(errors: [String?]) {
+        self.editEmailAddressValidationErrors = String()
+        errors.forEach { error in
+            editEmailAddressValidationErrors += "\n▫️\(error!)"
         }
     }
 
@@ -1283,6 +1294,50 @@ struct ContentView: View {
                 newEmailAddress: newEmailAddressEditEmailAddressForm,
                 errors: nil
             )
+
+            let data = try JSONEncoder().encode(user)
+            let url = URL(string: "\(emailURL)")!
+            let delegateClass = NetworkDelegateClass()
+            let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
+            let optimizedData: Data = try! data.gzipped(level: .bestCompression)
+            let postLength = String(format: "%lu", UInt(optimizedData.count))
+            let request = newPutRequest(url: url, data: optimizedData, postLength: postLength)
+            let task = delegateSession.dataTask(with: request) { data, response, error in
+                do {
+                    let userResponseWithMessage = try JSONDecoder().decode(UserResponseWithMessage.self, from: data!)
+
+                    DispatchQueue.main.async {
+
+                        let httpResponse = response as? HTTPURLResponse
+                        let httpResponseUnwrapped = httpResponse!
+
+                        // validation errors
+                        if (userResponseWithMessage.user != nil) {
+                            let errorsData = userResponseWithMessage.user?.errors!
+                            if (errorsData == [] && httpResponseUnwrapped.statusCode == 200) {
+                                resetValuesEditEmailAddress()
+                            } else {
+                                let errorsDataUnwrapped = errorsData!
+                                iterateOverErrorsEditEmailAddress(errors: errorsDataUnwrapped)
+                            }
+                        }
+
+                        // validation message
+                        if (userResponseWithMessage.message != nil) {
+                            let message = Message(message: userResponseWithMessage.message)
+                            self.editEmailAddressSuccessMessage = message
+                        }
+                    }
+
+                } catch let error {
+                    logger.error("[submitEditPasswordForm] Request: \(error)")
+                }
+            }
+
+            task.resume()
+
+        } catch let error {
+            logger.error("[submitEditPasswordForm] Error: \(error)")
         }
     }
 
@@ -1508,12 +1563,14 @@ struct ContentView: View {
         resetValuesEditAccount()
         resetValuesEditPassword()
         resetValuesNewSession()
+        resetValuesEditEmailAddress()
 
         // enable buttons again
         self.newPasswordComplete = false
         self.editPasswordComplete = false
         self.newAccountComplete = false
         self.editAccountComplete = false
+        self.editEmailAddressComplete = false
     }
 
     /* Navigation */
@@ -1791,13 +1848,13 @@ struct ContentView: View {
                                 
                                 Text("Change Password")
                                     .font(.system(size: 15))
-                                
+
                                 if let message = editPasswordSuccessMessage.message {
                                     Text("\(message)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(Color.secondary)
                                 }
-                                
+
                                 Text("\(editPasswordValidationErrors)\n")
                                     .font(.system(size: 11))
                                     .foregroundStyle(.gray)

@@ -25,6 +25,7 @@ import AVKit
 /* GzipSwift */
 import Gzip
 
+/* Zip */
 import Zip
 
 /* Logger */
@@ -171,7 +172,7 @@ struct ContentView: View {
             dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZZZZZ"
             let createdAtFormatted = dateFormatter.string(from: createdAt)
             let updatedAtFormatted = dateFormatter.string(from: updatedAt)
-            let item = UploadItem(
+            let uploadItem = UploadItem(
                 uuid: UUID(),
                 filePath: path,
                 mimeType: mimeType,
@@ -181,7 +182,7 @@ struct ContentView: View {
                 updatedAt: updatedAtFormatted
             )
 
-            let data = try JSONEncoder().encode(item)
+            let data = try JSONEncoder().encode(uploadItem)
             let url = URL(string: backendURL)!
             let delegateClass = NetworkDelegateClass()
             let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
@@ -197,86 +198,60 @@ struct ContentView: View {
         }
     }
 
-    func uploadItem(source: String, path: String, mimeType: String, data: Data, createdAt: Date, updatedAt: Date, zipFile: Bool) {
-        if (zipFile) {
-            data.withUnsafeBytes { (u8Ptr: UnsafePointer<UInt8>) in
-                let mutRawPointer = UnsafeMutableRawPointer(mutating: u8Ptr)
-                let totalSize = data.count
-                let chunkSize = 104857600 // 100MB
-                var offset = 0
-                var i = 0
-
-                while offset < totalSize {
-                    let chunkSize = offset + chunkSize > totalSize ? totalSize - offset : chunkSize
-                    let chunk = Data(bytesNoCopy: mutRawPointer+offset, count: chunkSize, deallocator: Data.Deallocator.none)
-
-                    newUploadRequest(
-                        source: source,
-                        path: "\(path).\(i).block",
-                        mimeType: "application/octet-stream",
-                        uploadData: chunk,
-                        createdAt: createdAt,
-                        updatedAt: updatedAt
-                    )
-
-                    i += 1
-                    offset += chunkSize
-                }
-            }
-        } else {
-            newUploadRequest(
-                source: source,
-                path: path,
-                mimeType: mimeType,
-                uploadData: data,
-                createdAt: createdAt,
-                updatedAt: updatedAt
-            )
-        }
-    }
-
     func importItem(itemPath: String, createdAt: Date, updatedAt: Date, source: String) {
         do {
             let fileExt = URL(fileURLWithPath: itemPath).pathExtension
             let allowedMimeTypes = mimeTypes.map { (key, value) in return key }
 
             if allowedMimeTypes.contains(fileExt) {
-                let mimeType = String(mimeTypes[fileExt]!).lowercased()
                 let data = try Data(contentsOf: URL(fileURLWithPath: itemPath))
                 let chunkSize = 104857600 // 100MB
 
-                if (data.count > chunkSize) {
-                    let zipFilePath = try Zip.quickZipFiles([URL(fileURLWithPath: itemPath)], fileName: "archive") // Zip
-                    let fileData = try Data(contentsOf: zipFilePath)
+               if (data.count > chunkSize) {
+                   let zipFilePath = try Zip.quickZipFiles([URL(fileURLWithPath: itemPath)], fileName: "archive") // Zip
+                   let fileData = try Data(contentsOf: zipFilePath)//
 
-                    DispatchQueue.main.async {
-                        uploadItem(
-                            source: source,
-                            path: itemPath,
-                            mimeType: mimeType,
-                            data: fileData,
-                            createdAt: createdAt,
-                            updatedAt: updatedAt,
-                            zipFile: true
-                        )
-                    }
-                } else {
+                   fileData.withUnsafeBytes { (u8Ptr: UnsafePointer<UInt8>) in
+                       let mutRawPointer = UnsafeMutableRawPointer(mutating: u8Ptr)
+                       let totalSize = fileData.count
+                       var offset = 0
+                       var i = 0//
+                       while offset < totalSize {
+                           let chunkSize = offset + chunkSize > totalSize ? totalSize - offset : chunkSize
+                           let chunk = Data(bytesNoCopy: mutRawPointer+offset, count: chunkSize, deallocator: Data.Deallocator.none)//
+
+               //            DispatchQueue.main.async {
+                               newUploadRequest(
+                                   source: source,
+                                   path: "\(itemPath).\(i).block",
+                                   mimeType: "application/octet-stream",
+                                   uploadData: chunk,
+                                   createdAt: createdAt,
+                                   updatedAt: updatedAt
+                               )
+               //            }//
+
+                           i += 1
+                           offset += chunkSize
+                       }
+                   }
+
+               } else {
                     let fileData = try Data(contentsOf: URL(fileURLWithPath: itemPath))
 
                     if allowedMimeTypes.contains(fileExt) {
                         let mimeType = String(mimeTypes[fileExt]!).lowercased()
 
-                        DispatchQueue.main.async {
-                            uploadItem(
+//                        DispatchQueue.main.async {
+                            newUploadRequest(
                                 source: source,
                                 path: itemPath,
                                 mimeType: mimeType,
-                                data: fileData,
+                                uploadData: fileData,
                                 createdAt: createdAt,
-                                updatedAt: updatedAt,
-                                zipFile: false
+                                updatedAt: updatedAt
                             )
-                        }
+//                        }
                     }
                 }
             }
@@ -1068,6 +1043,7 @@ struct ContentView: View {
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 do {
                     let userResponseWithMessage = try JSONDecoder().decode(UserResponseWithMessage.self, from: data!)
+                    print(userResponseWithMessage)
 
                     DispatchQueue.main.async {
 
@@ -1274,7 +1250,6 @@ struct ContentView: View {
         let id: Int?
         let uuid: UUID
         let emailAddress: String?
-        let newEmailAddress: String?
         let errors: [String]?
     }
 
@@ -1283,8 +1258,7 @@ struct ContentView: View {
             let user = UserWithEmailAddressAndNewEmailAddress(
                 id: self.signedInUser?.id,
                 uuid: UUID(),
-                emailAddress: emailAddressEditEmailAddressForm,
-                newEmailAddress: newEmailAddressEditEmailAddressForm,
+                emailAddress: newEmailAddressEditEmailAddressForm,
                 errors: nil
             )
 

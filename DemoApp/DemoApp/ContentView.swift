@@ -161,22 +161,24 @@ struct ContentView: View {
         var filePath: String
         var mimeType: String
         var source: String
+        var uploadFileUuid: UUID?
         var itemData: Data
         var createdAt: String
         var updatedAt: String
     }
 
-    func newUploadRequest(source: String, path: String, mimeType: String, uploadData: Data, createdAt: Date, updatedAt: Date) {
+    func newUploadRequest(uuid: UUID, source: String, path: String, mimeType: String, uploadData: Data, uploadFileUuid: UUID?, createdAt: Date, updatedAt: Date) {
         do {
             let dateFormatter = DateFormatter()
             dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZZZZZ"
             let createdAtFormatted = dateFormatter.string(from: createdAt)
             let updatedAtFormatted = dateFormatter.string(from: updatedAt)
             let uploadItem = UploadItem(
-                uuid: UUID(),
+                uuid: uuid,
                 filePath: path,
                 mimeType: mimeType,
                 source: source,
+                uploadFileUuid: uploadFileUuid,
                 itemData: uploadData,
                 createdAt: createdAtFormatted,
                 updatedAt: updatedAtFormatted
@@ -198,43 +200,54 @@ struct ContentView: View {
         }
     }
 
-    func importItem(itemPath: String, createdAt: Date, updatedAt: Date, source: String) {
+    func importItem(itemPath: String, createdAt: Date, updatedAt: Date, uuid: UUID, source: String) {
         do {
             let fileExt = URL(fileURLWithPath: itemPath).pathExtension
             let allowedMimeTypes = mimeTypes.map { (key, value) in return key }
 
             if allowedMimeTypes.contains(fileExt) {
-                let data = try Data(contentsOf: URL(fileURLWithPath: itemPath))
-                let chunkSize = 104857600 // 100MB
+               let mimeType = String(mimeTypes[fileExt]!).lowercased()
+               let data = try Data(contentsOf: URL(fileURLWithPath: itemPath))
+               let chunkSize = 104857600 // 100MB
 
                if (data.count > chunkSize) {
                    let zipFilePath = try Zip.quickZipFiles([URL(fileURLWithPath: itemPath)], fileName: "archive") // Zip
-                   let fileData = try Data(contentsOf: zipFilePath)//
 
-                   fileData.withUnsafeBytes { (u8Ptr: UnsafePointer<UInt8>) in
-                       let mutRawPointer = UnsafeMutableRawPointer(mutating: u8Ptr)
-                       let totalSize = fileData.count
-                       var offset = 0
-                       var i = 0//
-                       while offset < totalSize {
-                           let chunkSize = offset + chunkSize > totalSize ? totalSize - offset : chunkSize
-                           let chunk = Data(bytesNoCopy: mutRawPointer+offset, count: chunkSize, deallocator: Data.Deallocator.none)//
+                   let tempDir = FileManager.default.temporaryDirectory
+                   let tempFileURL = tempDir.appendingPathComponent("sample")
 
-               //            DispatchQueue.main.async {
-                               newUploadRequest(
-                                   source: source,
-                                   path: "\(itemPath).\(i).block",
-                                   mimeType: "application/octet-stream",
-                                   uploadData: chunk,
-                                   createdAt: createdAt,
-                                   updatedAt: updatedAt
-                               )
-               //            }//
+                   let chunker = FileChunker.init(input: zipFilePath, outputDirectory: tempFileURL, chunkSize: 104857600)
+                   let _ = try chunker.chunk()
 
-                           i += 1
-                           offset += chunkSize
-                       }
+                   let directoryContents = try FileManager.default.contentsOfDirectory(at: tempFileURL, includingPropertiesForKeys: nil, options: [])
+                   let FilePaths = directoryContents.map{ $0.path() }
+                   print(FilePaths)
+
+                   for counter in 0..<FilePaths.count {
+                       let filePath = FilePaths[counter]
+                       let fileData = try Data(contentsOf: URL(fileURLWithPath: filePath))
+                          newUploadRequest(
+                              uuid: UUID(),
+                              source: source,
+                              path: filePath,
+                              mimeType: "application/octet-stream",
+                              uploadData: fileData,
+                              uploadFileUuid: uuid,
+                              createdAt: createdAt,
+                              updatedAt: updatedAt
+                          )
                    }
+
+                    newUploadRequest(
+                        uuid: uuid,
+                        source: source,
+                        path: itemPath,
+                        mimeType: mimeType,
+                        uploadData: Data(),
+                        uploadFileUuid: nil,
+                        createdAt: createdAt,
+                        updatedAt: updatedAt
+                    )
 
                } else {
                     let fileData = try Data(contentsOf: URL(fileURLWithPath: itemPath))
@@ -242,16 +255,16 @@ struct ContentView: View {
                     if allowedMimeTypes.contains(fileExt) {
                         let mimeType = String(mimeTypes[fileExt]!).lowercased()
 
-//                        DispatchQueue.main.async {
-                            newUploadRequest(
-                                source: source,
-                                path: itemPath,
-                                mimeType: mimeType,
-                                uploadData: fileData,
-                                createdAt: createdAt,
-                                updatedAt: updatedAt
-                            )
-//                        }
+                        newUploadRequest(
+                            uuid: UUID(),
+                            source: source,
+                            path: itemPath,
+                            mimeType: mimeType,
+                            uploadData: fileData,
+                            uploadFileUuid: nil,
+                            createdAt: createdAt,
+                            updatedAt: updatedAt
+                        )
                     }
                 }
             }
@@ -277,10 +290,11 @@ struct ContentView: View {
               let fsFileType:String = attributes[FileAttributeKey.type] as! String
               let itemCreatedAt:Date = attributes[FileAttributeKey.creationDate] as! Date
               let itemUpdatedAt:Date = attributes[FileAttributeKey.modificationDate] as! Date
+              let uuid = UUID()
 
               if (fsFileType == "NSFileTypeRegular") {
 
-                  importItem(itemPath: itemPath, createdAt: itemCreatedAt, updatedAt: itemUpdatedAt, source: "root")
+                  importItem(itemPath: itemPath, createdAt: itemCreatedAt, updatedAt: itemUpdatedAt, uuid: uuid, source: "root")
 
               } else if (fsFileType == "NSFileTypeDirectory") {
 
@@ -295,10 +309,11 @@ struct ContentView: View {
                       let folderFsFileType:String = folderItemAttributes[FileAttributeKey.type] as! String
                       let folderItemCreatedAt:Date = folderItemAttributes[FileAttributeKey.creationDate] as! Date
                       let folderItemUpdatedAt:Date = folderItemAttributes[FileAttributeKey.modificationDate] as! Date
+                      let uuid = UUID()
 
                       if (folderFsFileType == "NSFileTypeRegular") {
 
-                          importItem(itemPath: folderItemPath, createdAt: folderItemCreatedAt, updatedAt: folderItemUpdatedAt, source: "folder")
+                          importItem(itemPath: folderItemPath, createdAt: folderItemCreatedAt, updatedAt: folderItemUpdatedAt, uuid: uuid, source: "folder")
 
                       }
 
@@ -315,10 +330,11 @@ struct ContentView: View {
                               let subfolderFsFileType:String = subfolderItemAttributes[FileAttributeKey.type] as! String
                               let subfolderItemCreatedAt:Date = subfolderItemAttributes[FileAttributeKey.creationDate] as! Date
                               let subfolderItemUpdatedAt:Date = subfolderItemAttributes[FileAttributeKey.modificationDate] as! Date
+                              let uuid = UUID()
 
                               if (subfolderFsFileType == "NSFileTypeRegular") {
 
-                                  importItem(itemPath: subfolderItemPath, createdAt: subfolderItemCreatedAt, updatedAt: subfolderItemUpdatedAt, source: "subfolder")
+                                  importItem(itemPath: subfolderItemPath, createdAt: subfolderItemCreatedAt, updatedAt: subfolderItemUpdatedAt, uuid: uuid, source: "subfolder")
 
                               }
                           }

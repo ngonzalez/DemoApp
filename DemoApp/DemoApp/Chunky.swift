@@ -47,12 +47,12 @@ public class FileChunker
         }
 
         var urls:[URL] = [ ]
-        let processInfo:ProcessInfo = .init( )
         let reader:FileHandle = try .init( forReadingFrom:input )
         var writer:FileHandle?
 
         var buffer:Data?
         var chunk:Int = 0
+        var i = 0
         repeat
         {
             if chunk >= chunkSize
@@ -69,10 +69,11 @@ public class FileChunker
             {
                 if writer == nil
                 {
-                    let outputURL = outputDirectory.appendingPathComponent( processInfo.globallyUniqueString ).appendingPathExtension( "block" )
+                    let outputURL = outputDirectory.appendingPathComponent( "\(i)-file" ).appendingPathExtension( "block" )
                     fileManager.createFile( atPath:outputURL.path, contents:nil, attributes:nil )
                     writer = try .init( forWritingTo:outputURL )
                     urls.append( outputURL )
+                    i += 1
                 }
                 
                 writer?.write( buffer )

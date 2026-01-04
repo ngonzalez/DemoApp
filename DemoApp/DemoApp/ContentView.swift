@@ -211,32 +211,45 @@ struct ContentView: View {
                let chunkSize = 104857600 // 100MB
 
                if (data.count > chunkSize) {
-                   let zipFilePath = try Zip.quickZipFiles([URL(fileURLWithPath: itemPath)], fileName: "archive") // Zip
+                   let zipFilePath = try Zip.quickZipFiles([URL(fileURLWithPath: itemPath)], fileName: "archive")
 
                    let tempDir = FileManager.default.temporaryDirectory
                    let tempFileURL = tempDir.appendingPathComponent("sample")
 
-                   let chunker = FileChunker.init(input: zipFilePath, outputDirectory: tempFileURL, chunkSize: 104857600)
+                   let chunker = FileChunker.init(input: zipFilePath, outputDirectory: tempFileURL, chunkSize: chunkSize)
                    let _ = try chunker.chunk()
 
-                   let directoryContents = try FileManager.default.contentsOfDirectory(at: tempFileURL, includingPropertiesForKeys: nil, options: [])
-                   let FilePaths = directoryContents.map{ $0.path() }
-                   print(FilePaths)
+                   let directoryContents = try
+                      FileManager.default.contentsOfDirectory(at: tempFileURL,
+                             includingPropertiesForKeys:[.contentModificationDateKey],
+                             options: [.skipsHiddenFiles, .skipsSubdirectoryDescendants])
+                          .filter { $0.lastPathComponent.hasSuffix(".block") }
+                          .sorted(by: {
+                              let date0 = try $0.promisedItemResourceValues(forKeys:[.contentModificationDateKey]).contentModificationDate!
+                              let date1 = try $1.promisedItemResourceValues(forKeys:[.contentModificationDateKey]).contentModificationDate!
+                              return date0.compare(date1) == .orderedAscending
+                           })
 
-                   for counter in 0..<FilePaths.count {
-                       let filePath = FilePaths[counter]
-                       let fileData = try Data(contentsOf: URL(fileURLWithPath: filePath))
-                          newUploadRequest(
-                              uuid: UUID(),
-                              source: source,
-                              path: filePath,
-                              mimeType: "application/octet-stream",
-                              uploadData: fileData,
-                              uploadFileUuid: uuid,
-                              createdAt: createdAt,
-                              updatedAt: updatedAt
-                          )
-                   }
+                   let FilePaths = directoryContents.map{ $0.path() }
+                   var i = 0
+
+                    for counter in 0..<FilePaths.count {
+                        let fileData = try Data(contentsOf: URL(fileURLWithPath: FilePaths[counter]))
+
+                        newUploadRequest(
+                            uuid: UUID(),
+                            source: source,
+                            path: "\(itemPath).\(i).block",
+                            mimeType: "application/octet-stream",
+                            uploadData: fileData,
+                            uploadFileUuid: uuid,
+                            createdAt: createdAt,
+                            updatedAt: updatedAt
+                        )
+                        i += 1
+                    }
+
+                    try FileManager.default.removeItem(at: tempFileURL)
 
                     newUploadRequest(
                         uuid: uuid,
@@ -252,20 +265,16 @@ struct ContentView: View {
                } else {
                     let fileData = try Data(contentsOf: URL(fileURLWithPath: itemPath))
 
-                    if allowedMimeTypes.contains(fileExt) {
-                        let mimeType = String(mimeTypes[fileExt]!).lowercased()
-
-                        newUploadRequest(
-                            uuid: UUID(),
-                            source: source,
-                            path: itemPath,
-                            mimeType: mimeType,
-                            uploadData: fileData,
-                            uploadFileUuid: nil,
-                            createdAt: createdAt,
-                            updatedAt: updatedAt
-                        )
-                    }
+                    newUploadRequest(
+                        uuid: UUID(),
+                        source: source,
+                        path: itemPath,
+                        mimeType: mimeType,
+                        uploadData: fileData,
+                        uploadFileUuid: nil,
+                        createdAt: createdAt,
+                        updatedAt: updatedAt
+                    )
                 }
             }
 

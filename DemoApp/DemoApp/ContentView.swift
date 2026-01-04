@@ -2855,22 +2855,11 @@ struct ContentView: View {
                 }
             }
         } detail: {
-
             if (selectedSideBarItem == .upload) {
-
                 HStack {
                     VStack {
                         List {
-
-                            // upload panel
-
-                            if (self.selectedFolders.count > 0 &&
-                                (self.selectedImageFiles.count == 0 &&
-                                 self.selectedAudioFiles.count == 0 &&
-                                 self.selectedPdfFiles.count == 0 &&
-                                 self.selectedVideoFiles.count == 0 &&
-                                 self.selectedTextFiles.count == 0)) {
-
+                            if (self.selectedFolders.count > 0) {
                                 ForEach(self.loadedFolders) { folder in
                                     if (self.selectedFolders.contains(folder.id) && String(folder.name) != "") {
                                         Label {
@@ -2884,31 +2873,35 @@ struct ContentView: View {
                                         }
                                     }
                                 }
-
-                                Button(action: publishSelectedFolders) {
-                                    Image(systemName: "newspaper")
-                                        .font(.system(size: 11))
-                                    Text("Publish selected \(self.selectedFolders.count) Folders")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(Color.white)
+                                HStack {
+                                    Button(action: publishSelectedFolders) {
+                                        Image(systemName: "newspaper.fill")
+                                            .font(.system(size: 11))
+                                        Text("Publish selected \(self.selectedFolders.count) Folders")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(Color.white)
+                                            .buttonStyle(.plain)
+                                    }
+                                    Button(action: unpublishSelectedFolders) {
+                                        Image(systemName: "newspaper")
+                                            .font(.system(size: 11))
+                                        Text("Unpublish selected \(self.selectedFolders.count) Folders")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(Color.gray)
+                                            .buttonStyle(.plain)
+                                    }
+                                    Button(action: deleteSelectedFolders) {
+                                        Image(systemName: "delete.forward")
+                                            .font(.system(size: 11))
+                                        Text("Delete selected \(self.selectedFolders.count) Folders")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(Color.gray)
+                                            .buttonStyle(.plain)
+                                    }
                                 }
-                                .buttonStyle(.accessoryBarAction)
-
-                                Button(action: unpublishSelectedFolders) {
-                                    Text("Unpublish selected \(self.selectedFolders.count) Folders")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(Color.gray)
-                                }
-                                .buttonStyle(.accessoryBarAction)
-
-                                Button(action: deleteSelectedFolders) {
-                                    Text("Delete selected \(self.selectedFolders.count) Folders")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(Color.gray)
-                                }
-                                .buttonStyle(.accessoryBarAction)
                             }
-
+                        }.frame(height: 100)
+                        List {
                             ForEach(self.selectedImageFiles) { imageFile in
 
                                 let fileName = imageFile.fileName

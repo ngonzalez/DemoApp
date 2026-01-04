@@ -2519,6 +2519,7 @@ struct ContentView: View {
                                                 Text("Delete selected \(selectedImageFiles.count) images")
                                                     .font(.system(size: 11))
                                                     .foregroundStyle(Color.gray)
+                                                    .buttonStyle(.plain)
                                             }
                                             .buttonStyle(.accessoryBarAction)
                                         }
@@ -2588,6 +2589,7 @@ struct ContentView: View {
                                                 Text("Delete selected \(selectedPdfFiles.count) pdf files")
                                                     .font(.system(size: 11))
                                                     .foregroundStyle(Color.gray)
+                                                    .buttonStyle(.plain)
                                             }
                                             .buttonStyle(.accessoryBarAction)
                                         }
@@ -2658,6 +2660,7 @@ struct ContentView: View {
                                                 Text("Delete selected \(selectedAudioFiles.count) audio files")
                                                     .font(.system(size: 11))
                                                     .foregroundStyle(Color.gray)
+                                                    .buttonStyle(.plain)
                                             }
                                             .buttonStyle(.accessoryBarAction)
                                         }
@@ -2743,6 +2746,7 @@ struct ContentView: View {
                                                 Text("Delete selected \(selectedVideoFiles.count) video files")
                                                     .font(.system(size: 11))
                                                     .foregroundStyle(Color.gray)
+                                                    .buttonStyle(.plain)
                                             }
                                             .buttonStyle(.accessoryBarAction)
                                         }
@@ -2811,6 +2815,7 @@ struct ContentView: View {
                                                 Text("Delete selected \(selectedTextFiles.count) text files")
                                                     .font(.system(size: 11))
                                                     .foregroundStyle(Color.gray)
+                                                    .buttonStyle(.plain)
                                             }
                                             .buttonStyle(.accessoryBarAction)
                                         }
@@ -2900,7 +2905,7 @@ struct ContentView: View {
                                     }
                                 }
                             }
-                        }.frame(height: 100)
+                        }.frame(height: 70)
                         List {
                             ForEach(self.selectedImageFiles) { imageFile in
 

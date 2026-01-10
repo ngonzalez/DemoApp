@@ -1879,7 +1879,6 @@ struct ContentView: View {
         if (searchableTextFiles.count == 0 && uploadTextFiles.count > 0) {
             searchableTextFiles = uploadTextFiles.map { $0 }
         }
-
         if (searchQuery == "" || searchQuery.count <= 3) {
             loadedFolders = searchableFolders.map { $0 }
             uploadImageFiles = searchableImageFiles.map { $0 }
@@ -1888,35 +1887,90 @@ struct ContentView: View {
             uploadPdfFiles = searchablePdfFiles.map { $0 }
             uploadTextFiles = searchableTextFiles.map { $0 }
         } else {
-            loadedFolders = loadedFolders.filter { folder in
+            loadedFolders = searchableFolders.filter { folder in
                 folder.name
                     .lowercased()
                     .contains(searchQuery)
             }
-            uploadImageFiles = uploadImageFiles.filter { imageFile in
+            uploadImageFiles = searchableImageFiles.filter { imageFile in
                 imageFile.fileName
                     .lowercased()
                     .contains(searchQuery)
             }
-            uploadVideoFiles = uploadVideoFiles.filter { videoFile in
+            uploadImageFiles.forEach { imageFile in
+                var found = false
+                self.loadedFolders.forEach { folder in
+                    if (folder.id == imageFile.folder.id) {
+                        found = true
+                    }
+                }
+                if (!found) {
+                    self.loadedFolders.append(imageFile.folder)
+                }
+            }
+            uploadVideoFiles = searchableVideoFiles.filter { videoFile in
                 videoFile.fileName
                     .lowercased()
                     .contains(searchQuery)
             }
-            uploadAudioFiles = uploadAudioFiles.filter { audioFile in
+            uploadVideoFiles.forEach { videoFile in
+                var found = false
+                self.loadedFolders.forEach { folder in
+                    if (folder.id == videoFile.folder.id) {
+                        found = true
+                    }
+                }
+                if (!found) {
+                    self.loadedFolders.append(videoFile.folder)
+                }
+            }
+            uploadAudioFiles = searchableAudioFiles.filter { audioFile in
                 audioFile.fileName
                     .lowercased()
                     .contains(searchQuery)
             }
-            uploadPdfFiles = uploadPdfFiles.filter { pdfFile in
+            uploadAudioFiles.forEach { audioFile in
+                var found = false
+                self.loadedFolders.forEach { folder in
+                    if (folder.id == audioFile.folder.id) {
+                        found = true
+                    }
+                }
+                if (!found) {
+                    self.loadedFolders.append(audioFile.folder)
+                }
+            }
+            uploadPdfFiles = searchablePdfFiles.filter { pdfFile in
                 pdfFile.fileName
                     .lowercased()
                     .contains(searchQuery)
             }
-            uploadTextFiles = uploadTextFiles.filter { textFile in
+            uploadPdfFiles.forEach { pdfFile in
+                var found = false
+                self.loadedFolders.forEach { folder in
+                    if (folder.id == pdfFile.folder.id) {
+                        found = true
+                    }
+                }
+                if (!found) {
+                    self.loadedFolders.append(pdfFile.folder)
+                }
+            }
+            uploadTextFiles = searchableTextFiles.filter { textFile in
                 textFile.fileName
                     .lowercased()
                     .contains(searchQuery)
+            }
+            uploadTextFiles.forEach { textFile in
+                var found = false
+                self.loadedFolders.forEach { folder in
+                    if (folder.id == textFile.folder.id) {
+                        found = true
+                    }
+                }
+                if (!found) {
+                    self.loadedFolders.append(textFile.folder)
+                }
             }
         }
     }
@@ -2982,47 +3036,49 @@ struct ContentView: View {
                     VStack {
                         List {
                             if (self.selectedFolders.count > 0) {
-                                ForEach(self.loadedFolders) { folder in
-                                    if (self.selectedFolders.contains(folder.id) && String(folder.name) != "") {
-                                        Label {
-                                            Text("\(folder.name)")
-                                                .font(.system(size: 11))
-                                                .foregroundStyle(.gray)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
+                                HStack {
+                                    ForEach(self.loadedFolders) { folder in
+                                        if (self.selectedFolders.contains(folder.id) && String(folder.name) != "") {
+                                            Label {
+                                                Text("\(folder.name)")
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(.gray)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
                                         }
                                     }
                                 }
                                 HStack {
                                     Button(action: publishSelectedFolders) {
                                         Image(systemName: "newspaper.fill")
-                                            .font(.system(size: 11))
+                                            .font(.system(size: 10))
                                         Text("Publish selected \(self.selectedFolders.count) Folders")
-                                            .font(.system(size: 11))
+                                            .font(.system(size: 9))
                                             .foregroundStyle(Color.white)
                                             .buttonStyle(.plain)
                                     }
                                     Button(action: unpublishSelectedFolders) {
                                         Image(systemName: "newspaper")
-                                            .font(.system(size: 11))
+                                            .font(.system(size: 10))
                                         Text("Unpublish selected \(self.selectedFolders.count) Folders")
-                                            .font(.system(size: 11))
+                                            .font(.system(size: 9))
                                             .foregroundStyle(Color.gray)
                                             .buttonStyle(.plain)
                                     }
                                     Button(action: deleteSelectedFolders) {
                                         Image(systemName: "delete.forward")
-                                            .font(.system(size: 11))
+                                            .font(.system(size: 10))
                                         Text("Delete selected \(self.selectedFolders.count) Folders")
-                                            .font(.system(size: 11))
+                                            .font(.system(size: 9))
                                             .foregroundStyle(Color.gray)
                                             .buttonStyle(.plain)
                                     }
                                 }
                             }
-                        }.frame(height: 70)
+                        }.frame(height: 100)
                         List {
                             ForEach(self.selectedImageFiles) { imageFile in
 

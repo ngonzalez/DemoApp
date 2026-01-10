@@ -57,6 +57,8 @@ class NetworkDelegateClass: NSObject, URLSessionDelegate, URLSessionDataDelegate
 @available(macOS 14, *)
 @MainActor
 struct ContentView: View {
+    
+    @State private var searchText: String = ""
 
     /* Media Player */
     @State private var player:AVPlayer = AVPlayer()
@@ -74,6 +76,19 @@ struct ContentView: View {
     @State private var uploadVideoFiles:Array<VideoFile> = Array<VideoFile>()
 
     @State private var uploadTextFiles:Array<TextFile> = Array<TextFile>()
+
+    /* Searchable */
+    @State private var searchableImageFiles:Array<ImageFile> = Array<ImageFile>()
+
+    @State private var searchablePdfFiles:Array<PdfFile> = Array<PdfFile>()
+
+    @State private var searchableAudioFiles:Array<AudioFile> = Array<AudioFile>()
+
+    @State private var searchableVideoFiles:Array<VideoFile> = Array<VideoFile>()
+
+    @State private var searchableTextFiles:Array<TextFile> = Array<TextFile>()
+
+    @State private var searchableFolders:Array<Folder> = Array<Folder>()
 
     /* Folders  */
     @State private var folders: Array<URL> = Array<URL>()
@@ -509,40 +524,19 @@ struct ContentView: View {
         for upload in self.uploadsWithFiles {
             self.uploadImageFiles += upload.imageFiles
             for imageFile in upload.imageFiles {
-                if self.loadedFolders.map({ $0.id }).contains(imageFile.folder.id) {
-                    for i in 0..<self.loadedFolders.count {
-                        let el = self.loadedFolders[i]
-                        if (el.id == imageFile.folder.id) {
-                            self.loadedFolders[i] = imageFile.folder
-                        }
-                    }
-                } else {
+                if !self.loadedFolders.map({ $0.id }).contains(imageFile.folder.id) {
                     self.loadedFolders.append(imageFile.folder)
                 }
             }
             self.uploadPdfFiles += upload.pdfFiles
             for pdfFile in upload.pdfFiles {
-                if self.loadedFolders.map({ $0.id }).contains(pdfFile.folder.id) {
-                    for i in 0..<self.loadedFolders.count {
-                        let el = self.loadedFolders[i]
-                        if (el.id == pdfFile.folder.id) {
-                            self.loadedFolders[i] = pdfFile.folder
-                        }
-                    }
-                } else {
+                if !self.loadedFolders.map({ $0.id }).contains(pdfFile.folder.id) {
                     self.loadedFolders.append(pdfFile.folder)
                 }
             }
             self.uploadAudioFiles += upload.audioFiles
             for audioFile in upload.audioFiles {
-                if self.loadedFolders.map({ $0.id }).contains(audioFile.folder.id) {
-                    for i in 0..<self.loadedFolders.count {
-                        let el = self.loadedFolders[i]
-                        if (el.id == audioFile.folder.id) {
-                            self.loadedFolders[i] = audioFile.folder
-                        }
-                    }
-                } else {
+                if !self.loadedFolders.map({ $0.id }).contains(audioFile.folder.id) {
                     self.loadedFolders.append(audioFile.folder)
                 }
                 DispatchQueue.main.async {
@@ -551,14 +545,7 @@ struct ContentView: View {
             }
             self.uploadVideoFiles += upload.videoFiles
             for videoFile in upload.videoFiles {
-                if self.loadedFolders.map({ $0.id }).contains(videoFile.folder.id) {
-                    for i in 0..<self.loadedFolders.count {
-                        let el = self.loadedFolders[i]
-                        if (el.id == videoFile.folder.id) {
-                            self.loadedFolders[i] = videoFile.folder
-                        }
-                    }
-                } else {
+                if !self.loadedFolders.map({ $0.id }).contains(videoFile.folder.id) {
                     self.loadedFolders.append(videoFile.folder)
                 }
                 DispatchQueue.main.async {
@@ -567,14 +554,7 @@ struct ContentView: View {
             }
             self.uploadTextFiles += upload.textFiles
             for textFile in upload.textFiles {
-                if self.loadedFolders.map({ $0.id }).contains(textFile.folder.id) {
-                    for i in 0..<self.loadedFolders.count {
-                        let el = self.loadedFolders[i]
-                        if (el.id == textFile.folder.id) {
-                            self.loadedFolders[i] = textFile.folder
-                        }
-                    }
-                } else {
+                if !self.loadedFolders.map({ $0.id }).contains(textFile.folder.id) {
                     self.loadedFolders.append(textFile.folder)
                 }
             }
@@ -1133,7 +1113,6 @@ struct ContentView: View {
                         self.newSession = true
                         self.newSessionComplete = false
 
-                        clearSelectedFiles()
                         clearSelectedFolders()
 
                         self.loadedFolders = Array<Folder>()
@@ -1670,7 +1649,8 @@ struct ContentView: View {
 
                         if (httpResponseUnwrapped.statusCode == 200) {
                             self.destroyAttachmentResponse = message
-                            clearSelectedFiles()
+
+                            clearSelectedFolders()
                         }
                     }
 
@@ -1824,11 +1804,9 @@ struct ContentView: View {
         }
     }
 
-    func displayImageFileMimeType(imageFile: ImageFile) -> Text {
-        Text("Mime/Type: \(imageFile.mimeType!)")
-            .font(.system(size: 11))
-    }
-
+    /*
+        Folder: Publish / Unpublish
+    */
     struct FolderIds: Codable {
         var id: Array<Int>
     }
@@ -1879,6 +1857,70 @@ struct ContentView: View {
         }
     }
 
+    /*
+        Search folders and files
+    */
+    func fetchSearchResults(for searchQuery: String) {
+        if (searchableFolders.count == 0 && loadedFolders.count > 0) {
+            searchableFolders = loadedFolders.map { $0 }
+        }
+        if (searchableImageFiles.count == 0 && uploadImageFiles.count > 0) {
+            searchableImageFiles = uploadImageFiles.map { $0 }
+        }
+        if (searchableVideoFiles.count == 0 && uploadVideoFiles.count > 0) {
+            searchableVideoFiles = uploadVideoFiles.map { $0 }
+        }
+        if (searchableAudioFiles.count == 0 && uploadAudioFiles.count > 0) {
+            searchableAudioFiles = uploadAudioFiles.map { $0 }
+        }
+        if (searchablePdfFiles.count == 0 && uploadPdfFiles.count > 0) {
+            searchablePdfFiles = uploadPdfFiles.map { $0 }
+        }
+        if (searchableTextFiles.count == 0 && uploadTextFiles.count > 0) {
+            searchableTextFiles = uploadTextFiles.map { $0 }
+        }
+
+        if (searchQuery == "" || searchQuery.count <= 3) {
+            loadedFolders = searchableFolders.map { $0 }
+            uploadImageFiles = searchableImageFiles.map { $0 }
+            uploadVideoFiles = searchableVideoFiles.map { $0 }
+            uploadAudioFiles = searchableAudioFiles.map { $0 }
+            uploadPdfFiles = searchablePdfFiles.map { $0 }
+            uploadTextFiles = searchableTextFiles.map { $0 }
+        } else {
+            loadedFolders = loadedFolders.filter { folder in
+                folder.name
+                    .lowercased()
+                    .contains(searchQuery)
+            }
+            uploadImageFiles = uploadImageFiles.filter { imageFile in
+                imageFile.fileName
+                    .lowercased()
+                    .contains(searchQuery)
+            }
+            uploadVideoFiles = uploadVideoFiles.filter { videoFile in
+                videoFile.fileName
+                    .lowercased()
+                    .contains(searchQuery)
+            }
+            uploadAudioFiles = uploadAudioFiles.filter { audioFile in
+                audioFile.fileName
+                    .lowercased()
+                    .contains(searchQuery)
+            }
+            uploadPdfFiles = uploadPdfFiles.filter { pdfFile in
+                pdfFile.fileName
+                    .lowercased()
+                    .contains(searchQuery)
+            }
+            uploadTextFiles = uploadTextFiles.filter { textFile in
+                textFile.fileName
+                    .lowercased()
+                    .contains(searchQuery)
+            }
+        }
+    }
+
     var body: some View {
         NavigationSplitView(columnVisibility: $visibility) {
             List(SideBarItem.allCases, selection: $selectedSideBarItem) { item in
@@ -1891,14 +1933,14 @@ struct ContentView: View {
             switch selectedSideBarItem {
             case .account:
                 if self.identified {
-
                     if self.editPassword {
-                        
+                        /*
+                            Account: Edit Password
+                        */
                         Form {
                             VStack {
-                                
                                 Spacer()
-                                
+
                                 Text("Change Password")
                                     .font(.system(size: 15))
 
@@ -1911,29 +1953,29 @@ struct ContentView: View {
                                 Text("\(editPasswordValidationErrors)\n")
                                     .font(.system(size: 11))
                                     .foregroundStyle(.gray)
-                                
+
                                 SecureField(text: $newPasswordEditPasswordForm, prompt: Text("New Password")) {
                                     Text("New Password")
                                 }
                                 .disableAutocorrection(true)
                                 .disabled(self.editPasswordComplete)
-                                
+
                                 SecureField(text: $newPasswordConfirmationEditPasswordForm, prompt: Text("New Password confirmation")) {
                                     Text("New Password confirmation")
                                 }
                                 .disableAutocorrection(true)
                                 .disabled(self.editPasswordComplete)
-                                
+
                                 Button(action: submitEditPasswordForm) {
                                     Text("Submit")
                                 }
                                 .buttonStyle(PlainButtonStyle())
                                 .disabled(self.editPasswordComplete)
-                                
+
                                 Spacer()
-                                
+
                                 Divider()
-                                
+
                                 /* Account */
                                 Button(action: clickBackToAccountLink) {
                                     Image(systemName: "person.text.rectangle")
@@ -1944,12 +1986,12 @@ struct ContentView: View {
                             }
                             .textFieldStyle(.roundedBorder)
                         }.padding(20)
-
                     } else if self.editEmailAddress {
-
+                        /*
+                            Account: Edit Email Address
+                        */
                         Form {
                             VStack {
-
                                 Spacer()
 
                                 Text("Change Email Address")
@@ -2002,10 +2044,11 @@ struct ContentView: View {
                         }.padding(20)
 
                     } else if self.editAccount {
-
+                        /*
+                            Account: Edit Account
+                        */
                         Form {
                             VStack {
-
                                 Spacer()
 
                                 Text("Edit Account")
@@ -2130,9 +2173,9 @@ struct ContentView: View {
                         }.padding(20)
 
                     } else if self.myAccount {
-
-                        // account panel
-
+                        /*
+                            Account Panel
+                        */
                         Text("My Account")
                             .font(.system(size: 15))
 
@@ -2175,10 +2218,11 @@ struct ContentView: View {
                     }
 
                 } else if self.newPassword {
-
+                    /*
+                        Account: Reset Password
+                    */
                     Form {
                         VStack {
-
                             Spacer()
 
                             Text("Reset Password")
@@ -2222,10 +2266,11 @@ struct ContentView: View {
                     }.padding(20)
 
                 } else if self.newAccount {
-
+                    /*
+                        Account: Register
+                    */
                     Form {
                         VStack {
-
                             Spacer()
 
                             Text("Register Account")
@@ -2287,10 +2332,11 @@ struct ContentView: View {
                     }.padding(20)
 
                 } else if self.newSession {
-
+                    /*
+                        Account: Sign-In
+                    */
                     Form {
                         VStack {
-
                             Spacer()
 
                             Text("New Session")
@@ -2357,8 +2403,10 @@ struct ContentView: View {
                 if !self.identified {
                     Text("You need to be identified. Please sign-in.")
                 } else {
+                    /*
+                        Main Upload Panel
+                    */
                     HStack {
-
                         /* Browse Button */
                         VStack {
                             Button(action: syncFolders) {
@@ -2384,13 +2432,13 @@ struct ContentView: View {
                             }) {
                                 if #available(macOS 15.0, *) {
                                     Image(systemName: "square.grid.3x1.folder.badge.plus")
-                                        .font(.system(size: 20))
+                                        .font(.system(size: 11))
+                                        .buttonStyle(.plain)
                                         .symbolEffect(.bounce, options: .repeat(1))
-                                        .padding(10)
                                 } else {
                                     Image(systemName: "square.grid.3x1.folder.badge.plus")
-                                        .font(.system(size: 20))
-                                        .padding(10)
+                                        .font(.system(size: 11))
+                                        .buttonStyle(.plain)
                                 }
                             }
                             .fileImporter(
@@ -2467,6 +2515,10 @@ struct ContentView: View {
                             .frame(height: 250)
                     } header: {
                         Text("Folders")
+                            .searchable(text: $searchText, prompt: "Search folders and files")
+                    }.onChange(of: searchText) {
+                        clearSelectedFolders()
+                        fetchSearchResults(for: searchText)
                     }
                 }
             }
@@ -2530,10 +2582,23 @@ struct ContentView: View {
                         .tableStyle(.inset(alternatesRowBackgrounds: false))
                         .onChange(of: imageFileSelection) {
                             self.selectedImageFiles = []
+                            self.selectedFolders = Set()
                             for selectedId in imageFileSelection {
                                 uploadImageFiles.forEach { imageFile in
                                     if imageFile.id == selectedId {
                                         self.selectedImageFiles.append(imageFile)
+                                        if (!self.selectedFolders.contains(imageFile.folder.id)) {
+                                            self.selectedFolders.insert(imageFile.folder.id)
+                                        }
+                                        var found = true
+                                        self.loadedFolders.forEach { folder in
+                                            if (folder.id == imageFile.folder.id) {
+                                                found = true
+                                            }
+                                        }
+                                        if (!found) {
+                                            self.loadedFolders.append(imageFile.folder)
+                                        }
                                     }
                                 }
                             }
@@ -2600,11 +2665,23 @@ struct ContentView: View {
                         .tableStyle(.inset(alternatesRowBackgrounds: false))
                         .onChange(of: pdfFileSelection) {
                             self.selectedPdfFiles = []
+                            self.selectedFolders = Set()
                             for selectedId in pdfFileSelection {
                                 uploadPdfFiles.forEach { pdfFile in
                                     if pdfFile.id == selectedId {
                                         self.selectedPdfFiles.append(pdfFile)
-//                                        displayPdf(pdfFile: pdfFile)
+                                        if (!self.selectedFolders.contains(pdfFile.folder.id)) {
+                                            self.selectedFolders.insert(pdfFile.folder.id)
+                                        }
+                                        var found = true
+                                        self.loadedFolders.forEach { folder in
+                                            if (folder.id == pdfFile.folder.id) {
+                                                found = true
+                                            }
+                                        }
+                                        if (!found) {
+                                            self.loadedFolders.append(pdfFile.folder)
+                                        }
                                     }
                                 }
                             }
@@ -2671,6 +2748,7 @@ struct ContentView: View {
                         .tableStyle(.inset(alternatesRowBackgrounds: false))
                         .onChange(of: audioFileSelection) { _, audioFileSelection in
                             self.selectedAudioFiles = []
+                            self.selectedFolders = Set()
                             for selectedId in audioFileSelection {
                                 uploadAudioFiles.forEach { audioFile in
                                     if audioFile.id == selectedId {
@@ -2690,6 +2768,19 @@ struct ContentView: View {
                                 uploadAudioFiles.forEach { audioFile in
                                     if audioFile.id == selectedId {
                                         self.selectedAudioFiles.append(audioFile)
+                                        if (!self.selectedFolders.contains(audioFile.folder.id)) {
+                                            self.selectedFolders.insert(audioFile.folder.id)
+                                        }
+                                        var found = true
+                                        self.loadedFolders.forEach { folder in
+                                            if (folder.id == audioFile.folder.id) {
+                                                found = true
+                                            }
+                                        }
+                                        if (!found) {
+                                            self.loadedFolders.append(audioFile.folder)
+                                        }
+
                                         displayAudio(audioFile: audioFile)
                                     }
                                 }
@@ -2757,10 +2848,24 @@ struct ContentView: View {
                         .tableStyle(.inset(alternatesRowBackgrounds: false))
                         .onChange(of: videoFileSelection) {
                             self.selectedVideoFiles = []
+                            self.selectedFolders = Set()
                             for selectedId in videoFileSelection {
                                 uploadVideoFiles.forEach { videoFile in
                                     if videoFile.id == selectedId {
                                         self.selectedVideoFiles.append(videoFile)
+                                        if (!self.selectedFolders.contains(videoFile.folder.id)) {
+                                            self.selectedFolders.insert(videoFile.folder.id)
+                                        }
+                                        var found = true
+                                        self.loadedFolders.forEach { folder in
+                                            if (folder.id == videoFile.folder.id) {
+                                                found = true
+                                            }
+                                        }
+                                        if (!found) {
+                                            self.loadedFolders.append(videoFile.folder)
+                                        }
+
                                         displayVideo(videoFile: videoFile)
                                     }
                                 }
@@ -2826,11 +2931,23 @@ struct ContentView: View {
                         .tableStyle(.inset(alternatesRowBackgrounds: false))
                         .onChange(of: textFileSelection) {
                             self.selectedTextFiles = []
+                            self.selectedFolders = Set()
                             for selectedId in textFileSelection {
                                 uploadTextFiles.forEach { textFile in
                                     if textFile.id == selectedId {
                                         self.selectedTextFiles.append(textFile)
-//                                        displayText(textFile: textFile)
+                                        if (!self.selectedFolders.contains(textFile.folder.id)) {
+                                            self.selectedFolders.insert(textFile.folder.id)
+                                        }
+                                        var found = true
+                                        self.loadedFolders.forEach { folder in
+                                            if (folder.id == textFile.folder.id) {
+                                                found = true
+                                            }
+                                        }
+                                        if (!found) {
+                                            self.loadedFolders.append(textFile.folder)
+                                        }
                                     }
                                 }
                             }

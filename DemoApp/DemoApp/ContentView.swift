@@ -1065,7 +1065,6 @@ struct ContentView: View {
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 do {
                     let userResponseWithMessage = try JSONDecoder().decode(UserResponseWithMessage.self, from: data!)
-                    print(userResponseWithMessage)
 
                     DispatchQueue.main.async {
 
@@ -1090,6 +1089,7 @@ struct ContentView: View {
                         // validation message
                         if (userResponseWithMessage.message != nil) {
                             let message = Message(message: userResponseWithMessage.message)
+                            print(String(message.message!))
                             self.newSessionSuccessMessage = message
                         }
                     }
@@ -2321,7 +2321,7 @@ struct ContentView: View {
 
                 } else if self.newAccount {
                     /*
-                        Account: Register
+                        Account: Registration
                     */
                     Form {
                         VStack {
@@ -3038,7 +3038,7 @@ struct ContentView: View {
                                         if (self.selectedFolders.contains(folder.id)) {
                                             Label {
                                                 Text("\(folder.name)")
-                                                    .font(.system(size: 12))
+                                                    .font(.system(size: 10))
                                                     .foregroundStyle(.gray)
                                             } icon: {
                                                 Rectangle()
@@ -3047,7 +3047,7 @@ struct ContentView: View {
                                             }
                                         }
                                     }
-                                }
+                                }.lineLimit(3)
                                 HStack {
                                     Button(action: publishSelectedFolders) {
                                         Image(systemName: "newspaper.fill")
@@ -3083,7 +3083,7 @@ struct ContentView: View {
                                       systemImage: "photo")
                                 .labelStyle(.titleAndIcon)
                                 .font(.system(size: 17))
-                                
+
                                 let fileUrl = imageFile.fileUrl
                                 AsyncImage(url: URL(string: fileUrl)) { result in
                                     result.image?
@@ -3091,7 +3091,7 @@ struct ContentView: View {
                                         .scaledToFill()
                                 }
                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                
+
                                 Label {
                                     let mimeType = imageFile.mimeType ?? "--"
                                     Text("Mime/Type \(mimeType)")
@@ -3102,7 +3102,7 @@ struct ContentView: View {
                                         .fill(.gray)
                                         .frame(width: 8, height: 8)
                                 }
-                                
+
                                 Label {
                                     let formatInfo = imageFile.formatInfo ?? "--"
                                     Text("Format \(formatInfo)")
@@ -3113,7 +3113,7 @@ struct ContentView: View {
                                         .fill(.gray)
                                         .frame(width: 8, height: 8)
                                 }
-                                
+
                                 Label {
                                     let dimensions = imageFile.dimensions ?? "--"
                                     Text("Dimensions \(dimensions)")
@@ -3124,7 +3124,7 @@ struct ContentView: View {
                                         .fill(.gray)
                                         .frame(width: 8, height: 8)
                                 }
-                                
+
                                 Label {
                                     let megapixels = imageFile.megapixels ?? 0.1
                                     Text("Megapixels \(megapixels)")
@@ -3135,7 +3135,7 @@ struct ContentView: View {
                                         .fill(.gray)
                                         .frame(width: 8, height: 8)
                                 }
-                                
+
                                 Label {
                                     let width = imageFile.width ?? 0
                                     Text("Width \(width)")
@@ -3146,7 +3146,7 @@ struct ContentView: View {
                                         .fill(.gray)
                                         .frame(width: 8, height: 8)
                                 }
-                                
+
                                 Label {
                                     let height = imageFile.height ?? 0
                                     Text("Height \(height)")
@@ -3157,7 +3157,7 @@ struct ContentView: View {
                                         .fill(.gray)
                                         .frame(width: 8, height: 8)
                                 }
-                                
+
                                 Label {
                                     let fileSize = imageFile.fileSize ?? ""
                                     Text("File Size \(fileSize)")
@@ -3168,6 +3168,8 @@ struct ContentView: View {
                                         .fill(.gray)
                                         .frame(width: 8, height: 8)
                                 }
+
+                                Spacer()
                             }
                             ForEach(self.selectedPdfFiles) { pdfFile in
 
@@ -3481,10 +3483,6 @@ struct ContentView: View {
                             }
                         }
                         .listRowSeparator(.visible)
-                        .background(
-                            LinearGradient(gradient: Gradient(colors: [.black, .white]), startPoint: .top, endPoint: .bottom)
-                        )
-                        .padding(20)
 
                         if (self.selectedImageFiles.count > 0 ||
                             self.selectedAudioFiles.count > 0 ||

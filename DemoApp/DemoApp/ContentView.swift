@@ -1884,8 +1884,7 @@ struct ContentView: View {
     func fetchSearchResults(for searchQuery: String) {
         print("searchQuery \(searchQuery)")
         if (searchQuery == "" || searchQuery.count <= 3) {
-            clearSelectedFolders()
-            getAllUploads()
+            refreshUploads()
         } else {
             loadedFolders = searchableFolders.filter { folder in
                 folder.name

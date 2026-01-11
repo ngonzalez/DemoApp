@@ -2,8 +2,6 @@
 //  Chunky.swift
 //  DemoApp
 //
-//  Created by Nicolas GONZALEZ on 1/3/26.
-//
 
 import Foundation
 

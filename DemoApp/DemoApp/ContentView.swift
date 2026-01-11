@@ -1,5 +1,5 @@
 /*
-    Copyright 2024,2025 Nicolas GONZALEZ
+    Copyright 2024,2025,2026 Nicolas GONZALEZ
 
     MIT License
 
@@ -1089,7 +1089,7 @@ struct ContentView: View {
                         // validation message
                         if (userResponseWithMessage.message != nil) {
                             let message = Message(message: userResponseWithMessage.message)
-                            print(String(message.message!))
+                            logger.info("\(message.message!)")
                             self.newSessionSuccessMessage = message
                         }
                     }
@@ -1882,7 +1882,8 @@ struct ContentView: View {
         Search folders and files
     */
     func fetchSearchResults(for searchQuery: String) {
-        print("searchQuery \(searchQuery)")
+        logger.info("[fetchSearchResults] \(searchQuery)")
+
         if (searchQuery == "" || searchQuery.count <= 3) {
             refreshUploads()
         } else {
@@ -3012,17 +3013,20 @@ struct ContentView: View {
                     .padding(.horizontal, 5)
                 }
             case .account:
+                /*
+                  Account: Sign-Out
+                */
                 if self.identified && self.myAccount && (!self.newPassword && !self.editPassword && !self.editEmailAddress && !self.newAccount && !self.editAccount) {
 
                     Button(action: submitDestroySessionForm) {
                         Image(systemName: "xmark")
-                            .font(.system(size: 9))
+                            .font(.system(size: 10))
                             .foregroundStyle(Color.primary)
                         Text("Sign-out")
-                            .font(.system(size: 9))
+                            .font(.system(size: 11))
                             .foregroundStyle(Color.primary)
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(.plain)
                     .padding(10)
                 }
             }
@@ -3031,28 +3035,16 @@ struct ContentView: View {
                 HStack {
                     VStack {
                         List {
+                            /*
+                              Folder actions
+                            */
                             if (self.selectedFolders.count > 0) {
-                                HStack {
-                                    ForEach(self.loadedFolders) { folder in
-                                        if (self.selectedFolders.contains(folder.id)) {
-                                            Label {
-                                                Text("\(folder.name)")
-                                                    .font(.system(size: 10))
-                                                    .foregroundStyle(.gray)
-                                            } icon: {
-                                                Rectangle()
-                                                    .fill(.gray)
-                                                    .frame(width: 8, height: 8)
-                                            }
-                                        }
-                                    }
-                                }.lineLimit(3)
                                 HStack {
                                     Button(action: publishSelectedFolders) {
                                         Image(systemName: "newspaper.fill")
                                             .font(.system(size: 10))
                                         Text("Publish selected \(self.selectedFolders.count) Folders")
-                                            .font(.system(size: 9))
+                                            .font(.system(size: 11))
                                             .foregroundStyle(Color.white)
                                             .buttonStyle(.plain)
                                     }
@@ -3060,7 +3052,7 @@ struct ContentView: View {
                                         Image(systemName: "newspaper")
                                             .font(.system(size: 10))
                                         Text("Unpublish selected \(self.selectedFolders.count) Folders")
-                                            .font(.system(size: 9))
+                                            .font(.system(size: 11))
                                             .foregroundStyle(Color.gray)
                                             .buttonStyle(.plain)
                                     }
@@ -3068,14 +3060,68 @@ struct ContentView: View {
                                         Image(systemName: "delete.forward")
                                             .font(.system(size: 10))
                                         Text("Delete selected \(self.selectedFolders.count) Folders")
-                                            .font(.system(size: 9))
+                                            .font(.system(size: 11))
                                             .foregroundStyle(Color.gray)
                                             .buttonStyle(.plain)
                                     }
                                 }
+                                /*
+                                  Selected folder / (x) folders selected
+                                */
+                                VStack {
+                                    if (self.selectedFolders.count > 1) {
+                                        Text("\(self.selectedFolders.count) folders selected")
+                                            .font(.system(size: 12))
+                                            .foregroundStyle(.gray)
+                                            .lineLimit(1)
+                                            .truncationMode(.middle)
+                                            .padding(5)
+                                    } else if (self.selectedFolders.count == 1) {
+                                        ForEach(self.loadedFolders.sorted(by: { $0.name > $1.name })) { folder in
+                                            if (self.selectedFolders.contains(folder.id)) {
+                                                Label {
+                                                    Text("\(folder.name)")
+                                                        .font(.system(size: 11))
+                                                        .foregroundStyle(folder.state == "published" ? .white : .gray)
+                                                        .lineLimit(1)
+                                                        .truncationMode(.middle)
+                                                        .padding(5)
+                                                } icon: {
+                                                    Rectangle()
+                                                        .fill(folder.state == "published" ? .yellow : .gray)
+                                                        .frame(width: 8, height: 8)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
-                        }.frame(height: 100)
+                        }.frame(height: 75)
                         List {
+                            /*
+                              Folders list
+                            */
+                            if (self.selectedImageFiles.count == 0 && self.selectedPdfFiles.count == 0 && self.selectedAudioFiles.count == 0 && self.selectedVideoFiles.count == 0 &&
+                                self.selectedTextFiles.count == 0 && self.selectedFolders.count > 1) {
+                                ForEach(self.loadedFolders) { folder in
+                                    if (self.selectedFolders.contains(folder.id)) {
+                                        Label {
+                                            Text("\(folder.name)")
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(folder.state == "published" ? .white : .gray)
+                                                .lineLimit(1)
+                                                .truncationMode(.middle)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(folder.state == "published" ? .yellow : .gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+                                    }
+                                }
+                            }
+                            /*
+                              ImageFiles
+                            */
                             ForEach(self.selectedImageFiles) { imageFile in
                                 let fileName = imageFile.fileName
                                 Label(fileName,
@@ -3170,6 +3216,9 @@ struct ContentView: View {
 
                                 Spacer()
                             }
+                            /*
+                              PdfFiles
+                            */
                             ForEach(self.selectedPdfFiles) { pdfFile in
 
                                 let fileName = pdfFile.fileName
@@ -3311,7 +3360,9 @@ struct ContentView: View {
                                 Spacer()
 
                             }
-
+                            /*
+                              VideoFiles
+                            */
                             ForEach(self.selectedVideoFiles) { videoFile in
 
                                 let fileName = videoFile.fileName
@@ -3443,7 +3494,9 @@ struct ContentView: View {
                                 Spacer()
 
                             }
-
+                            /*
+                              TextFiles
+                            */
                             ForEach(self.selectedTextFiles) { textFile in
 
                                 let fileName = textFile.fileName
@@ -3482,6 +3535,7 @@ struct ContentView: View {
                             }
                         }
                         .listRowSeparator(.visible)
+                        .padding(10)
 
                         if (self.selectedImageFiles.count > 0 ||
                             self.selectedAudioFiles.count > 0 ||

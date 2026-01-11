@@ -1,5 +1,5 @@
 /*
-    Copyright 2024,2025 Nicolas GONZALEZ
+    Copyright 2024,2025,2026 Nicolas GONZALEZ
 
     MIT License
 

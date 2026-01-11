@@ -1089,7 +1089,7 @@ struct ContentView: View {
                         // validation message
                         if (userResponseWithMessage.message != nil) {
                             let message = Message(message: userResponseWithMessage.message)
-                            print(String(message.message!))
+                            logger.info("\(message.message!)")
                             self.newSessionSuccessMessage = message
                         }
                     }
@@ -1843,7 +1843,7 @@ struct ContentView: View {
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 DispatchQueue.main.async {
                     self.loadedFolders = []
-                    getAllUploads()
+                    getSelectedUploads()
                 }
             }
 
@@ -1867,7 +1867,7 @@ struct ContentView: View {
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 DispatchQueue.main.async {
                     self.loadedFolders = []
-                    getAllUploads()
+                    getSelectedUploads()
                 }
             }
 
@@ -1882,7 +1882,8 @@ struct ContentView: View {
         Search folders and files
     */
     func fetchSearchResults(for searchQuery: String) {
-        print("searchQuery \(searchQuery)")
+        logger.info("[fetchSearchResults] \(searchQuery)")
+
         if (searchQuery == "" || searchQuery.count <= 3) {
             refreshUploads()
         } else {
@@ -3032,16 +3033,16 @@ struct ContentView: View {
                     VStack {
                         List {
                             if (self.selectedFolders.count > 0) {
-                                HStack {
+                                VStack {
                                     ForEach(self.loadedFolders) { folder in
                                         if (self.selectedFolders.contains(folder.id)) {
                                             Label {
                                                 Text("\(folder.name)")
-                                                    .font(.system(size: 10))
-                                                    .foregroundStyle(.gray)
+                                                    .font(.system(size: 14))
+                                                    .foregroundStyle(folder.state == "published" ? .white : .gray)
                                             } icon: {
                                                 Rectangle()
-                                                    .fill(.gray)
+                                                    .fill(folder.state == "published" ? .yellow : .gray)
                                                     .frame(width: 8, height: 8)
                                             }
                                         }
@@ -3482,6 +3483,7 @@ struct ContentView: View {
                             }
                         }
                         .listRowSeparator(.visible)
+                        .padding(10)
 
                         if (self.selectedImageFiles.count > 0 ||
                             self.selectedAudioFiles.count > 0 ||

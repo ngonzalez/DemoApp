@@ -519,7 +519,6 @@ struct ContentView: View {
         self.uploadAudioFiles = []
         self.uploadVideoFiles = []
         self.uploadTextFiles = []
-        self.loadedFolders = []
 
         for upload in self.uploadsWithFiles {
             self.uploadImageFiles += upload.imageFiles
@@ -558,6 +557,24 @@ struct ContentView: View {
                     self.loadedFolders.append(textFile.folder)
                 }
             }
+        }
+        if (loadedFolders.count > 0) {
+            searchableFolders = loadedFolders.map { $0 }
+        }
+        if (uploadImageFiles.count > 0) {
+            searchableImageFiles = uploadImageFiles.map { $0 }
+        }
+        if (uploadVideoFiles.count > 0) {
+            searchableVideoFiles = uploadVideoFiles.map { $0 }
+        }
+        if (uploadAudioFiles.count > 0) {
+            searchableAudioFiles = uploadAudioFiles.map { $0 }
+        }
+        if (uploadPdfFiles.count > 0) {
+            searchablePdfFiles = uploadPdfFiles.map { $0 }
+        }
+        if (uploadTextFiles.count > 0) {
+            searchableTextFiles = uploadTextFiles.map { $0 }
         }
     }
 
@@ -1717,7 +1734,9 @@ struct ContentView: View {
         return folderNames.joined(separator: ", ")
     }
 
-    /* Streaming */
+    /*
+     Audio, Video: Streaming
+    */
     struct Stream: Decodable, Identifiable {
         let id: Int
         let m3u8Exists:Bool
@@ -1823,7 +1842,8 @@ struct ContentView: View {
             let request = newPostRequestWithContent(url: url, data: optimizedData, postLength: postLength)
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 DispatchQueue.main.async {
-                    getSelectedUploads()
+                    self.loadedFolders = []
+                    getAllUploads()
                 }
             }
 
@@ -1846,7 +1866,8 @@ struct ContentView: View {
             let request = newPostRequest(url: url, data: optimizedData, postLength: postLength)
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 DispatchQueue.main.async {
-                    getSelectedUploads()
+                    self.loadedFolders = []
+                    getAllUploads()
                 }
             }
 
@@ -1861,31 +1882,10 @@ struct ContentView: View {
         Search folders and files
     */
     func fetchSearchResults(for searchQuery: String) {
-        if (searchableFolders.count == 0 && loadedFolders.count > 0) {
-            searchableFolders = loadedFolders.map { $0 }
-        }
-        if (searchableImageFiles.count == 0 && uploadImageFiles.count > 0) {
-            searchableImageFiles = uploadImageFiles.map { $0 }
-        }
-        if (searchableVideoFiles.count == 0 && uploadVideoFiles.count > 0) {
-            searchableVideoFiles = uploadVideoFiles.map { $0 }
-        }
-        if (searchableAudioFiles.count == 0 && uploadAudioFiles.count > 0) {
-            searchableAudioFiles = uploadAudioFiles.map { $0 }
-        }
-        if (searchablePdfFiles.count == 0 && uploadPdfFiles.count > 0) {
-            searchablePdfFiles = uploadPdfFiles.map { $0 }
-        }
-        if (searchableTextFiles.count == 0 && uploadTextFiles.count > 0) {
-            searchableTextFiles = uploadTextFiles.map { $0 }
-        }
+        print("searchQuery \(searchQuery)")
         if (searchQuery == "" || searchQuery.count <= 3) {
-            loadedFolders = searchableFolders.map { $0 }
-            uploadImageFiles = searchableImageFiles.map { $0 }
-            uploadVideoFiles = searchableVideoFiles.map { $0 }
-            uploadAudioFiles = searchableAudioFiles.map { $0 }
-            uploadPdfFiles = searchablePdfFiles.map { $0 }
-            uploadTextFiles = searchableTextFiles.map { $0 }
+            clearSelectedFolders()
+            getAllUploads()
         } else {
             loadedFolders = searchableFolders.filter { folder in
                 folder.name
@@ -1898,15 +1898,14 @@ struct ContentView: View {
                     .contains(searchQuery)
             }
             uploadImageFiles.forEach { imageFile in
-                var found = false
+                var i = 0
                 self.loadedFolders.forEach { folder in
                     if (folder.id == imageFile.folder.id) {
-                        found = true
+                        self.loadedFolders.remove(at: i)
                     }
+                    i += 1
                 }
-                if (!found) {
-                    self.loadedFolders.append(imageFile.folder)
-                }
+                self.loadedFolders.append(imageFile.folder)
             }
             uploadVideoFiles = searchableVideoFiles.filter { videoFile in
                 videoFile.fileName
@@ -1914,15 +1913,14 @@ struct ContentView: View {
                     .contains(searchQuery)
             }
             uploadVideoFiles.forEach { videoFile in
-                var found = false
+                var i = 0
                 self.loadedFolders.forEach { folder in
                     if (folder.id == videoFile.folder.id) {
-                        found = true
+                        self.loadedFolders.remove(at: i)
                     }
+                    i += 1
                 }
-                if (!found) {
-                    self.loadedFolders.append(videoFile.folder)
-                }
+                self.loadedFolders.append(videoFile.folder)
             }
             uploadAudioFiles = searchableAudioFiles.filter { audioFile in
                 audioFile.fileName
@@ -1930,15 +1928,14 @@ struct ContentView: View {
                     .contains(searchQuery)
             }
             uploadAudioFiles.forEach { audioFile in
-                var found = false
+                var i = 0
                 self.loadedFolders.forEach { folder in
                     if (folder.id == audioFile.folder.id) {
-                        found = true
+                        self.loadedFolders.remove(at: i)
                     }
+                    i += 1
                 }
-                if (!found) {
-                    self.loadedFolders.append(audioFile.folder)
-                }
+                self.loadedFolders.append(audioFile.folder)
             }
             uploadPdfFiles = searchablePdfFiles.filter { pdfFile in
                 pdfFile.fileName
@@ -1946,15 +1943,14 @@ struct ContentView: View {
                     .contains(searchQuery)
             }
             uploadPdfFiles.forEach { pdfFile in
-                var found = false
+                var i = 0
                 self.loadedFolders.forEach { folder in
                     if (folder.id == pdfFile.folder.id) {
-                        found = true
+                        self.loadedFolders.remove(at: i)
                     }
+                    i += 1
                 }
-                if (!found) {
-                    self.loadedFolders.append(pdfFile.folder)
-                }
+                self.loadedFolders.append(pdfFile.folder)
             }
             uploadTextFiles = searchableTextFiles.filter { textFile in
                 textFile.fileName
@@ -1962,17 +1958,21 @@ struct ContentView: View {
                     .contains(searchQuery)
             }
             uploadTextFiles.forEach { textFile in
-                var found = false
+                var i = 0
                 self.loadedFolders.forEach { folder in
                     if (folder.id == textFile.folder.id) {
-                        found = true
+                        self.loadedFolders.remove(at: i)
                     }
+                    i += 1
                 }
-                if (!found) {
-                    self.loadedFolders.append(textFile.folder)
-                }
+                self.loadedFolders.append(textFile.folder)
             }
         }
+    }
+
+    func refreshUploads() {
+        clearSelectedFolders()
+        getAllUploads()
     }
 
     var body: some View {
@@ -2518,7 +2518,7 @@ struct ContentView: View {
                     .padding(5)
                     .navigationTitle("DemoApp (\(String(describing: self.signedInUser?.emailAddress))")
                     .toolbar {
-                        Button(action: getAllUploads) {
+                        Button(action: refreshUploads) {
                             Image(systemName: "arrow.clockwise")
                                 .font(.system(size: 20))
                         }
@@ -2554,16 +2554,18 @@ struct ContentView: View {
                             }
                         }
                         .onChange(of: folderSelection) {
-                            self.selectedFolders = []
-                            for selectedId in folderSelection {
-                                loadedFolders.forEach { folder in
-                                    if folder.id == selectedId {
-                                        self.selectedFolders.insert(folder.id)
+                            DispatchQueue.main.async {
+                                clearSelectedFiles()
+                                self.selectedFolders = []
+                                for selectedId in folderSelection {
+                                    loadedFolders.forEach { folder in
+                                        if folder.id == selectedId {
+                                            self.selectedFolders.insert(folder.id)
+                                        }
                                     }
                                 }
+                                getSelectedUploads()
                             }
-                            clearSelectedFiles()
-                            getSelectedUploads()
                         }
                         .tableStyle(.inset(alternatesRowBackgrounds: false))
                             .frame(height: 250)
@@ -2571,12 +2573,12 @@ struct ContentView: View {
                         Text("Folders")
                             .searchable(text: $searchText, prompt: "Search folders and files")
                     }.onChange(of: searchText) {
-                        clearSelectedFolders()
-                        fetchSearchResults(for: searchText)
+                        DispatchQueue.main.async {
+                            fetchSearchResults(for: searchText)
+                        }
                     }
                 }
             }
-
             switch selectedSideBarItem {
             case .upload:
                 if self.identified {
@@ -2644,15 +2646,14 @@ struct ContentView: View {
                                         if (!self.selectedFolders.contains(imageFile.folder.id)) {
                                             self.selectedFolders.insert(imageFile.folder.id)
                                         }
-                                        var found = true
+                                        var i = 0
                                         self.loadedFolders.forEach { folder in
                                             if (folder.id == imageFile.folder.id) {
-                                                found = true
+                                                self.loadedFolders.remove(at: i)
                                             }
+                                            i += 1
                                         }
-                                        if (!found) {
-                                            self.loadedFolders.append(imageFile.folder)
-                                        }
+                                        self.loadedFolders.append(imageFile.folder)
                                     }
                                 }
                             }
@@ -2727,15 +2728,14 @@ struct ContentView: View {
                                         if (!self.selectedFolders.contains(pdfFile.folder.id)) {
                                             self.selectedFolders.insert(pdfFile.folder.id)
                                         }
-                                        var found = true
+                                        var i = 0
                                         self.loadedFolders.forEach { folder in
                                             if (folder.id == pdfFile.folder.id) {
-                                                found = true
+                                                self.loadedFolders.remove(at: i)
                                             }
+                                            i += 1
                                         }
-                                        if (!found) {
-                                            self.loadedFolders.append(pdfFile.folder)
-                                        }
+                                        self.loadedFolders.append(pdfFile.folder)
                                     }
                                 }
                             }
@@ -2825,15 +2825,14 @@ struct ContentView: View {
                                         if (!self.selectedFolders.contains(audioFile.folder.id)) {
                                             self.selectedFolders.insert(audioFile.folder.id)
                                         }
-                                        var found = true
+                                        var i = 0
                                         self.loadedFolders.forEach { folder in
                                             if (folder.id == audioFile.folder.id) {
-                                                found = true
+                                                self.loadedFolders.remove(at: i)
                                             }
+                                            i += 1
                                         }
-                                        if (!found) {
-                                            self.loadedFolders.append(audioFile.folder)
-                                        }
+                                        self.loadedFolders.append(audioFile.folder)
 
                                         displayAudio(audioFile: audioFile)
                                     }
@@ -2910,15 +2909,14 @@ struct ContentView: View {
                                         if (!self.selectedFolders.contains(videoFile.folder.id)) {
                                             self.selectedFolders.insert(videoFile.folder.id)
                                         }
-                                        var found = true
+                                        var i = 0
                                         self.loadedFolders.forEach { folder in
                                             if (folder.id == videoFile.folder.id) {
-                                                found = true
+                                                self.loadedFolders.remove(at: i)
                                             }
+                                            i += 1
                                         }
-                                        if (!found) {
-                                            self.loadedFolders.append(videoFile.folder)
-                                        }
+                                        self.loadedFolders.append(videoFile.folder)
 
                                         displayVideo(videoFile: videoFile)
                                     }
@@ -2993,15 +2991,14 @@ struct ContentView: View {
                                         if (!self.selectedFolders.contains(textFile.folder.id)) {
                                             self.selectedFolders.insert(textFile.folder.id)
                                         }
-                                        var found = true
+                                        var i = 0
                                         self.loadedFolders.forEach { folder in
                                             if (folder.id == textFile.folder.id) {
-                                                found = true
+                                                self.loadedFolders.remove(at: i)
                                             }
+                                            i += 1
                                         }
-                                        if (!found) {
-                                            self.loadedFolders.append(textFile.folder)
-                                        }
+                                        self.loadedFolders.append(textFile.folder)
                                     }
                                 }
                             }
@@ -3038,10 +3035,10 @@ struct ContentView: View {
                             if (self.selectedFolders.count > 0) {
                                 HStack {
                                     ForEach(self.loadedFolders) { folder in
-                                        if (self.selectedFolders.contains(folder.id) && String(folder.name) != "") {
+                                        if (self.selectedFolders.contains(folder.id)) {
                                             Label {
                                                 Text("\(folder.name)")
-                                                    .font(.system(size: 11))
+                                                    .font(.system(size: 12))
                                                     .foregroundStyle(.gray)
                                             } icon: {
                                                 Rectangle()
@@ -3081,102 +3078,97 @@ struct ContentView: View {
                         }.frame(height: 100)
                         List {
                             ForEach(self.selectedImageFiles) { imageFile in
-
                                 let fileName = imageFile.fileName
                                 Label(fileName,
-                                     systemImage: "photo.circle")
-                                   .labelStyle(.titleAndIcon)
-                                   .font(.system(size: 13))
-
+                                      systemImage: "photo")
+                                .labelStyle(.titleAndIcon)
+                                .font(.system(size: 17))
+                                
                                 let fileUrl = imageFile.fileUrl
                                 AsyncImage(url: URL(string: fileUrl)) { result in
-                                   result.image?
-                                       .resizable()
-                                       .scaledToFill()
+                                    result.image?
+                                        .resizable()
+                                        .scaledToFill()
                                 }
                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-
+                                
                                 Label {
                                     let mimeType = imageFile.mimeType ?? "--"
                                     Text("Mime/Type \(mimeType)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.gray)
                                 } icon: {
-                                   Rectangle()
-                                       .fill(.gray)
-                                       .frame(width: 8, height: 8)
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
                                 }
-
+                                
                                 Label {
                                     let formatInfo = imageFile.formatInfo ?? "--"
                                     Text("Format \(formatInfo)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.gray)
                                 } icon: {
-                                   Rectangle()
-                                       .fill(.gray)
-                                       .frame(width: 8, height: 8)
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
                                 }
-
+                                
                                 Label {
                                     let dimensions = imageFile.dimensions ?? "--"
                                     Text("Dimensions \(dimensions)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.gray)
                                 } icon: {
-                                   Rectangle()
-                                       .fill(.gray)
-                                       .frame(width: 8, height: 8)
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
                                 }
-
+                                
                                 Label {
                                     let megapixels = imageFile.megapixels ?? 0.1
                                     Text("Megapixels \(megapixels)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.gray)
                                 } icon: {
-                                   Rectangle()
-                                       .fill(.gray)
-                                       .frame(width: 8, height: 8)
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
                                 }
-
+                                
                                 Label {
                                     let width = imageFile.width ?? 0
                                     Text("Width \(width)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.gray)
                                 } icon: {
-                                   Rectangle()
-                                       .fill(.gray)
-                                       .frame(width: 8, height: 8)
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
                                 }
-
+                                
                                 Label {
                                     let height = imageFile.height ?? 0
                                     Text("Height \(height)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.gray)
                                 } icon: {
-                                   Rectangle()
-                                       .fill(.gray)
-                                       .frame(width: 8, height: 8)
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
                                 }
-
+                                
                                 Label {
                                     let fileSize = imageFile.fileSize ?? ""
                                     Text("File Size \(fileSize)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.gray)
                                 } icon: {
-                                   Rectangle()
-                                       .fill(.gray)
-                                       .frame(width: 8, height: 8)
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
                                 }
-
-                                Spacer()
-
                             }
-
                             ForEach(self.selectedPdfFiles) { pdfFile in
 
                                 let fileName = pdfFile.fileName
@@ -3487,9 +3479,12 @@ struct ContentView: View {
                                 Spacer()
 
                             }
-
-
-                        }.padding(20)
+                        }
+                        .listRowSeparator(.visible)
+                        .background(
+                            LinearGradient(gradient: Gradient(colors: [.black, .white]), startPoint: .top, endPoint: .bottom)
+                        )
+                        .padding(20)
 
                         if (self.selectedImageFiles.count > 0 ||
                             self.selectedAudioFiles.count > 0 ||

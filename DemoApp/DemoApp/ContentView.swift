@@ -519,7 +519,6 @@ struct ContentView: View {
         self.uploadAudioFiles = []
         self.uploadVideoFiles = []
         self.uploadTextFiles = []
-        self.loadedFolders = []
 
         for upload in self.uploadsWithFiles {
             self.uploadImageFiles += upload.imageFiles
@@ -1843,7 +1842,7 @@ struct ContentView: View {
             let request = newPostRequestWithContent(url: url, data: optimizedData, postLength: postLength)
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 DispatchQueue.main.async {
-                    clearSelectedFolders()
+                    self.loadedFolders = []
                     getAllUploads()
                 }
             }
@@ -1867,7 +1866,7 @@ struct ContentView: View {
             let request = newPostRequest(url: url, data: optimizedData, postLength: postLength)
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 DispatchQueue.main.async {
-                    clearSelectedFolders()
+                    self.loadedFolders = []
                     getAllUploads()
                 }
             }
@@ -1883,13 +1882,10 @@ struct ContentView: View {
         Search folders and files
     */
     func fetchSearchResults(for searchQuery: String) {
+        print("searchQuery \(searchQuery)")
         if (searchQuery == "" || searchQuery.count <= 3) {
-            loadedFolders = searchableFolders.map { $0 }
-            uploadImageFiles = searchableImageFiles.map { $0 }
-            uploadVideoFiles = searchableVideoFiles.map { $0 }
-            uploadAudioFiles = searchableAudioFiles.map { $0 }
-            uploadPdfFiles = searchablePdfFiles.map { $0 }
-            uploadTextFiles = searchableTextFiles.map { $0 }
+            clearSelectedFolders()
+            getAllUploads()
         } else {
             loadedFolders = searchableFolders.filter { folder in
                 folder.name
@@ -1972,6 +1968,11 @@ struct ContentView: View {
                 self.loadedFolders.append(textFile.folder)
             }
         }
+    }
+
+    func refreshUploads() {
+        clearSelectedFolders()
+        getAllUploads()
     }
 
     var body: some View {
@@ -2517,7 +2518,7 @@ struct ContentView: View {
                     .padding(5)
                     .navigationTitle("DemoApp (\(String(describing: self.signedInUser?.emailAddress))")
                     .toolbar {
-                        Button(action: getAllUploads) {
+                        Button(action: refreshUploads) {
                             Image(systemName: "arrow.clockwise")
                                 .font(.system(size: 20))
                         }
@@ -2553,16 +2554,16 @@ struct ContentView: View {
                             }
                         }
                         .onChange(of: folderSelection) {
-                            self.selectedFolders = []
-                            for selectedId in folderSelection {
-                                loadedFolders.forEach { folder in
-                                    if folder.id == selectedId {
-                                        self.selectedFolders.insert(folder.id)
+                            DispatchQueue.main.async {
+                                clearSelectedFiles()
+                                self.selectedFolders = []
+                                for selectedId in folderSelection {
+                                    loadedFolders.forEach { folder in
+                                        if folder.id == selectedId {
+                                            self.selectedFolders.insert(folder.id)
+                                        }
                                     }
                                 }
-                            }
-                            clearSelectedFiles()
-                            DispatchQueue.main.async {
                                 getSelectedUploads()
                             }
                         }
@@ -2572,7 +2573,6 @@ struct ContentView: View {
                         Text("Folders")
                             .searchable(text: $searchText, prompt: "Search folders and files")
                     }.onChange(of: searchText) {
-                        clearSelectedFolders()
                         DispatchQueue.main.async {
                             fetchSearchResults(for: searchText)
                         }
@@ -3078,102 +3078,97 @@ struct ContentView: View {
                         }.frame(height: 100)
                         List {
                             ForEach(self.selectedImageFiles) { imageFile in
-
                                 let fileName = imageFile.fileName
                                 Label(fileName,
-                                     systemImage: "photo.circle")
-                                   .labelStyle(.titleAndIcon)
-                                   .font(.system(size: 13))
-
+                                      systemImage: "photo")
+                                .labelStyle(.titleAndIcon)
+                                .font(.system(size: 17))
+                                
                                 let fileUrl = imageFile.fileUrl
                                 AsyncImage(url: URL(string: fileUrl)) { result in
-                                   result.image?
-                                       .resizable()
-                                       .scaledToFill()
+                                    result.image?
+                                        .resizable()
+                                        .scaledToFill()
                                 }
                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-
+                                
                                 Label {
                                     let mimeType = imageFile.mimeType ?? "--"
                                     Text("Mime/Type \(mimeType)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.gray)
                                 } icon: {
-                                   Rectangle()
-                                       .fill(.gray)
-                                       .frame(width: 8, height: 8)
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
                                 }
-
+                                
                                 Label {
                                     let formatInfo = imageFile.formatInfo ?? "--"
                                     Text("Format \(formatInfo)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.gray)
                                 } icon: {
-                                   Rectangle()
-                                       .fill(.gray)
-                                       .frame(width: 8, height: 8)
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
                                 }
-
+                                
                                 Label {
                                     let dimensions = imageFile.dimensions ?? "--"
                                     Text("Dimensions \(dimensions)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.gray)
                                 } icon: {
-                                   Rectangle()
-                                       .fill(.gray)
-                                       .frame(width: 8, height: 8)
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
                                 }
-
+                                
                                 Label {
                                     let megapixels = imageFile.megapixels ?? 0.1
                                     Text("Megapixels \(megapixels)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.gray)
                                 } icon: {
-                                   Rectangle()
-                                       .fill(.gray)
-                                       .frame(width: 8, height: 8)
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
                                 }
-
+                                
                                 Label {
                                     let width = imageFile.width ?? 0
                                     Text("Width \(width)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.gray)
                                 } icon: {
-                                   Rectangle()
-                                       .fill(.gray)
-                                       .frame(width: 8, height: 8)
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
                                 }
-
+                                
                                 Label {
                                     let height = imageFile.height ?? 0
                                     Text("Height \(height)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.gray)
                                 } icon: {
-                                   Rectangle()
-                                       .fill(.gray)
-                                       .frame(width: 8, height: 8)
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
                                 }
-
+                                
                                 Label {
                                     let fileSize = imageFile.fileSize ?? ""
                                     Text("File Size \(fileSize)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.gray)
                                 } icon: {
-                                   Rectangle()
-                                       .fill(.gray)
-                                       .frame(width: 8, height: 8)
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
                                 }
-
-                                Spacer()
-
                             }
-
                             ForEach(self.selectedPdfFiles) { pdfFile in
 
                                 let fileName = pdfFile.fileName
@@ -3484,9 +3479,12 @@ struct ContentView: View {
                                 Spacer()
 
                             }
-
-
-                        }.padding(20)
+                        }
+                        .listRowSeparator(.visible)
+                        .background(
+                            LinearGradient(gradient: Gradient(colors: [.black, .white]), startPoint: .top, endPoint: .bottom)
+                        )
+                        .padding(20)
 
                         if (self.selectedImageFiles.count > 0 ||
                             self.selectedAudioFiles.count > 0 ||

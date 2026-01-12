@@ -3010,7 +3010,7 @@ struct ContentView: View {
                             Text("Text (\(uploadTextFiles.count))")
                         }
                     }
-                    .padding(.horizontal, 5)
+                    .padding(10)
                 }
             case .account:
                 /*
@@ -3036,7 +3036,7 @@ struct ContentView: View {
                     VStack {
                         List {
                             /*
-                              Folder actions
+                              Folder actions: Publish, unpublish, delete
                             */
                             if (self.selectedFolders.count > 0) {
                                 HStack {
@@ -3099,7 +3099,7 @@ struct ContentView: View {
                         }.frame(height: 75)
                         List {
                             /*
-                              Folders list
+                              Folders list with publish status
                             */
                             if (self.selectedImageFiles.count == 0 && self.selectedPdfFiles.count == 0 && self.selectedAudioFiles.count == 0 && self.selectedVideoFiles.count == 0 &&
                                 self.selectedTextFiles.count == 0 && self.selectedFolders.count > 1) {
@@ -3127,7 +3127,7 @@ struct ContentView: View {
                                 Label(fileName,
                                       systemImage: "photo")
                                 .labelStyle(.titleAndIcon)
-                                .font(.system(size: 17))
+                                .font(.system(size: 13))
 
                                 let fileUrl = imageFile.fileUrl
                                 AsyncImage(url: URL(string: fileUrl)) { result in
@@ -3226,6 +3226,11 @@ struct ContentView: View {
                                     .labelStyle(.titleAndIcon)
                                     .font(.system(size: 13))
 
+                                Image(systemName: "square.text.square")
+                                    .font(.system(size: 40))
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(10)
+
                                 Label {
                                     let mimeType = pdfFile.mimeType ?? "--"
                                     Text("Mime/Type \(mimeType)")
@@ -3251,7 +3256,9 @@ struct ContentView: View {
                                 Spacer()
 
                             }
-
+                            /*
+                              AudioFiles
+                            */
                             ForEach(self.selectedAudioFiles) { audioFile in
 
                                 let fileName = audioFile.fileName
@@ -3504,9 +3511,10 @@ struct ContentView: View {
                                     .labelStyle(.titleAndIcon)
                                     .font(.system(size: 13))
 
-//                                Text("""
-//                                    \(textContent)
-//                                    """).padding(20)
+                                Image(systemName: "square.text.square")
+                                    .font(.system(size: 40))
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(10)
 
                                 Label {
                                     let mimeType = textFile.mimeType ?? ""
@@ -3537,6 +3545,9 @@ struct ContentView: View {
                         .listRowSeparator(.visible)
                         .padding(10)
 
+                        /*
+                          Folders, Attachments: Clear selection
+                        */
                         if (self.selectedImageFiles.count > 0 ||
                             self.selectedAudioFiles.count > 0 ||
                             self.selectedPdfFiles.count > 0 ||

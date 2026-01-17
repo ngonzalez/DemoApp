@@ -19,7 +19,7 @@ public class FileChunker
     let chunkSize:Int
     let bufferSize:Int
 
-    init( input:URL, outputDirectory:URL, chunkSize:Int, bufferSize:Int = CHUNK_DEFAULT_BUFFER_SIZE )
+    init(input:URL, outputDirectory:URL, chunkSize:Int, bufferSize:Int = CHUNK_DEFAULT_BUFFER_SIZE)
     {
         self.input = input
         self.outputDirectory = outputDirectory
@@ -27,7 +27,7 @@ public class FileChunker
         self.bufferSize = bufferSize
     }
 
-    func chunk( )throws->[URL]
+    func chunk() throws -> [URL]
     {
         let fileManager:FileManager = .default
 
@@ -83,7 +83,6 @@ public class FileChunker
         try reader.close( )
         return urls
     }
-    
 }
 
 extension URL

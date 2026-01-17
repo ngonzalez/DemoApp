@@ -3010,7 +3010,7 @@ struct ContentView: View {
                             Text("Text (\(uploadTextFiles.count))")
                         }
                     }
-                    .padding(.horizontal, 5)
+                    .padding(10)
                 }
             case .account:
                 /*
@@ -3225,6 +3225,11 @@ struct ContentView: View {
                                 Label(fileName, systemImage: "doc.circle.fill")
                                     .labelStyle(.titleAndIcon)
                                     .font(.system(size: 13))
+
+                                Image(systemName: "square.text.square")
+                                    .font(.system(size: 40))
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(10)
 
                                 Label {
                                     let mimeType = pdfFile.mimeType ?? "--"
@@ -3506,9 +3511,10 @@ struct ContentView: View {
                                     .labelStyle(.titleAndIcon)
                                     .font(.system(size: 13))
 
-//                                Text("""
-//                                    \(textContent)
-//                                    """).padding(20)
+                                Image(systemName: "square.text.square")
+                                    .font(.system(size: 40))
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(10)
 
                                 Label {
                                     let mimeType = textFile.mimeType ?? ""
@@ -3539,6 +3545,9 @@ struct ContentView: View {
                         .listRowSeparator(.visible)
                         .padding(10)
 
+                        /*
+                          Folders, Attachments: Clear selection
+                        */
                         if (self.selectedImageFiles.count > 0 ||
                             self.selectedAudioFiles.count > 0 ||
                             self.selectedPdfFiles.count > 0 ||

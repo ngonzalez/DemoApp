@@ -448,6 +448,7 @@ struct ContentView: View {
         let dataUrl: String?
         let mimeType: String?
         let formatInfo: String?
+        let fileSize: String?
     }
 
     struct TextFile: Decodable, Identifiable {
@@ -458,6 +459,7 @@ struct ContentView: View {
         let dataUrl: String?
         let mimeType: String?
         let formatInfo: String?
+        let fileSize: String?
     }
 
     struct AudioFile: Decodable, Identifiable {
@@ -3160,6 +3162,17 @@ struct ContentView: View {
                                 }
 
                                 Label {
+                                    let fileSize = imageFile.fileSize ?? ""
+                                    Text("File Size \(fileSize)")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.gray)
+                                } icon: {
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
+                                }
+
+                                Label {
                                     let dimensions = imageFile.dimensions ?? "--"
                                     Text("Dimensions \(dimensions)")
                                         .font(.system(size: 11))
@@ -3195,17 +3208,6 @@ struct ContentView: View {
                                 Label {
                                     let height = imageFile.height ?? 0
                                     Text("Height \(height)")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.gray)
-                                } icon: {
-                                    Rectangle()
-                                        .fill(.gray)
-                                        .frame(width: 8, height: 8)
-                                }
-
-                                Label {
-                                    let fileSize = imageFile.fileSize ?? ""
-                                    Text("File Size \(fileSize)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.gray)
                                 } icon: {
@@ -3253,6 +3255,17 @@ struct ContentView: View {
                                         .frame(width: 8, height: 8)
                                 }
 
+                                Label {
+                                    let fileSize = pdfFile.fileSize ?? ""
+                                    Text("File Size \(fileSize)")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.gray)
+                                } icon: {
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
+                                }
+
                                 Spacer()
 
                             }
@@ -3277,19 +3290,8 @@ struct ContentView: View {
                                 }
 
                                 Label {
-                                    let fileSize = audioFile.fileSize ?? 0
-                                    Text("File Size \(fileSize)")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.gray)
-                                } icon: {
-                                    Rectangle()
-                                        .fill(.gray)
-                                        .frame(width: 8, height: 8)
-                                }
-
-                                Label {
-                                    let title = audioFile.title ?? "--"
-                                    Text("Title \(title)")
+                                    let formatInfo = audioFile.formatInfo ?? "--"
+                                    Text("Format \(formatInfo)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.gray)
                                 } icon: {
@@ -3310,8 +3312,19 @@ struct ContentView: View {
                                 }
 
                                 Label {
-                                    let formatInfo = audioFile.formatInfo ?? "--"
-                                    Text("Format \(formatInfo)")
+                                    let fileSize = audioFile.fileSize ?? 0
+                                    Text("File Size \(fileSize)")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.gray)
+                                } icon: {
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
+                                }
+
+                                Label {
+                                    let title = audioFile.title ?? "--"
+                                    Text("Title \(title)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.gray)
                                 } icon: {
@@ -3389,19 +3402,8 @@ struct ContentView: View {
                                 }
 
                                 Label {
-                                    let fileSize = videoFile.fileSize ?? 0
-                                    Text("File Size \(fileSize)")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.gray)
-                                } icon: {
-                                    Rectangle()
-                                        .fill(.gray)
-                                        .frame(width: 8, height: 8)
-                                }
-
-                                Label {
-                                    let title = videoFile.title ?? "--"
-                                    Text("Title \(title)")
+                                    let formatInfo = videoFile.formatInfo ?? ""
+                                    Text("Format \(formatInfo)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.gray)
                                 } icon: {
@@ -3422,8 +3424,19 @@ struct ContentView: View {
                                 }
 
                                 Label {
-                                    let formatInfo = videoFile.formatInfo ?? ""
-                                    Text("Format \(formatInfo)")
+                                    let fileSize = videoFile.fileSize ?? 0
+                                    Text("File Size \(fileSize)")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.gray)
+                                } icon: {
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
+                                }
+
+                                Label {
+                                    let title = videoFile.title ?? "--"
+                                    Text("Title \(title)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.gray)
                                 } icon: {
@@ -3530,6 +3543,17 @@ struct ContentView: View {
                                 Label {
                                     let formatInfo = textFile.formatInfo ?? ""
                                     Text("Format \(formatInfo)")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.gray)
+                                } icon: {
+                                    Rectangle()
+                                        .fill(.gray)
+                                        .frame(width: 8, height: 8)
+                                }
+
+                                Label {
+                                    let fileSize = textFile.fileSize ?? ""
+                                    Text("File Size \(fileSize)")
                                         .font(.system(size: 11))
                                         .foregroundStyle(.gray)
                                 } icon: {

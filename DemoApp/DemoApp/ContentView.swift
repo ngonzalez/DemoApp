@@ -170,6 +170,8 @@ struct ContentView: View {
 
     @State private var isImporting:Bool = false
 
+    @State private var isPublished:Bool = false
+
     struct UploadItem: Codable {
         var id: Int?
         var uuid: UUID
@@ -2559,10 +2561,14 @@ struct ContentView: View {
                             DispatchQueue.main.async {
                                 clearSelectedFiles()
                                 self.selectedFolders = []
+                                self.isPublished = folderSelection.count > 0
                                 for selectedId in folderSelection {
                                     loadedFolders.forEach { folder in
                                         if folder.id == selectedId {
                                             self.selectedFolders.insert(folder.id)
+                                            if (folder.state != "published") {
+                                                self.isPublished = false
+                                            }
                                         }
                                     }
                                 }
@@ -3038,42 +3044,40 @@ struct ContentView: View {
                     VStack {
                         List {
                             /*
-                              Folder actions: Publish, unpublish, delete
+                              Folder actions: Publish, delete
                             */
                             if (self.selectedFolders.count > 0) {
                                 HStack {
-                                    Button(action: publishSelectedFolders) {
-                                        Image(systemName: "newspaper.fill")
-                                            .font(.system(size: 10))
-                                        Text("Publish selected \(self.selectedFolders.count) Folders")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(Color.white)
-                                            .buttonStyle(.plain)
+                                    Toggle(isOn: $isPublished) {
+                                        Label("Publish folders",
+                                              systemImage: "newspaper")
+                                        .foregroundStyle(.white)
+                                        .font(.system(size: 11))
+                                    } .onChange(of: isPublished) { _, newValue in
+                                        if (newValue) {
+                                            publishSelectedFolders()
+                                        } else {
+                                            unpublishSelectedFolders()
+                                        }
                                     }
-                                    Button(action: unpublishSelectedFolders) {
-                                        Image(systemName: "newspaper")
-                                            .font(.system(size: 10))
-                                        Text("Unpublish selected \(self.selectedFolders.count) Folders")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(Color.gray)
-                                            .buttonStyle(.plain)
-                                    }
+                                    .toggleStyle(SwitchToggleStyle(tint: .blue))
+                                }
+                                HStack {
                                     Button(action: deleteSelectedFolders) {
-                                        Image(systemName: "delete.forward")
-                                            .font(.system(size: 10))
-                                        Text("Delete selected \(self.selectedFolders.count) Folders")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(Color.gray)
-                                            .buttonStyle(.plain)
+                                        Label("Delete folders",
+                                              systemImage: "trash")
+                                        .foregroundStyle(.white)
+                                        .font(.system(size: 11))
                                     }
+                                    .buttonStyle(.plain)
                                 }
                                 /*
                                   Selected folder / (x) folders selected
                                 */
-                                VStack {
+                                HStack {
                                     if (self.selectedFolders.count > 1) {
                                         Text("\(self.selectedFolders.count) folders selected")
-                                            .font(.system(size: 12))
+                                            .font(.system(size: 11))
                                             .foregroundStyle(.gray)
                                             .lineLimit(1)
                                             .truncationMode(.middle)
@@ -3098,7 +3102,8 @@ struct ContentView: View {
                                     }
                                 }
                             }
-                        }.frame(height: 75)
+                        }.frame(height: 120)
+
                         List {
                             /*
                               Folders list with publish status

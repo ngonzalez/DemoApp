@@ -170,10 +170,6 @@ struct ContentView: View {
 
     @State private var isImporting:Bool = false
 
-    @State private var isPublished:Bool = false
-
-    @State private var _allPublished:Bool = false
-
     struct UploadItem: Codable {
         var id: Int?
         var uuid: UUID
@@ -2563,18 +2559,13 @@ struct ContentView: View {
                             DispatchQueue.main.async {
                                 clearSelectedFiles()
                                 self.selectedFolders = []
-                                self._allPublished = true
                                 for selectedId in folderSelection {
                                     loadedFolders.forEach { folder in
                                         if folder.id == selectedId {
                                             self.selectedFolders.insert(folder.id)
-                                            if (folder.state != "published") {
-                                                self._allPublished = false
-                                            }
                                         }
                                     }
                                 }
-                                self.isPublished = self._allPublished
                                 getSelectedUploads()
                             }
                         }
@@ -3051,25 +3042,24 @@ struct ContentView: View {
                             */
                             if (self.selectedFolders.count > 0) {
                                 HStack {
-                                    Toggle(isOn: $isPublished) {
+                                    Button(action: publishSelectedFolders) {
                                         Label("Publish folders",
                                               systemImage: "newspaper")
                                         .foregroundStyle(.white)
                                         .font(.system(size: 11))
-                                    } .onChange(of: isPublished) { _, newValue in
-                                        if (newValue) {
-                                            publishSelectedFolders()
-                                        } else {
-                                            unpublishSelectedFolders()
-                                        }
                                     }
-                                    .toggleStyle(SwitchToggleStyle(tint: .blue))
-                                }
-                                HStack {
+                                    .buttonStyle(.plain)
+                                    Button(action: unpublishSelectedFolders) {
+                                        Label("Unpublish folders",
+                                              systemImage: "archivebox")
+                                        .foregroundStyle(.gray)
+                                        .font(.system(size: 11))
+                                    }
+                                    .buttonStyle(.plain)
                                     Button(action: deleteSelectedFolders) {
                                         Label("Delete folders",
                                               systemImage: "trash")
-                                        .foregroundStyle(.white)
+                                        .foregroundStyle(.gray)
                                         .font(.system(size: 11))
                                     }
                                     .buttonStyle(.plain)

@@ -172,6 +172,8 @@ struct ContentView: View {
 
     @State private var isPublished:Bool = false
 
+    @State private var _allPublished:Bool = false
+
     struct UploadItem: Codable {
         var id: Int?
         var uuid: UUID
@@ -2561,17 +2563,18 @@ struct ContentView: View {
                             DispatchQueue.main.async {
                                 clearSelectedFiles()
                                 self.selectedFolders = []
-                                self.isPublished = folderSelection.count > 0
+                                self._allPublished = true
                                 for selectedId in folderSelection {
                                     loadedFolders.forEach { folder in
                                         if folder.id == selectedId {
                                             self.selectedFolders.insert(folder.id)
                                             if (folder.state != "published") {
-                                                self.isPublished = false
+                                                self._allPublished = false
                                             }
                                         }
                                     }
                                 }
+                                self.isPublished = self._allPublished
                                 getSelectedUploads()
                             }
                         }

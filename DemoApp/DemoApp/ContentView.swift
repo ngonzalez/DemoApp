@@ -170,10 +170,6 @@ struct ContentView: View {
 
     @State private var isImporting:Bool = false
 
-    @State private var isPublished:Bool = false
-
-    @State private var _allPublished:Bool = false
-
     struct UploadItem: Codable {
         var id: Int?
         var uuid: UUID
@@ -774,21 +770,29 @@ struct ContentView: View {
     @State private var backendURL:String = "https://link12.ddns.net:4040/upload"
 //    @State private var backendURL:String = "http://192.168.1.11:3000/upload"
 
-//    @State private var publishURL:String = "https://appshare.site:4040/olders/publish"
-    @State private var publishURL:String = "https://link12.ddns.net:4040/folders/publish"
-//    @State private var publishURL:String = "http://192.168.1.11:3000/folders/publish"
+//    @State private var foldersPublishURL:String = "https://appshare.site:4040/folders/publish"
+    @State private var foldersPublishURL:String = "https://link12.ddns.net:4040/folders/publish"
+//    @State private var foldersPublishURL:String = "http://192.168.1.11:3000/folders/publish"
 
-//    @State private var unpublishURL:String = "https://appshare.site:4040/olders/unpublish"
-    @State private var unpublishURL:String = "https://link12.ddns.net:4040/folders/unpublish"
-//    @State private var unpublishURL:String = "http://192.168.1.11:3000/folders/unpublish"
+//    @State private var foldersUnpublishURL:String = "https://appshare.site:4040/folders/unpublish"
+    @State private var foldersUnpublishURL:String = "https://link12.ddns.net:4040/folders/unpublish"
+//    @State private var foldersUnpublishURL:String = "http://192.168.1.11:3000/folders/unpublish"
 
-//    @State private var destroyAttachmentURL:String = "https://appshare.site:4040/attachments"
-    @State private var destroyAttachmentURL:String = "https://link12.ddns.net:4040/attachments"
-//    @State private var destroyAttachmentURL:String = "http://192.168.1.11:3000/attachments"
+//    @State private var foldersArchiveURL:String = "https://appshare.site:4040/folders/archive"
+    @State private var foldersArchiveURL:String = "https://link12.ddns.net:4040/folders/archive"
+//    @State private var foldersArchiveURL:String = "http://192.168.1.11:3000/folders/archive"
 
-//    @State private var foldersURL:String = "https://appshare.site:4040/folders"
-    @State private var foldersURL:String = "https://link12.ddns.net:4040/folders"
-//    @State private var foldersURL:String = "http://192.168.1.11:3000/folders"
+//    @State private var foldersUnarchiveURL:String = "https://appshare.site:4040/folders/unarchive"
+    @State private var foldersUnarchiveURL:String = "https://link12.ddns.net:4040/folders/unarchive"
+//    @State private var foldersUnarchiveURL:String = "http://192.168.1.11:3000/folders/unarchive"
+
+//    @State private var foldersDeleteURL:String = "https://appshare.site:4040/folders/delete"
+    @State private var foldersDeleteURL:String = "https://link12.ddns.net:4040/folders/delete"
+//    @State private var foldersDeleteURL:String = "http://192.168.1.11:3000/folders/delete"
+
+//    @State private var attachmentsDeleteURL:String = "https://appshare.site:4040/attachments/delete"
+    @State private var attachmentsDeleteURL:String = "https://link12.ddns.net:4040/attachments/delete"
+//    @State private var attachmentsDeleteURL:String = "http://192.168.1.11:3000/attachments/delete"
 
 //    @State private var serviceURL:String = "https://appshare.site:5050"
     @State private var serviceURL:String = "https://link12.ddns.net:5050"
@@ -1603,19 +1607,15 @@ struct ContentView: View {
     }
 
     func deleteSelectedFolders() {
-        submitDestroyFolderForm()
-    }
-
-    func submitDestroyFolderForm() {
         do {
             let item = FolderIds(id: self.selectedFolders.map { $0 })
             let data = try JSONEncoder().encode(item)
-            let url = URL(string: "\(foldersURL)")!
+            let url = URL(string: "\(foldersDeleteURL)")!
             let delegateClass = NetworkDelegateClass()
             let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
             let optimizedData: Data = try! data.gzipped(level: .bestCompression)
             let postLength = String(format: "%lu", UInt(optimizedData.count))
-            let request = newDeleteRequestWithContent(url: url, data: optimizedData, postLength: postLength)
+            let request = newPostRequestWithContent(url: url, data: optimizedData, postLength: postLength)
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 do {
                     let message = try JSONDecoder().decode(Message.self, from: data!)
@@ -1636,14 +1636,14 @@ struct ContentView: View {
                     }
 
                 } catch let error {
-                    logger.error("[submitDestroyImageForm] Request: \(error)")
+                    logger.error("[deleteSelectedFolders] Request: \(error)")
                 }
             }
 
             task.resume()
 
         } catch let error {
-            logger.error("[submitDestroyImageForm] Request: \(error)")
+            logger.error("[deleteSelectedFolders] Request: \(error)")
         }
     }
 
@@ -1656,12 +1656,12 @@ struct ContentView: View {
         do {
             let ids = AttachmentIds(id: ids, type: type)
             let data = try JSONEncoder().encode(ids)
-            let url = URL(string: "\(destroyAttachmentURL)")!
+            let url = URL(string: "\(attachmentsDeleteURL)")!
             let delegateClass = NetworkDelegateClass()
             let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
             let optimizedData: Data = try! data.gzipped(level: .bestCompression)
             let postLength = String(format: "%lu", UInt(optimizedData.count))
-            let request = newDeleteRequestWithContent(url: url, data: optimizedData, postLength: postLength)
+            let request = newPostRequestWithContent(url: url, data: optimizedData, postLength: postLength)
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 do {
                     let message = try JSONDecoder().decode(Message.self, from: data!)
@@ -1674,6 +1674,7 @@ struct ContentView: View {
                             self.destroyAttachmentResponse = message
 
                             clearSelectedFolders()
+                            clearSelectedFiles()
                         }
                     }
 
@@ -1682,14 +1683,14 @@ struct ContentView: View {
                     }
 
                 } catch let error {
-                    logger.error("[submitDestroyImageForm] Request: \(error)")
+                    logger.error("[submitDestroyAttachments] Request: \(error)")
                 }
             }
 
             task.resume()
 
         } catch let error {
-            logger.error("[submitDestroyImageForm] Request: \(error)")
+            logger.error("[submitDestroyAttachments] Request: \(error)")
         }
     }
 
@@ -1698,6 +1699,7 @@ struct ContentView: View {
             ids: self.selectedImageFiles.map { $0.id },
             type: "ImageFile"
         )
+        refreshUploads()
     }
 
     func deleteSelectedAudioFiles() {
@@ -1705,6 +1707,7 @@ struct ContentView: View {
             ids: self.selectedAudioFiles.map { $0.id },
             type: "AudioFile"
         )
+        refreshUploads()
     }
 
     func deleteSelectedVideoFiles() {
@@ -1712,6 +1715,7 @@ struct ContentView: View {
             ids: self.selectedVideoFiles.map { $0.id },
             type: "VideoFile"
         )
+        refreshUploads()
     }
 
     func deleteSelectedPdfs() {
@@ -1719,6 +1723,7 @@ struct ContentView: View {
             ids: self.selectedPdfFiles.map { $0.id },
             type: "PdfFile"
         )
+        refreshUploads()
     }
 
     func deleteSelectedTextFiles() {
@@ -1726,6 +1731,7 @@ struct ContentView: View {
             ids: self.selectedTextFiles.map { $0.id },
             type: "TextFile"
         )
+        refreshUploads()
     }
 
     func getFolderName(folder: Folder) -> String {
@@ -1836,11 +1842,25 @@ struct ContentView: View {
         var id: Array<Int>
     }
 
+    func updateSelectedFolders() {
+        if ($selectedFolderAction.wrappedValue == FolderAction.publish) {
+            publishSelectedFolders()
+        } else if ($selectedFolderAction.wrappedValue == FolderAction.unpublish) {
+            unpublishSelectedFolders()
+        } else if ($selectedFolderAction.wrappedValue == FolderAction.archive) {
+            archiveSelectedFolders()
+        } else if ($selectedFolderAction.wrappedValue == FolderAction.unarchive) {
+            unarchiveSelectedFolders()
+        } else if ($selectedFolderAction.wrappedValue == FolderAction.delete) {
+            deleteSelectedFolders()
+        }
+    }
+
     func publishSelectedFolders() {
         do {
             let item = FolderIds(id: self.selectedFolders.map { $0 })
             let data = try JSONEncoder().encode(item)
-            let url = URL(string: "\(publishURL)")!
+            let url = URL(string: "\(foldersPublishURL)")!
             let delegateClass = NetworkDelegateClass()
             let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
             let optimizedData: Data = try! data.gzipped(level: .bestCompression)
@@ -1864,7 +1884,7 @@ struct ContentView: View {
         do {
             let item = FolderIds(id: self.selectedFolders.map { $0 })
             let data = try JSONEncoder().encode(item)
-            let url = URL(string: "\(unpublishURL)")!
+            let url = URL(string: "\(foldersUnpublishURL)")!
             let delegateClass = NetworkDelegateClass()
             let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
             let optimizedData: Data = try! data.gzipped(level: .bestCompression)
@@ -1881,6 +1901,54 @@ struct ContentView: View {
 
         } catch let error {
             logger.error("[unpublishSelectedFolders] \(error)")
+        }
+    }
+
+    func archiveSelectedFolders() {
+        do {
+            let item = FolderIds(id: self.selectedFolders.map { $0 })
+            let data = try JSONEncoder().encode(item)
+            let url = URL(string: "\(foldersArchiveURL)")!
+            let delegateClass = NetworkDelegateClass()
+            let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
+            let optimizedData: Data = try! data.gzipped(level: .bestCompression)
+            let postLength = String(format: "%lu", UInt(optimizedData.count))
+            let request = newPostRequest(url: url, data: optimizedData, postLength: postLength)
+            let task = delegateSession.dataTask(with: request) { data, response, error in
+                DispatchQueue.main.async {
+                    self.loadedFolders = []
+                    getAllUploads()
+                }
+            }
+
+            task.resume()
+
+        } catch let error {
+            logger.error("[archiveSelectedFolders] \(error)")
+        }
+    }
+
+    func unarchiveSelectedFolders() {
+        do {
+            let item = FolderIds(id: self.selectedFolders.map { $0 })
+            let data = try JSONEncoder().encode(item)
+            let url = URL(string: "\(foldersUnarchiveURL)")!
+            let delegateClass = NetworkDelegateClass()
+            let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
+            let optimizedData: Data = try! data.gzipped(level: .bestCompression)
+            let postLength = String(format: "%lu", UInt(optimizedData.count))
+            let request = newPostRequest(url: url, data: optimizedData, postLength: postLength)
+            let task = delegateSession.dataTask(with: request) { data, response, error in
+                DispatchQueue.main.async {
+                    self.loadedFolders = []
+                    getAllUploads()
+                }
+            }
+
+            task.resume()
+
+        } catch let error {
+            logger.error("[unarchiveSelectedFolders] \(error)")
         }
     }
 
@@ -1980,6 +2048,13 @@ struct ContentView: View {
         clearSelectedFolders()
         getAllUploads()
     }
+
+    enum FolderAction: String, CaseIterable, Identifiable {
+        case publish, unpublish, archive, unarchive, delete
+        var id: Self { self }
+    }
+
+    @State private var selectedFolderAction: FolderAction = .publish
 
     var body: some View {
         NavigationSplitView(columnVisibility: $visibility) {
@@ -2563,18 +2638,13 @@ struct ContentView: View {
                             DispatchQueue.main.async {
                                 clearSelectedFiles()
                                 self.selectedFolders = []
-                                self._allPublished = true
                                 for selectedId in folderSelection {
                                     loadedFolders.forEach { folder in
                                         if folder.id == selectedId {
                                             self.selectedFolders.insert(folder.id)
-                                            if (folder.state != "published") {
-                                                self._allPublished = false
-                                            }
                                         }
                                     }
                                 }
-                                self.isPublished = self._allPublished
                                 getSelectedUploads()
                             }
                         }
@@ -3050,36 +3120,12 @@ struct ContentView: View {
                               Folder actions: Publish, delete
                             */
                             if (self.selectedFolders.count > 0) {
-                                HStack {
-                                    Toggle(isOn: $isPublished) {
-                                        Label("Publish folders",
-                                              systemImage: "newspaper")
-                                        .foregroundStyle(.white)
-                                        .font(.system(size: 11))
-                                    } .onChange(of: isPublished) { _, newValue in
-                                        if (newValue) {
-                                            publishSelectedFolders()
-                                        } else {
-                                            unpublishSelectedFolders()
-                                        }
-                                    }
-                                    .toggleStyle(SwitchToggleStyle(tint: .blue))
-                                }
-                                HStack {
-                                    Button(action: deleteSelectedFolders) {
-                                        Label("Delete folders",
-                                              systemImage: "trash")
-                                        .foregroundStyle(.white)
-                                        .font(.system(size: 11))
-                                    }
-                                    .buttonStyle(.plain)
-                                }
                                 /*
                                   Selected folder / (x) folders selected
                                 */
                                 HStack {
                                     if (self.selectedFolders.count > 1) {
-                                        Text("\(self.selectedFolders.count) folders selected")
+                                        Text("\(self.selectedFolders.count) Folders selected")
                                             .font(.system(size: 11))
                                             .foregroundStyle(.gray)
                                             .lineLimit(1)
@@ -3104,15 +3150,38 @@ struct ContentView: View {
                                         }
                                     }
                                 }
+                                if (self.selectedFolders.count >= 1) {
+                                    HStack {
+                                        VStack {
+                                            Picker("Folder actions", selection: $selectedFolderAction) {
+                                                ForEach(FolderAction.allCases) { action in
+                                                    Text(action.rawValue.capitalized)
+                                                }
+                                            }
+                                            .pickerStyle(MenuPickerStyle())
+                                        }.frame(width: 250)
+                                        Button(action: updateSelectedFolders) {
+                                            Image(systemName: "chevron.right")
+                                                .font(.system(size: 11))
+                                            Text("Update Folders")
+                                                .font(.system(size: 11))
+                                                .padding(5)
+                                        }.buttonStyle(.bordered)
+                                    }
+                                }
                             }
-                        }.frame(height: 120)
+                        }.frame(height: 90)
 
                         List {
                             /*
                               Folders list with publish status
                             */
-                            if (self.selectedImageFiles.count == 0 && self.selectedPdfFiles.count == 0 && self.selectedAudioFiles.count == 0 && self.selectedVideoFiles.count == 0 &&
-                                self.selectedTextFiles.count == 0 && self.selectedFolders.count > 1) {
+                            if (self.selectedImageFiles.count == 0 &&
+                                self.selectedPdfFiles.count == 0 &&
+                                self.selectedAudioFiles.count == 0 &&
+                                self.selectedVideoFiles.count == 0 &&
+                                self.selectedTextFiles.count == 0 &&
+                                self.selectedFolders.count > 1) {
                                 ForEach(self.loadedFolders) { folder in
                                     if (self.selectedFolders.contains(folder.id)) {
                                         Label {

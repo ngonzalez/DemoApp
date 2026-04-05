@@ -3150,12 +3150,7 @@ struct ContentView: View {
                                         }
                                     }
                                 }
-                                if (self.selectedImageFiles.count == 0 &&
-                                    self.selectedPdfFiles.count == 0 &&
-                                    self.selectedAudioFiles.count == 0 &&
-                                    self.selectedVideoFiles.count == 0 &&
-                                    self.selectedTextFiles.count == 0 &&
-                                    self.selectedFolders.count >= 1) {
+                                if (self.selectedFolders.count >= 1) {
                                     HStack {
                                         VStack {
                                             Picker("Folder actions", selection: $selectedFolderAction) {

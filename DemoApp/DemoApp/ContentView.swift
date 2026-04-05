@@ -790,13 +790,9 @@ struct ContentView: View {
     @State private var foldersDeleteURL:String = "https://link12.ddns.net:4040/folders/delete"
 //    @State private var foldersDeleteURL:String = "http://192.168.1.11:3000/folders/delete"
 
-//    @State private var attachmentsDeleteURL:String = "https://appshare.site:4040/attachments"
-    @State private var attachmentsDeleteURL:String = "https://link12.ddns.net:4040/attachments"
-//    @State private var attachmentsDeleteURL:String = "http://192.168.1.11:3000/attachments"
-
-//    @State private var foldersURL:String = "https://appshare.site:4040/folders"
-    @State private var foldersURL:String = "https://link12.ddns.net:4040/folders"
-//    @State private var foldersURL:String = "http://192.168.1.11:3000/folders"
+//    @State private var attachmentsDeleteURL:String = "https://appshare.site:4040/attachments/delete"
+    @State private var attachmentsDeleteURL:String = "https://link12.ddns.net:4040/attachments/delete"
+//    @State private var attachmentsDeleteURL:String = "http://192.168.1.11:3000/attachments/delete"
 
 //    @State private var serviceURL:String = "https://appshare.site:5050"
     @State private var serviceURL:String = "https://link12.ddns.net:5050"
@@ -1678,6 +1674,7 @@ struct ContentView: View {
                             self.destroyAttachmentResponse = message
 
                             clearSelectedFolders()
+                            clearSelectedFiles()
                         }
                     }
 
@@ -1686,14 +1683,14 @@ struct ContentView: View {
                     }
 
                 } catch let error {
-                    logger.error("[submitDestroyImageForm] Request: \(error)")
+                    logger.error("[submitDestroyAttachments] Request: \(error)")
                 }
             }
 
             task.resume()
 
         } catch let error {
-            logger.error("[submitDestroyImageForm] Request: \(error)")
+            logger.error("[submitDestroyAttachments] Request: \(error)")
         }
     }
 
@@ -1702,6 +1699,7 @@ struct ContentView: View {
             ids: self.selectedImageFiles.map { $0.id },
             type: "ImageFile"
         )
+        refreshUploads()
     }
 
     func deleteSelectedAudioFiles() {
@@ -1709,6 +1707,7 @@ struct ContentView: View {
             ids: self.selectedAudioFiles.map { $0.id },
             type: "AudioFile"
         )
+        refreshUploads()
     }
 
     func deleteSelectedVideoFiles() {
@@ -1716,6 +1715,7 @@ struct ContentView: View {
             ids: self.selectedVideoFiles.map { $0.id },
             type: "VideoFile"
         )
+        refreshUploads()
     }
 
     func deleteSelectedPdfs() {
@@ -1723,6 +1723,7 @@ struct ContentView: View {
             ids: self.selectedPdfFiles.map { $0.id },
             type: "PdfFile"
         )
+        refreshUploads()
     }
 
     func deleteSelectedTextFiles() {
@@ -1730,6 +1731,7 @@ struct ContentView: View {
             ids: self.selectedTextFiles.map { $0.id },
             type: "TextFile"
         )
+        refreshUploads()
     }
 
     func getFolderName(folder: Folder) -> String {

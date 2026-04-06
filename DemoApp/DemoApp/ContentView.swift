@@ -1839,11 +1839,15 @@ struct ContentView: View {
     /*
         Folder: Publish / Unpublish
     */
-    struct FolderIds: Codable {
-        var id: Array<Int>
+    enum FolderAction: String, CaseIterable, Identifiable {
+        case publish, unpublish, archive, unarchive, delete
+        var id: Self { self }
     }
 
+    @State private var selectedFolderAction: FolderAction = .publish
+
     func updateSelectedFolders() {
+        self.searchText = "";
         if ($selectedFolderAction.wrappedValue == FolderAction.publish) {
             publishSelectedFolders()
         } else if ($selectedFolderAction.wrappedValue == FolderAction.unpublish) {
@@ -1855,6 +1859,10 @@ struct ContentView: View {
         } else if ($selectedFolderAction.wrappedValue == FolderAction.delete) {
             deleteSelectedFolders()
         }
+    }
+
+    struct FolderIds: Codable {
+        var id: Array<Int>
     }
 
     func publishSelectedFolders() {
@@ -1965,12 +1973,12 @@ struct ContentView: View {
             loadedFolders = searchableFolders.filter { folder in
                 folder.name
                     .lowercased()
-                    .contains(searchQuery)
+                    .contains(searchQuery.lowercased())
             }
             uploadImageFiles = searchableImageFiles.filter { imageFile in
                 imageFile.fileName
                     .lowercased()
-                    .contains(searchQuery)
+                    .contains(searchQuery.lowercased())
             }
             uploadImageFiles.forEach { imageFile in
                 var i = 0
@@ -1985,7 +1993,7 @@ struct ContentView: View {
             uploadVideoFiles = searchableVideoFiles.filter { videoFile in
                 videoFile.fileName
                     .lowercased()
-                    .contains(searchQuery)
+                    .contains(searchQuery.lowercased())
             }
             uploadVideoFiles.forEach { videoFile in
                 var i = 0
@@ -2000,7 +2008,7 @@ struct ContentView: View {
             uploadAudioFiles = searchableAudioFiles.filter { audioFile in
                 audioFile.fileName
                     .lowercased()
-                    .contains(searchQuery)
+                    .contains(searchQuery.lowercased())
             }
             uploadAudioFiles.forEach { audioFile in
                 var i = 0
@@ -2015,7 +2023,7 @@ struct ContentView: View {
             uploadPdfFiles = searchablePdfFiles.filter { pdfFile in
                 pdfFile.fileName
                     .lowercased()
-                    .contains(searchQuery)
+                    .contains(searchQuery.lowercased())
             }
             uploadPdfFiles.forEach { pdfFile in
                 var i = 0
@@ -2030,7 +2038,7 @@ struct ContentView: View {
             uploadTextFiles = searchableTextFiles.filter { textFile in
                 textFile.fileName
                     .lowercased()
-                    .contains(searchQuery)
+                    .contains(searchQuery.lowercased())
             }
             uploadTextFiles.forEach { textFile in
                 var i = 0
@@ -2049,13 +2057,6 @@ struct ContentView: View {
         clearSelectedFolders()
         getAllUploads()
     }
-
-    enum FolderAction: String, CaseIterable, Identifiable {
-        case publish, unpublish, archive, unarchive, delete
-        var id: Self { self }
-    }
-
-    @State private var selectedFolderAction: FolderAction = .publish
 
     var body: some View {
         NavigationSplitView(columnVisibility: $visibility) {

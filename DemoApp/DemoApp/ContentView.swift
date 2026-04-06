@@ -511,6 +511,7 @@ struct ContentView: View {
     }
 
     @State var loadedFolders: Array<Folder> = Array<Folder>()
+    @State var sortedFolders: Array<Folder> = Array<Folder>()
 
     func setUploads(results: Array<UploadWithFiles>) {
         self.uploadsWithFiles = results
@@ -2610,7 +2611,7 @@ struct ContentView: View {
                               selection: $folderSelection,
                               sortOrder: $folderSortOrder) {
 
-                            TableColumn("name") { folder in
+                            TableColumn("name", value: \.name) { folder in
                                 Label("\(folder.name)",
                                       systemImage: "folder")
                                 .foregroundStyle(.primary)
@@ -2618,7 +2619,7 @@ struct ContentView: View {
                                 .font(.system(size: 11))
                             }
 
-                            TableColumn("state") { folder in
+                            TableColumn("state", value: \.state) { folder in
                                 Label {
                                     Text("\(folder.state)")
                                         .font(.system(size: 11))
@@ -2632,6 +2633,11 @@ struct ContentView: View {
                         } rows: {
                             ForEach(loadedFolders) { folder in
                                 TableRow(folder)
+                            }
+                        }
+                        .onChange(of: folderSortOrder) { _, folderSortOrder in
+                            withAnimation {
+                                loadedFolders.sort(using: folderSortOrder)
                             }
                         }
                         .onChange(of: folderSelection) {
@@ -2700,17 +2706,18 @@ struct ContentView: View {
                             } header: {
                                 HStack {
                                     VStack {
-                                        Text("Image")
+                                        Text("Image Files")
                                     }
                                     VStack {
                                         if (selectedImageFiles.count > 0) {
                                             Button(action: deleteSelectedImages) {
-                                                Text("Delete selected \(selectedImageFiles.count) images")
+                                                Image(systemName: "minus.circle")
                                                     .font(.system(size: 11))
-                                                    .foregroundStyle(Color.gray)
-                                                    .buttonStyle(.plain)
+                                                Text("Delete selected \(self.selectedImageFiles.count > 1 ? "Image Files" : "Image File")")
+                                                    .font(.system(size: 11))
                                             }
-                                            .buttonStyle(.accessoryBarAction)
+                                            .buttonStyle(.borderedProminent)
+                                            .tint(.blue)
                                         }
                                     }
                                 }
@@ -2745,7 +2752,7 @@ struct ContentView: View {
                             }
                         }
                         .tabItem {
-                            Text("Image (\(uploadImageFiles.count))")
+                            Text("Image Files (\(uploadImageFiles.count))")
                         }
 
                         VStack {
@@ -2782,17 +2789,18 @@ struct ContentView: View {
                             } header: {
                                 HStack {
                                     VStack {
-                                        Text("Pdf")
+                                        Text("Pdf Files")
                                     }
                                     VStack {
                                         if (selectedPdfFiles.count > 0) {
                                             Button(action: deleteSelectedPdfs) {
-                                                Text("Delete selected \(selectedPdfFiles.count) pdf files")
+                                                Image(systemName: "minus.circle")
                                                     .font(.system(size: 11))
-                                                    .foregroundStyle(Color.gray)
-                                                    .buttonStyle(.plain)
+                                                Text("Delete selected \(self.selectedPdfFiles.count > 1 ? "Pdf Files" : "Pdf File")")
+                                                    .font(.system(size: 11))
                                             }
-                                            .buttonStyle(.accessoryBarAction)
+                                            .buttonStyle(.borderedProminent)
+                                            .tint(.blue)
                                         }
                                     }
                                 }
@@ -2825,7 +2833,7 @@ struct ContentView: View {
                             uploadPdfFiles.sort(using: pdfFileSortOrder)
                         }
                         .tabItem {
-                            Text("Pdfs (\(uploadPdfFiles.count))")
+                            Text("Pdf Files (\(uploadPdfFiles.count))")
                         }
 
                         VStack {
@@ -2864,17 +2872,18 @@ struct ContentView: View {
                             } header: {
                                 HStack {
                                     VStack {
-                                        Text("Audio")
+                                        Text("Audio Files")
                                     }
                                     VStack {
                                         if (selectedAudioFiles.count > 0) {
                                             Button(action: deleteSelectedAudioFiles) {
-                                                Text("Delete selected \(selectedAudioFiles.count) audio files")
+                                                Image(systemName: "minus.circle")
                                                     .font(.system(size: 11))
-                                                    .foregroundStyle(Color.gray)
-                                                    .buttonStyle(.plain)
+                                                Text("Delete selected \(self.selectedAudioFiles.count > 1 ? "Audio Files" : "Audio File")")
+                                                    .font(.system(size: 11))
                                             }
-                                            .buttonStyle(.accessoryBarAction)
+                                            .buttonStyle(.borderedProminent)
+                                            .tint(.blue)
                                         }
                                     }
                                 }
@@ -2924,7 +2933,7 @@ struct ContentView: View {
                             uploadAudioFiles.sort(using: audioFileSortOrder)
                         }
                         .tabItem {
-                            Text("Audio (\(uploadAudioFiles.count))")
+                            Text("Audio Files (\(uploadAudioFiles.count))")
                         }
 
                         VStack {
@@ -2963,17 +2972,18 @@ struct ContentView: View {
                             } header: {
                                 HStack {
                                     VStack {
-                                        Text("Video")
+                                        Text("Video Files")
                                     }
                                     VStack {
                                         if (selectedVideoFiles.count > 0) {
                                             Button(action: deleteSelectedVideoFiles) {
-                                                Text("Delete selected \(selectedVideoFiles.count) video files")
+                                                Image(systemName: "minus.circle")
                                                     .font(.system(size: 11))
-                                                    .foregroundStyle(Color.gray)
-                                                    .buttonStyle(.plain)
+                                                Text("Delete selected \(self.selectedVideoFiles.count > 1 ? "Video Files" : "Video File")")
+                                                    .font(.system(size: 11))
                                             }
-                                            .buttonStyle(.accessoryBarAction)
+                                            .buttonStyle(.borderedProminent)
+                                            .tint(.blue)
                                         }
                                     }
                                 }
@@ -3008,7 +3018,7 @@ struct ContentView: View {
                             uploadVideoFiles.sort(using: videoFileSortOrder)
                         }
                         .tabItem {
-                            Text("Video (\(uploadVideoFiles.count))").colorMultiply(.cyan)
+                            Text("Video Files (\(uploadVideoFiles.count))").colorMultiply(.cyan)
                         }
 
                         VStack {
@@ -3045,17 +3055,18 @@ struct ContentView: View {
                             } header: {
                                 HStack {
                                     VStack {
-                                        Text("Text")
+                                        Text("Text Files")
                                     }
                                     VStack {
                                         if (selectedTextFiles.count > 0) {
                                             Button(action: deleteSelectedTextFiles) {
-                                                Text("Delete selected \(selectedTextFiles.count) text files")
+                                                Image(systemName: "minus.circle")
                                                     .font(.system(size: 11))
-                                                    .foregroundStyle(Color.gray)
-                                                    .buttonStyle(.plain)
+                                                Text("Delete selected \(self.selectedTextFiles.count > 1 ? "Text Files" : "Text File")")
+                                                    .font(.system(size: 11))
                                             }
-                                            .buttonStyle(.accessoryBarAction)
+                                            .buttonStyle(.borderedProminent)
+                                            .tint(.blue)
                                         }
                                     }
                                 }
@@ -3088,7 +3099,7 @@ struct ContentView: View {
                             uploadTextFiles.sort(using: textFileSortOrder)
                         }
                         .tabItem {
-                            Text("Text (\(uploadTextFiles.count))")
+                            Text("Text Files (\(uploadTextFiles.count))")
                         }
                     }
                     .padding(10)

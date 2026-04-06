@@ -445,6 +445,7 @@ struct ContentView: View {
         let folder: Folder
         let fileName: String
         let fileUrl: String
+        let webUrl: String
         let dataUrl: String?
         let mimeType: String?
         let formatInfo: String?
@@ -456,6 +457,7 @@ struct ContentView: View {
         let folder: Folder
         let fileName: String
         let fileUrl: String
+        let webUrl: String
         let dataUrl: String?
         let mimeType: String?
         let formatInfo: String?
@@ -511,7 +513,6 @@ struct ContentView: View {
     }
 
     @State var loadedFolders: Array<Folder> = Array<Folder>()
-    @State var sortedFolders: Array<Folder> = Array<Folder>()
 
     func setUploads(results: Array<UploadWithFiles>) {
         self.uploadsWithFiles = results
@@ -2058,6 +2059,8 @@ struct ContentView: View {
         getAllUploads()
     }
 
+    @Environment(\.openURL) var openURL
+
     var body: some View {
         NavigationSplitView(columnVisibility: $visibility) {
             List(SideBarItem.allCases, selection: $selectedSideBarItem) { item in
@@ -3178,7 +3181,7 @@ struct ContentView: View {
 
                         List {
                             /*
-                              ImageFiles
+                              ImageFile
                             */
                             ForEach(self.selectedImageFiles) { imageFile in
                                 Section {
@@ -3286,68 +3289,9 @@ struct ContentView: View {
                                 .opacity(0.25)
                             )
 
+                            
                             /*
-                              PdfFiles
-                            */
-                            ForEach(self.selectedPdfFiles) { pdfFile in
-                                Section {
-                                    Spacer()
-
-                                    let fileName = pdfFile.fileName
-                                    Label(fileName, systemImage: "doc.circle.fill")
-                                        .labelStyle(.titleAndIcon)
-                                        .font(.system(size: 13))
-
-                                    Image(systemName: "square.text.square")
-                                        .font(.system(size: 40))
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                        .padding(10)
-
-                                    Label {
-                                        let mimeType = pdfFile.mimeType ?? "--"
-                                        Text("Mime/Type \(mimeType)")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.gray)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Label {
-                                        let formatInfo = pdfFile.formatInfo ?? "--"
-                                        Text("Format \(formatInfo)")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.gray)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Label {
-                                        let fileSize = pdfFile.fileSize ?? ""
-                                        Text("File Size \(fileSize)")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.gray)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Spacer()
-                                }
-                            }
-                            .listRowSeparator(.hidden)
-                            .listRowBackground(Ellipse()
-                                .background(Color.black)
-                                .foregroundColor(Color.clear)
-                                .opacity(0.25)
-                            )
-
-                            /*
-                              AudioFiles
+                              AudioFile
                             */
                             ForEach(self.selectedAudioFiles) { audioFile in
                                 Section {
@@ -3467,7 +3411,7 @@ struct ContentView: View {
                             )
 
                             /*
-                              VideoFiles
+                              VideoFile
                             */
                             ForEach(self.selectedVideoFiles) { videoFile in
                                 Section {
@@ -3610,7 +3554,82 @@ struct ContentView: View {
                             )
 
                             /*
-                              TextFiles
+                              PdfFile
+                            */
+                            ForEach(self.selectedPdfFiles) { pdfFile in
+                                Section {
+                                    Spacer()
+
+                                    let fileName = pdfFile.fileName
+                                    Label(fileName, systemImage: "doc.circle.fill")
+                                        .labelStyle(.titleAndIcon)
+                                        .font(.system(size: 13))
+
+                                    Image(systemName: "square.text.square")
+                                        .font(.system(size: 40))
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .padding(10)
+
+                                    Label {
+                                        let mimeType = pdfFile.mimeType ?? "--"
+                                        Text("Mime/Type \(mimeType)")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.gray)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
+                                    Label {
+                                        let formatInfo = pdfFile.formatInfo ?? "--"
+                                        Text("Format \(formatInfo)")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.gray)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
+                                    Label {
+                                        let fileSize = pdfFile.fileSize ?? ""
+                                        Text("File Size \(fileSize)")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.gray)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
+                                    Divider()
+
+                                    Button(action: {
+                                        if let url = URL(string: pdfFile.webUrl) {
+                                            openURL(url)
+                                        }
+                                    }) {
+                                        Image(systemName: "globe")
+                                            .font(.system(size: 11))
+                                        Text("Open in web view")
+                                            .font(.system(size: 11))
+                                    }
+                                    .buttonStyle(.borderedProminent)
+                                    .tint(.blue)
+
+                                    Spacer()
+                                }
+                            }
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Ellipse()
+                                .background(Color.black)
+                                .foregroundColor(Color.clear)
+                                .opacity(0.25)
+                            )
+
+                            /*
+                              TextFile
                             */
                             ForEach(self.selectedTextFiles) { textFile in
 
@@ -3659,6 +3678,21 @@ struct ContentView: View {
                                             .fill(.gray)
                                             .frame(width: 8, height: 8)
                                     }
+
+                                    Divider()
+
+                                    Button(action: {
+                                        if let url = URL(string: textFile.webUrl) {
+                                            openURL(url)
+                                        }
+                                    }) {
+                                        Image(systemName: "globe")
+                                            .font(.system(size: 11))
+                                        Text("Open in web view")
+                                            .font(.system(size: 11))
+                                    }
+                                    .buttonStyle(.borderedProminent)
+                                    .tint(.blue)
 
                                     Spacer()
                                 }

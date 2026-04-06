@@ -430,6 +430,7 @@ struct ContentView: View {
         let folder: Folder
         let fileName: String
         let fileUrl: String
+        let webUrl: String
         let dataUrl: String?
         let mimeType: String?
         let formatInfo: String?
@@ -446,6 +447,7 @@ struct ContentView: View {
         let fileName: String
         let fileUrl: String
         let webUrl: String
+        let webViewUrl: String
         let dataUrl: String?
         let mimeType: String?
         let formatInfo: String?
@@ -458,6 +460,7 @@ struct ContentView: View {
         let fileName: String
         let fileUrl: String
         let webUrl: String
+        let webViewUrl: String
         let dataUrl: String?
         let mimeType: String?
         let formatInfo: String?
@@ -469,6 +472,7 @@ struct ContentView: View {
         let folder: Folder
         let fileName: String
         let fileUrl: String
+        let webUrl: String
         let aasmState: String
         let playlistUrl: String?
         let dataUrl: String?
@@ -487,6 +491,7 @@ struct ContentView: View {
         let folder: Folder
         let fileName: String
         let fileUrl: String
+        let webUrl: String
         let aasmState: String
         let playlistUrl: String?
         let dataUrl: String?
@@ -2686,15 +2691,6 @@ struct ContentView: View {
                                             .labelStyle(.titleAndIcon)
                                             .font(.system(size: 11))
                                     }
-
-                                    TableColumn("fileUrl") { imageFile in
-                                        Link(destination: URL(string: imageFile.fileUrl)!, label: {
-                                            Image(systemName: "bubble.left")
-                                            Text("Web")
-                                                .font(.system(size: 11))
-                                        })
-                                    }
-
                                     TableColumn("mimeType") { imageFile in
                                         let mimeType = imageFile.mimeType
                                         let mimeTypeUnwrapped = mimeType!
@@ -2721,7 +2717,7 @@ struct ContentView: View {
                                                     .font(.system(size: 11))
                                             }
                                             .buttonStyle(.borderedProminent)
-                                            .tint(.blue)
+                                            .tint(.black)
                                         }
                                     }
                                 }
@@ -2761,87 +2757,6 @@ struct ContentView: View {
 
                         VStack {
                             Section {
-                                /* PdfFiles */
-                                Table(of: PdfFile.self,
-                                      selection: $pdfFileSelection,
-                                      sortOrder: $pdfFileSortOrder) {
-
-                                    TableColumn("fileName") { pdfFile in
-                                        Label(pdfFile.fileName, systemImage: "document")
-                                            .labelStyle(.titleAndIcon)
-                                            .font(.system(size: 11))
-                                    }
-                                    TableColumn("fileUrl") { pdfFile in
-                                        Link(destination: URL(string: pdfFile.fileUrl)!, label: {
-                                            Image(systemName: "bubble.left")
-                                            Text("Web")
-                                                .font(.system(size: 11))
-                                        })
-                                    }
-                                    TableColumn("mimeType") { pdfFile in
-                                        let mimeType = pdfFile.mimeType
-                                        let mimeTypeUnwrapped = mimeType!
-                                        Text(mimeTypeUnwrapped)
-                                            .labelStyle(.titleAndIcon)
-                                            .font(.system(size: 11))
-                                    }
-                                } rows: {
-                                    ForEach(uploadPdfFiles) { pdfFile in
-                                        TableRow(pdfFile)
-                                    }
-                                }
-                            } header: {
-                                HStack {
-                                    VStack {
-                                        Text("Pdf Files")
-                                    }
-                                    VStack {
-                                        if (selectedPdfFiles.count > 0) {
-                                            Button(action: deleteSelectedPdfs) {
-                                                Image(systemName: "minus.circle")
-                                                    .font(.system(size: 11))
-                                                Text("Delete selected \(self.selectedPdfFiles.count > 1 ? "Pdf Files" : "Pdf File")")
-                                                    .font(.system(size: 11))
-                                            }
-                                            .buttonStyle(.borderedProminent)
-                                            .tint(.blue)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        .tableStyle(.inset(alternatesRowBackgrounds: false))
-                        .onChange(of: pdfFileSelection) {
-                            self.selectedPdfFiles = []
-                            self.selectedFolders = Set()
-                            for selectedId in pdfFileSelection {
-                                uploadPdfFiles.forEach { pdfFile in
-                                    if pdfFile.id == selectedId {
-                                        self.selectedPdfFiles.append(pdfFile)
-                                        if (!self.selectedFolders.contains(pdfFile.folder.id)) {
-                                            self.selectedFolders.insert(pdfFile.folder.id)
-                                        }
-                                        var i = 0
-                                        self.loadedFolders.forEach { folder in
-                                            if (folder.id == pdfFile.folder.id) {
-                                                self.loadedFolders.remove(at: i)
-                                            }
-                                            i += 1
-                                        }
-                                        self.loadedFolders.append(pdfFile.folder)
-                                    }
-                                }
-                            }
-                        }
-                        .onChange(of: pdfFileSortOrder) { _, pdfFileSortOrder in
-                            uploadPdfFiles.sort(using: pdfFileSortOrder)
-                        }
-                        .tabItem {
-                            Text("Pdf Files (\(uploadPdfFiles.count))")
-                        }
-
-                        VStack {
-                            Section {
                                 /* AudioFiles */
                                 Table(of: AudioFile.self,
                                       selection: $audioFileSelection,
@@ -2852,15 +2767,6 @@ struct ContentView: View {
                                             .labelStyle(.titleAndIcon)
                                             .font(.system(size: 11))
                                     }
-
-                                    TableColumn("fileUrl") { audioFile in
-                                        Link(destination: URL(string: audioFile.fileUrl)!, label: {
-                                            Image(systemName: "bubble.left")
-                                            Text("Web")
-                                                .font(.system(size: 11))
-                                        })
-                                    }
-
                                     TableColumn("mimeType") { audioFile in
                                         let mimeType = audioFile.mimeType
                                         let mimeTypeUnwrapped = mimeType!
@@ -2887,7 +2793,7 @@ struct ContentView: View {
                                                     .font(.system(size: 11))
                                             }
                                             .buttonStyle(.borderedProminent)
-                                            .tint(.blue)
+                                            .tint(.black)
                                         }
                                     }
                                 }
@@ -2987,7 +2893,7 @@ struct ContentView: View {
                                                     .font(.system(size: 11))
                                             }
                                             .buttonStyle(.borderedProminent)
-                                            .tint(.blue)
+                                            .tint(.black)
                                         }
                                     }
                                 }
@@ -3023,6 +2929,80 @@ struct ContentView: View {
                         }
                         .tabItem {
                             Text("Video Files (\(uploadVideoFiles.count))").colorMultiply(.cyan)
+                        }
+
+                        VStack {
+                            Section {
+                                /* PdfFiles */
+                                Table(of: PdfFile.self,
+                                      selection: $pdfFileSelection,
+                                      sortOrder: $pdfFileSortOrder) {
+
+                                    TableColumn("fileName") { pdfFile in
+                                        Label(pdfFile.fileName, systemImage: "doc")
+                                            .labelStyle(.titleAndIcon)
+                                            .font(.system(size: 11))
+                                    }
+                                    TableColumn("mimeType") { pdfFile in
+                                        let mimeType = pdfFile.mimeType
+                                        let mimeTypeUnwrapped = mimeType!
+                                        Text(mimeTypeUnwrapped)
+                                            .labelStyle(.titleAndIcon)
+                                            .font(.system(size: 11))
+                                    }
+                                } rows: {
+                                    ForEach(uploadPdfFiles) { pdfFile in
+                                        TableRow(pdfFile)
+                                    }
+                                }
+                            } header: {
+                                HStack {
+                                    VStack {
+                                        Text("Pdf Files")
+                                    }
+                                    VStack {
+                                        if (selectedPdfFiles.count > 0) {
+                                            Button(action: deleteSelectedPdfs) {
+                                                Image(systemName: "minus.circle")
+                                                    .font(.system(size: 11))
+                                                Text("Delete selected \(self.selectedPdfFiles.count > 1 ? "Pdf Files" : "Pdf File")")
+                                                    .font(.system(size: 11))
+                                            }
+                                            .buttonStyle(.borderedProminent)
+                                            .tint(.black)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        .tableStyle(.inset(alternatesRowBackgrounds: false))
+                        .onChange(of: pdfFileSelection) {
+                            self.selectedPdfFiles = []
+                            self.selectedFolders = Set()
+                            for selectedId in pdfFileSelection {
+                                uploadPdfFiles.forEach { pdfFile in
+                                    if pdfFile.id == selectedId {
+                                        self.selectedPdfFiles.append(pdfFile)
+                                        if (!self.selectedFolders.contains(pdfFile.folder.id)) {
+                                            self.selectedFolders.insert(pdfFile.folder.id)
+                                        }
+                                        var i = 0
+                                        self.loadedFolders.forEach { folder in
+                                            if (folder.id == pdfFile.folder.id) {
+                                                self.loadedFolders.remove(at: i)
+                                            }
+                                            i += 1
+                                        }
+                                        self.loadedFolders.append(pdfFile.folder)
+                                    }
+                                }
+                            }
+                        }
+                        .onChange(of: pdfFileSortOrder) { _, pdfFileSortOrder in
+                            uploadPdfFiles.sort(using: pdfFileSortOrder)
+                        }
+                        .tabItem {
+                            Text("Pdf Files (\(uploadPdfFiles.count))")
                         }
 
                         VStack {
@@ -3070,7 +3050,7 @@ struct ContentView: View {
                                                     .font(.system(size: 11))
                                             }
                                             .buttonStyle(.borderedProminent)
-                                            .tint(.blue)
+                                            .tint(.black)
                                         }
                                     }
                                 }
@@ -3279,6 +3259,24 @@ struct ContentView: View {
                                             .frame(width: 8, height: 8)
                                     }
 
+                                    Label {
+                                        Link("File URL", destination: URL(string: imageFile.fileUrl)!)
+                                            .tint(.blue)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
+                                    Label {
+                                        Link("Web URL", destination: URL(string: imageFile.webUrl)!)
+                                            .tint(.blue)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
                                     Spacer()
                                 }
                             }
@@ -3394,6 +3392,24 @@ struct ContentView: View {
                                         Text("Sample Rate \(sampleRate)")
                                             .font(.system(size: 11))
                                             .foregroundStyle(.gray)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
+                                    Label {
+                                        Link("File URL", destination: URL(string: audioFile.fileUrl)!)
+                                            .tint(.blue)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
+                                    Label {
+                                        Link("Web URL", destination: URL(string: audioFile.webUrl)!)
+                                            .tint(.blue)
                                     } icon: {
                                         Rectangle()
                                             .fill(.gray)
@@ -3543,6 +3559,24 @@ struct ContentView: View {
                                             .frame(width: 8, height: 8)
                                     }
 
+                                    Label {
+                                        Link("File URL", destination: URL(string: videoFile.fileUrl)!)
+                                            .tint(.blue)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
+                                    Label {
+                                        Link("Web URL", destination: URL(string: videoFile.webUrl)!)
+                                            .tint(.blue)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
                                     Spacer()
                                 }
                             }
@@ -3603,10 +3637,28 @@ struct ContentView: View {
                                             .frame(width: 8, height: 8)
                                     }
 
+                                    Label {
+                                        Link("File URL", destination: URL(string: pdfFile.fileUrl)!)
+                                            .tint(.blue)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
+                                    Label {
+                                        Link("Web URL", destination: URL(string: pdfFile.webUrl)!)
+                                            .tint(.blue)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
                                     Divider()
 
                                     Button(action: {
-                                        if let url = URL(string: pdfFile.webUrl) {
+                                        if let url = URL(string: pdfFile.webViewUrl) {
                                             openURL(url)
                                         }
                                     }) {
@@ -3679,10 +3731,28 @@ struct ContentView: View {
                                             .frame(width: 8, height: 8)
                                     }
 
+                                    Label {
+                                        Link("File URL", destination: URL(string: textFile.fileUrl)!)
+                                            .tint(.blue)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
+                                    Label {
+                                        Link("Web URL", destination: URL(string: textFile.webUrl)!)
+                                            .tint(.blue)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
                                     Divider()
 
                                     Button(action: {
-                                        if let url = URL(string: textFile.webUrl) {
+                                        if let url = URL(string: textFile.webViewUrl) {
                                             openURL(url)
                                         }
                                     }) {

@@ -3202,449 +3202,495 @@ struct ContentView: View {
                               ImageFiles
                             */
                             ForEach(self.selectedImageFiles) { imageFile in
-                                let fileName = imageFile.fileName
-                                Label(fileName,
-                                      systemImage: "photo")
-                                .labelStyle(.titleAndIcon)
-                                .font(.system(size: 13))
+                                Section {
+                                    Spacer()
 
-                                let fileUrl = imageFile.fileUrl
-                                AsyncImage(url: URL(string: fileUrl)) { result in
-                                    result.image?
-                                        .resizable()
-                                        .scaledToFill()
+                                    let fileName = imageFile.fileName
+                                    Label(fileName,
+                                          systemImage: "photo")
+                                    .labelStyle(.titleAndIcon)
+                                    .font(.system(size: 13))
+
+                                    let fileUrl = imageFile.fileUrl
+                                    AsyncImage(url: URL(string: fileUrl)) { result in
+                                        result.image?
+                                            .resizable()
+                                            .scaledToFill()
+                                    }
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                    .padding(10)
+
+                                    Label {
+                                        let mimeType = imageFile.mimeType ?? "--"
+                                        Text("Mime/Type \(mimeType)")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.gray)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
+                                    Label {
+                                        let formatInfo = imageFile.formatInfo ?? "--"
+                                        Text("Format \(formatInfo)")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.gray)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
+                                    Label {
+                                        let fileSize = imageFile.fileSize ?? ""
+                                        Text("File Size \(fileSize)")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.gray)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
+                                    Label {
+                                        let dimensions = imageFile.dimensions ?? "--"
+                                        Text("Dimensions \(dimensions)")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.gray)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
+                                    Label {
+                                        let megapixels = imageFile.megapixels ?? 0.1
+                                        Text("Megapixels \(megapixels)")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.gray)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
+                                    Label {
+                                        let width = imageFile.width ?? 0
+                                        Text("Width \(width)")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.gray)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
+                                    Label {
+                                        let height = imageFile.height ?? 0
+                                        Text("Height \(height)")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.gray)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
+                                    Spacer()
                                 }
-                                .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-                                Label {
-                                    let mimeType = imageFile.mimeType ?? "--"
-                                    Text("Mime/Type \(mimeType)")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.gray)
-                                } icon: {
-                                    Rectangle()
-                                        .fill(.gray)
-                                        .frame(width: 8, height: 8)
-                                }
-
-                                Label {
-                                    let formatInfo = imageFile.formatInfo ?? "--"
-                                    Text("Format \(formatInfo)")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.gray)
-                                } icon: {
-                                    Rectangle()
-                                        .fill(.gray)
-                                        .frame(width: 8, height: 8)
-                                }
-
-                                Label {
-                                    let fileSize = imageFile.fileSize ?? ""
-                                    Text("File Size \(fileSize)")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.gray)
-                                } icon: {
-                                    Rectangle()
-                                        .fill(.gray)
-                                        .frame(width: 8, height: 8)
-                                }
-
-                                Label {
-                                    let dimensions = imageFile.dimensions ?? "--"
-                                    Text("Dimensions \(dimensions)")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.gray)
-                                } icon: {
-                                    Rectangle()
-                                        .fill(.gray)
-                                        .frame(width: 8, height: 8)
-                                }
-
-                                Label {
-                                    let megapixels = imageFile.megapixels ?? 0.1
-                                    Text("Megapixels \(megapixels)")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.gray)
-                                } icon: {
-                                    Rectangle()
-                                        .fill(.gray)
-                                        .frame(width: 8, height: 8)
-                                }
-
-                                Label {
-                                    let width = imageFile.width ?? 0
-                                    Text("Width \(width)")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.gray)
-                                } icon: {
-                                    Rectangle()
-                                        .fill(.gray)
-                                        .frame(width: 8, height: 8)
-                                }
-
-                                Label {
-                                    let height = imageFile.height ?? 0
-                                    Text("Height \(height)")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.gray)
-                                } icon: {
-                                    Rectangle()
-                                        .fill(.gray)
-                                        .frame(width: 8, height: 8)
-                                }
-
-                                Spacer()
                             }
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Ellipse()
+                                .background(Color.black)
+                                .foregroundColor(Color.clear)
+                                .opacity(0.25)
+                            )
+
                             /*
                               PdfFiles
                             */
                             ForEach(self.selectedPdfFiles) { pdfFile in
+                                Section {
+                                    Spacer()
 
-                                let fileName = pdfFile.fileName
-                                Label(fileName, systemImage: "doc.circle.fill")
-                                    .labelStyle(.titleAndIcon)
-                                    .font(.system(size: 13))
+                                    let fileName = pdfFile.fileName
+                                    Label(fileName, systemImage: "doc.circle.fill")
+                                        .labelStyle(.titleAndIcon)
+                                        .font(.system(size: 13))
 
-                                Image(systemName: "square.text.square")
-                                    .font(.system(size: 40))
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .padding(10)
+                                    Image(systemName: "square.text.square")
+                                        .font(.system(size: 40))
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .padding(10)
 
-                                Label {
-                                    let mimeType = pdfFile.mimeType ?? "--"
-                                    Text("Mime/Type \(mimeType)")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.gray)
-                                } icon: {
-                                    Rectangle()
-                                        .fill(.gray)
-                                        .frame(width: 8, height: 8)
+                                    Label {
+                                        let mimeType = pdfFile.mimeType ?? "--"
+                                        Text("Mime/Type \(mimeType)")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.gray)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
+                                    Label {
+                                        let formatInfo = pdfFile.formatInfo ?? "--"
+                                        Text("Format \(formatInfo)")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.gray)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
+                                    Label {
+                                        let fileSize = pdfFile.fileSize ?? ""
+                                        Text("File Size \(fileSize)")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.gray)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
+                                    Spacer()
                                 }
-
-                                Label {
-                                    let formatInfo = pdfFile.formatInfo ?? "--"
-                                    Text("Format \(formatInfo)")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.gray)
-                                } icon: {
-                                    Rectangle()
-                                        .fill(.gray)
-                                        .frame(width: 8, height: 8)
-                                }
-
-                                Label {
-                                    let fileSize = pdfFile.fileSize ?? ""
-                                    Text("File Size \(fileSize)")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.gray)
-                                } icon: {
-                                    Rectangle()
-                                        .fill(.gray)
-                                        .frame(width: 8, height: 8)
-                                }
-
-                                Spacer()
-
                             }
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Ellipse()
+                                .background(Color.black)
+                                .foregroundColor(Color.clear)
+                                .opacity(0.25)
+                            )
+
                             /*
                               AudioFiles
                             */
                             ForEach(self.selectedAudioFiles) { audioFile in
+                                Section {
+                                    Spacer()
 
-                                let fileName = audioFile.fileName
-                                Label(fileName, systemImage: "waveform.circle")
-                                    .labelStyle(.titleAndIcon)
-                                    .font(.system(size: 13))
+                                    let fileName = audioFile.fileName
+                                    Label(fileName, systemImage: "waveform.circle")
+                                        .labelStyle(.titleAndIcon)
+                                        .font(.system(size: 13))
 
-                                if (audioFile.aasmState == "created") {
-                                    Text("Processing…")
-                                        .padding(10)
-                                } else if (audioFile.aasmState == "processed") {
-                                    VideoPlayer(player: player)
-                                        .frame(minWidth: 400, maxWidth: .infinity,
-                                               minHeight: 150, maxHeight: .infinity)
-                                        .padding(10)
+                                    if (audioFile.aasmState == "created") {
+                                        Text("Processing…")
+                                            .padding(10)
+                                    } else if (audioFile.aasmState == "processed") {
+                                        VideoPlayer(player: player)
+                                            .frame(minWidth: 400, maxWidth: .infinity,
+                                                   minHeight: 150, maxHeight: .infinity)
+                                            .padding(10)
+                                    }
+
+                                    Label {
+                                        let formatInfo = audioFile.formatInfo ?? "--"
+                                        Text("Format \(formatInfo)")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.gray)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
+                                    Label {
+                                        let mimeType = audioFile.mimeType ?? "--"
+                                        Text("Mime/Type \(mimeType)")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.gray)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
+                                    Label {
+                                        let fileSize = audioFile.fileSize ?? 0
+                                        Text("File Size \(fileSize)")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.gray)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
+                                    Label {
+                                        let title = audioFile.title ?? "--"
+                                        Text("Title \(title)")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.gray)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
+                                    Label {
+                                        let bitrate = audioFile.bitrate ?? 0
+                                        Text("Bitrate \(bitrate)")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.gray)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
+                                    Label {
+                                        let channels = audioFile.channels ?? 0
+                                        Text("Channels \(channels)")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.gray)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
+                                    Label {
+                                        let length = audioFile.length ?? 0
+                                        Text("Length (ms) \(length)")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.gray)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
+                                    Label {
+                                        let sampleRate = audioFile.sampleRate ?? 0
+                                        Text("Sample Rate \(sampleRate)")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.gray)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
+                                    Spacer()
                                 }
-
-                                Label {
-                                    let formatInfo = audioFile.formatInfo ?? "--"
-                                    Text("Format \(formatInfo)")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.gray)
-                                } icon: {
-                                    Rectangle()
-                                        .fill(.gray)
-                                        .frame(width: 8, height: 8)
-                                }
-
-                                Label {
-                                    let mimeType = audioFile.mimeType ?? "--"
-                                    Text("Mime/Type \(mimeType)")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.gray)
-                                } icon: {
-                                    Rectangle()
-                                        .fill(.gray)
-                                        .frame(width: 8, height: 8)
-                                }
-
-                                Label {
-                                    let fileSize = audioFile.fileSize ?? 0
-                                    Text("File Size \(fileSize)")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.gray)
-                                } icon: {
-                                    Rectangle()
-                                        .fill(.gray)
-                                        .frame(width: 8, height: 8)
-                                }
-
-                                Label {
-                                    let title = audioFile.title ?? "--"
-                                    Text("Title \(title)")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.gray)
-                                } icon: {
-                                    Rectangle()
-                                        .fill(.gray)
-                                        .frame(width: 8, height: 8)
-                                }
-
-                                Label {
-                                    let bitrate = audioFile.bitrate ?? 0
-                                    Text("Bitrate \(bitrate)")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.gray)
-                                } icon: {
-                                    Rectangle()
-                                        .fill(.gray)
-                                        .frame(width: 8, height: 8)
-                                }
-
-                                Label {
-                                    let channels = audioFile.channels ?? 0
-                                    Text("Channels \(channels)")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.gray)
-                                } icon: {
-                                    Rectangle()
-                                        .fill(.gray)
-                                        .frame(width: 8, height: 8)
-                                }
-
-                                Label {
-                                    let length = audioFile.length ?? 0
-                                    Text("Length (ms) \(length)")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.gray)
-                                } icon: {
-                                    Rectangle()
-                                        .fill(.gray)
-                                        .frame(width: 8, height: 8)
-                                }
-
-                                Label {
-                                    let sampleRate = audioFile.sampleRate ?? 0
-                                    Text("Sample Rate \(sampleRate)")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.gray)
-                                } icon: {
-                                    Rectangle()
-                                        .fill(.gray)
-                                        .frame(width: 8, height: 8)
-                                }
-
-                                Spacer()
-
                             }
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Ellipse()
+                                .background(Color.black)
+                                .foregroundColor(Color.clear)
+                                .opacity(0.25)
+                            )
+
                             /*
                               VideoFiles
                             */
                             ForEach(self.selectedVideoFiles) { videoFile in
+                                Section {
+                                    Spacer()
 
-                                let fileName = videoFile.fileName
-                                Label(fileName,
-                                      systemImage: "video.circle")
-                                    .labelStyle(.titleAndIcon)
-                                    .font(.system(size: 13))
+                                    let fileName = videoFile.fileName
+                                    Label(fileName,
+                                          systemImage: "video.circle")
+                                        .labelStyle(.titleAndIcon)
+                                        .font(.system(size: 13))
 
-                                if (videoFile.aasmState == "created") {
-                                    Text("Processing…")
-                                        .padding(10)
-                                } else if (videoFile.aasmState == "processed") {
-                                    VideoPlayer(player: player)
-                                        .frame(minWidth: 400, maxWidth: .infinity,
-                                               minHeight: 300, maxHeight: .infinity)
-                                        .padding(10)
+                                    if (videoFile.aasmState == "created") {
+                                        Text("Processing…")
+                                            .padding(10)
+                                    } else if (videoFile.aasmState == "processed") {
+                                        VideoPlayer(player: player)
+                                            .frame(minWidth: 400, maxWidth: .infinity,
+                                                   minHeight: 300, maxHeight: .infinity)
+                                            .padding(10)
+                                    }
+
+                                    Label {
+                                        let formatInfo = videoFile.formatInfo ?? ""
+                                        Text("Format \(formatInfo)")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.gray)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
+                                    Label {
+                                        let mimeType = videoFile.mimeType ?? ""
+                                        Text("Mime/Type \(mimeType)")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.gray)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
+                                    Label {
+                                        let fileSize = videoFile.fileSize ?? 0
+                                        Text("File Size \(fileSize)")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.gray)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
+                                    Label {
+                                        let title = videoFile.title ?? "--"
+                                        Text("Title \(title)")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.gray)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
+                                    Label {
+                                        let bitrate = videoFile.bitrate ?? 0
+                                        Text("Bitrate \(bitrate)")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.gray)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
+                                    Label {
+                                        let frameRate = videoFile.frameRate ?? 0
+                                        Text("FrameRate \(frameRate)")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.gray)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
+                                    Label {
+                                        let length = videoFile.length ?? 0
+                                        Text("Length (s) \(length)")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.gray)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
+                                    Label {
+                                        let width = videoFile.width ?? 0
+                                        Text("Width \(width)")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.gray)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
+                                    Label {
+                                        let height = videoFile.height ?? 0
+                                        Text("Height \(height)")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.gray)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
+                                    Label {
+                                        let aspectRatio = videoFile.aspectRatio ?? 0
+                                        Text("Aspect Ratio: \(aspectRatio)")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.gray)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
+                                    Spacer()
                                 }
-
-                                Label {
-                                    let formatInfo = videoFile.formatInfo ?? ""
-                                    Text("Format \(formatInfo)")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.gray)
-                                } icon: {
-                                    Rectangle()
-                                        .fill(.gray)
-                                        .frame(width: 8, height: 8)
-                                }
-
-                                Label {
-                                    let mimeType = videoFile.mimeType ?? ""
-                                    Text("Mime/Type \(mimeType)")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.gray)
-                                } icon: {
-                                    Rectangle()
-                                        .fill(.gray)
-                                        .frame(width: 8, height: 8)
-                                }
-
-                                Label {
-                                    let fileSize = videoFile.fileSize ?? 0
-                                    Text("File Size \(fileSize)")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.gray)
-                                } icon: {
-                                    Rectangle()
-                                        .fill(.gray)
-                                        .frame(width: 8, height: 8)
-                                }
-
-                                Label {
-                                    let title = videoFile.title ?? "--"
-                                    Text("Title \(title)")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.gray)
-                                } icon: {
-                                    Rectangle()
-                                        .fill(.gray)
-                                        .frame(width: 8, height: 8)
-                                }
-
-                                Label {
-                                    let bitrate = videoFile.bitrate ?? 0
-                                    Text("Bitrate \(bitrate)")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.gray)
-                                } icon: {
-                                    Rectangle()
-                                        .fill(.gray)
-                                        .frame(width: 8, height: 8)
-                                }
-
-                                Label {
-                                    let frameRate = videoFile.frameRate ?? 0
-                                    Text("FrameRate \(frameRate)")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.gray)
-                                } icon: {
-                                    Rectangle()
-                                        .fill(.gray)
-                                        .frame(width: 8, height: 8)
-                                }
-
-                                Label {
-                                    let length = videoFile.length ?? 0
-                                    Text("Length (s) \(length)")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.gray)
-                                } icon: {
-                                    Rectangle()
-                                        .fill(.gray)
-                                        .frame(width: 8, height: 8)
-                                }
-
-                                Label {
-                                    let width = videoFile.width ?? 0
-                                    Text("Width \(width)")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.gray)
-                                } icon: {
-                                    Rectangle()
-                                        .fill(.gray)
-                                        .frame(width: 8, height: 8)
-                                }
-
-                                Label {
-                                    let height = videoFile.height ?? 0
-                                    Text("Height \(height)")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.gray)
-                                } icon: {
-                                    Rectangle()
-                                        .fill(.gray)
-                                        .frame(width: 8, height: 8)
-                                }
-
-                                Label {
-                                    let aspectRatio = videoFile.aspectRatio ?? 0
-                                    Text("Aspect Ratio: \(aspectRatio)")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.gray)
-                                } icon: {
-                                    Rectangle()
-                                        .fill(.gray)
-                                        .frame(width: 8, height: 8)
-                                }
-
-                                Spacer()
-
                             }
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Ellipse()
+                                .background(Color.black)
+                                .foregroundColor(Color.clear)
+                                .opacity(0.25)
+                            )
+
                             /*
                               TextFiles
                             */
                             ForEach(self.selectedTextFiles) { textFile in
 
-                                let fileName = textFile.fileName
-                                Label(fileName, systemImage: "doc.circle")
-                                    .labelStyle(.titleAndIcon)
-                                    .font(.system(size: 13))
+                                Section {
+                                    Spacer()
 
-                                Image(systemName: "square.text.square")
-                                    .font(.system(size: 40))
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .padding(10)
+                                    let fileName = textFile.fileName
+                                    Label(fileName, systemImage: "doc.circle")
+                                        .labelStyle(.titleAndIcon)
+                                        .font(.system(size: 13))
 
-                                Label {
-                                    let mimeType = textFile.mimeType ?? ""
-                                    Text("Mime/Type \(mimeType)")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.gray)
-                                } icon: {
-                                    Rectangle()
-                                        .fill(.gray)
-                                        .frame(width: 8, height: 8)
+                                    Image(systemName: "square.text.square")
+                                        .font(.system(size: 40))
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .padding(10)
+
+                                    Label {
+                                        let mimeType = textFile.mimeType ?? ""
+                                        Text("Mime/Type \(mimeType)")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.gray)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
+                                    Label {
+                                        let formatInfo = textFile.formatInfo ?? ""
+                                        Text("Format \(formatInfo)")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.gray)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
+                                    Label {
+                                        let fileSize = textFile.fileSize ?? ""
+                                        Text("File Size \(fileSize)")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.gray)
+                                    } icon: {
+                                        Rectangle()
+                                            .fill(.gray)
+                                            .frame(width: 8, height: 8)
+                                    }
+
+                                    Spacer()
                                 }
-
-                                Label {
-                                    let formatInfo = textFile.formatInfo ?? ""
-                                    Text("Format \(formatInfo)")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.gray)
-                                } icon: {
-                                    Rectangle()
-                                        .fill(.gray)
-                                        .frame(width: 8, height: 8)
-                                }
-
-                                Label {
-                                    let fileSize = textFile.fileSize ?? ""
-                                    Text("File Size \(fileSize)")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.gray)
-                                } icon: {
-                                    Rectangle()
-                                        .fill(.gray)
-                                        .frame(width: 8, height: 8)
-                                }
-
-                                Spacer()
-
                             }
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Ellipse()
+                                .background(Color.black)
+                                .foregroundColor(Color.clear)
+                                .opacity(0.25)
+                            )
                         }
-                        .listRowSeparator(.visible)
-                        .padding(10)
 
                         /*
                           Folders, Attachments: Clear selection

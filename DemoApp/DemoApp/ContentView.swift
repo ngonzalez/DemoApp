@@ -3098,7 +3098,6 @@ struct ContentView: View {
                   Account: Sign-Out
                 */
                 if self.identified && self.myAccount && (!self.newPassword && !self.editPassword && !self.editEmailAddress && !self.newAccount && !self.editAccount) {
-
                     Button(action: submitDestroySessionForm) {
                         Image(systemName: "xmark")
                             .font(.system(size: 10))
@@ -3115,73 +3114,35 @@ struct ContentView: View {
             if (selectedSideBarItem == .upload) {
                 HStack {
                     VStack {
-                        List {
-                            /*
-                              Folder actions: Publish, delete
-                            */
-                            if (self.selectedFolders.count > 0) {
-                                /*
-                                  Selected folder / (x) folders selected
-                                */
-                                HStack {
-                                    if (self.selectedFolders.count > 1) {
-                                        Text("\(self.selectedFolders.count) Folders selected")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.gray)
-                                            .lineLimit(1)
-                                            .truncationMode(.middle)
-                                            .padding(5)
-                                    } else if (self.selectedFolders.count == 1) {
-                                        ForEach(self.loadedFolders.sorted(by: { $0.name > $1.name })) { folder in
-                                            if (self.selectedFolders.contains(folder.id)) {
-                                                Label {
-                                                    Text("\(folder.name)")
-                                                        .font(.system(size: 11))
-                                                        .foregroundStyle(folder.state == "published" ? .white : .gray)
-                                                        .lineLimit(1)
-                                                        .truncationMode(.middle)
-                                                        .padding(5)
-                                                } icon: {
-                                                    Rectangle()
-                                                        .fill(folder.state == "published" ? .yellow : .gray)
-                                                        .frame(width: 8, height: 8)
-                                                }
-                                            }
+                        if (self.selectedFolders.count > 0) {
+                            HStack {
+                                VStack {
+                                    Picker("Folder actions", selection: $selectedFolderAction) {
+                                        ForEach(FolderAction.allCases) { action in
+                                            Text(action.rawValue.capitalized)
+                                                .font(.system(size: 11))
                                         }
                                     }
+                                    .pickerStyle(MenuPickerStyle())
+                                    .tint(.blue)
+                                }.frame(width: 250)
+                                Button(action: updateSelectedFolders) {
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 11))
+                                    Text("Update \(self.selectedFolders.count > 1 ? "Folders" : "Folder")")
+                                        .font(.system(size: 11))
                                 }
-                                if (self.selectedFolders.count >= 1) {
-                                    HStack {
-                                        VStack {
-                                            Picker("Folder actions", selection: $selectedFolderAction) {
-                                                ForEach(FolderAction.allCases) { action in
-                                                    Text(action.rawValue.capitalized)
-                                                }
-                                            }
-                                            .pickerStyle(MenuPickerStyle())
-                                        }.frame(width: 250)
-                                        Button(action: updateSelectedFolders) {
-                                            Image(systemName: "chevron.right")
-                                                .font(.system(size: 11))
-                                            Text("Update Folders")
-                                                .font(.system(size: 11))
-                                                .padding(5)
-                                        }.buttonStyle(.bordered)
-                                    }
-                                }
-                            }
-                        }.frame(height: 90)
+                                .buttonStyle(.borderedProminent)
+                                .tint(.blue)
+                                Text("\(self.selectedFolders.count) \(self.selectedFolders.count > 1 ? "Folders" : "Folder") selected")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.gray)
+                                    .lineLimit(1)
+                                    .truncationMode(.middle)
+                                    .padding(5)
+                            }.frame(height: 50)
 
-                        List {
-                            /*
-                              Folders list with publish status
-                            */
-                            if (self.selectedImageFiles.count == 0 &&
-                                self.selectedPdfFiles.count == 0 &&
-                                self.selectedAudioFiles.count == 0 &&
-                                self.selectedVideoFiles.count == 0 &&
-                                self.selectedTextFiles.count == 0 &&
-                                self.selectedFolders.count > 1) {
+                            VStack(alignment: .leading, spacing: 0) {
                                 ForEach(self.loadedFolders) { folder in
                                     if (self.selectedFolders.contains(folder.id)) {
                                         Label {
@@ -3195,9 +3156,15 @@ struct ContentView: View {
                                                 .fill(folder.state == "published" ? .yellow : .gray)
                                                 .frame(width: 8, height: 8)
                                         }
+                                        .padding(5)
                                     }
                                 }
                             }
+                            .frame(minWidth: 0, maxWidth: .infinity, alignment: .topLeading)
+                            .padding(5)
+                        }
+
+                        List {
                             /*
                               ImageFiles
                             */

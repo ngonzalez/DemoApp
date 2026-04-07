@@ -802,9 +802,17 @@ struct ContentView: View {
     @State private var attachmentsDeleteURL:String = "https://link12.ddns.net:4040/attachments/delete"
 //    @State private var attachmentsDeleteURL:String = "http://192.168.1.11:3000/attachments/delete"
 
-//    @State private var serviceURL:String = "https://appshare.site:5050"
-    @State private var serviceURL:String = "https://link12.ddns.net:5050"
-//    @State private var serviceURL:String = "http://192.168.1.11:3001"
+//    @State private var videoFilesServiceURL:String = "https://appshare.site:5050/video_files"
+    @State private var videoFilesServiceURL:String = "https://link12.ddns.net:5050/video_files"
+//    @State private var videoFilesServiceURL:String = "http://192.168.1.11:3001/video_files"
+
+//    @State private var audioFilesServiceURL:String = "https://appshare.site:5050/audio_files"
+    @State private var audioFilesServiceURL:String = "https://link12.ddns.net:5050/audio_files"
+//    @State private var audioFilesServiceURL:String = "http://192.168.1.11:3001/audio_files"
+
+//    @State private var playlistsServiceURL:String = "https://appshare.site:5050/playlists"
+    @State private var playlistsServiceURL:String = "https://link12.ddns.net:5050/playlists"
+//    @State private var playlistsServiceURL:String = "http://192.168.1.11:3001/playlists"
 
     /*
         Backend Requests
@@ -1614,47 +1622,6 @@ struct ContentView: View {
         clearSelection()
     }
 
-    func deleteSelectedFolders() {
-        do {
-            let item = FolderIds(id: self.selectedFolders.map { $0 })
-            let data = try JSONEncoder().encode(item)
-            let url = URL(string: "\(foldersDeleteURL)")!
-            let delegateClass = NetworkDelegateClass()
-            let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
-            let optimizedData: Data = try! data.gzipped(level: .bestCompression)
-            let postLength = String(format: "%lu", UInt(optimizedData.count))
-            let request = newPostRequestWithContent(url: url, data: optimizedData, postLength: postLength)
-            let task = delegateSession.dataTask(with: request) { data, response, error in
-                do {
-                    let message = try JSONDecoder().decode(Message.self, from: data!)
-
-                    DispatchQueue.main.async {
-                        let httpResponse = response as? HTTPURLResponse
-                        let httpResponseUnwrapped = httpResponse!
-
-                        if (httpResponseUnwrapped.statusCode == 200) {
-                            self.destroyFolderResponse = message
-                            clearSelectedFolders()
-                            clearSelectedFiles()
-                        }
-                    }
-
-                    DispatchQueue.main.async {
-                        getAllUploads()
-                    }
-
-                } catch let error {
-                    logger.error("[deleteSelectedFolders] Request: \(error)")
-                }
-            }
-
-            task.resume()
-
-        } catch let error {
-            logger.error("[deleteSelectedFolders] Request: \(error)")
-        }
-    }
-
     struct AttachmentIds: Codable {
         var id: Array<Int>
         var type: String
@@ -1769,7 +1736,7 @@ struct ContentView: View {
     func getVideoStream(videoFile: VideoFile) {
         let delegateClass = NetworkDelegateClass()
         let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
-        let url = URL(string: "\(serviceURL)/video_files/\(videoFile.id).json")!
+        let url = URL(string: "\(videoFilesServiceURL)/\(videoFile.id).json")!
         let request = newGetRequest(url: url)
         let task = delegateSession.dataTask(with: request) { data, response, error in
             do {
@@ -1796,7 +1763,7 @@ struct ContentView: View {
     func getAudioStream(audioFile: AudioFile) {
         let delegateClass = NetworkDelegateClass()
         let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
-        let url = URL(string: "\(serviceURL)/audio_files/\(audioFile.id).json")!
+        let url = URL(string: "\(audioFilesServiceURL)/\(audioFile.id).json")!
         let request = newGetRequest(url: url)
         let task = delegateSession.dataTask(with: request) { data, response, error in
             do {
@@ -1831,14 +1798,14 @@ struct ContentView: View {
 
     func displayVideo(videoFile: VideoFile) {
         if self.videoStreams.map({ $0.id }).contains(videoFile.id) {
-            let url = URL(string: "\(serviceURL)/playlists/video-\(videoFile.id).m3u8")!
+            let url = URL(string: "\(playlistsServiceURL)/video-\(videoFile.id).m3u8")!
             initMediaPlayer(url: url)
         }
     }
 
     func displayAudio(audioFile: AudioFile) {
         if self.audioStreams.map({ $0.id }).contains(audioFile.id) {
-            let url = URL(string: "\(serviceURL)/playlists/audio-\(audioFile.id).m3u8")!
+            let url = URL(string: "\(playlistsServiceURL)/audio-\(audioFile.id).m3u8")!
             initMediaPlayer(url: url)
         }
     }
@@ -1965,6 +1932,32 @@ struct ContentView: View {
 
         } catch let error {
             logger.error("[unarchiveSelectedFolders] \(error)")
+        }
+    }
+
+    func deleteSelectedFolders() {
+        do {
+            let item = FolderIds(id: self.selectedFolders.map { $0 })
+            let data = try JSONEncoder().encode(item)
+            let url = URL(string: "\(foldersDeleteURL)")!
+            let delegateClass = NetworkDelegateClass()
+            let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
+            let optimizedData: Data = try! data.gzipped(level: .bestCompression)
+            let postLength = String(format: "%lu", UInt(optimizedData.count))
+            let request = newPostRequestWithContent(url: url, data: optimizedData, postLength: postLength)
+            let task = delegateSession.dataTask(with: request) { data, response, error in
+                DispatchQueue.main.async {
+                    self.loadedFolders = []
+                    clearSelectedFolders()
+                    clearSelectedFiles()
+                    getAllUploads()
+                }
+            }
+
+            task.resume()
+
+        } catch let error {
+            logger.error("[deleteSelectedFolders] Request: \(error)")
         }
     }
 

@@ -423,6 +423,7 @@ struct ContentView: View {
         let dataUrl: String
         let folder: String?
         let subfolder: String?
+        let webUrl: String
     }
 
     struct ImageFile: Decodable, Identifiable {
@@ -1846,11 +1847,11 @@ struct ContentView: View {
         Folder: Publish / Unpublish
     */
     enum FolderAction: String, CaseIterable, Identifiable {
-        case publish, unpublish, archive, unarchive, delete
+        case none, publish, unpublish, archive, unarchive, delete
         var id: Self { self }
     }
 
-    @State private var selectedFolderAction: FolderAction = .publish
+    @State private var selectedFolderAction: FolderAction = .none
 
     func updateSelectedFolders() {
         self.searchText = "";
@@ -2627,7 +2628,6 @@ struct ContentView: View {
                                 .labelStyle(.titleAndIcon)
                                 .font(.system(size: 11))
                             }
-
                             TableColumn("state", value: \.state) { folder in
                                 Label {
                                     Text("\(folder.state)")
@@ -2858,15 +2858,6 @@ struct ContentView: View {
                                             .labelStyle(.titleAndIcon)
                                             .font(.system(size: 11))
                                     }
-
-                                    TableColumn("fileUrl") { videoFile in
-                                        Link(destination: URL(string: videoFile.fileUrl)!, label: {
-                                            Image(systemName: "bubble.left")
-                                            Text("Web")
-                                                .font(.system(size: 11))
-                                        })
-                                    }
-
                                     TableColumn("mimeType") { videoFile in
                                         let mimeType = videoFile.mimeType
                                         let mimeTypeUnwrapped = mimeType!
@@ -3017,13 +3008,6 @@ struct ContentView: View {
                                             .labelStyle(.titleAndIcon)
                                             .font(.system(size: 11))
                                     }
-                                    TableColumn("fileUrl") { textFile in
-                                        Link(destination: URL(string: textFile.fileUrl)!, label: {
-                                            Image(systemName: "bubble.left")
-                                            Text("Web")
-                                                .font(.system(size: 11))
-                                        })
-                                    }
                                     TableColumn("mimeType") { textFile in
                                         let mimeType = textFile.mimeType
                                         let mimeTypeUnwrapped = mimeType!
@@ -3114,7 +3098,7 @@ struct ContentView: View {
                                 VStack {
                                     Picker("Folder actions", selection: $selectedFolderAction) {
                                         ForEach(FolderAction.allCases) { action in
-                                            Text(action.rawValue.capitalized)
+                                            Text((action == FolderAction.none) ? "" : action.rawValue.capitalized)
                                                 .font(.system(size: 11))
                                         }
                                     }
@@ -3146,6 +3130,8 @@ struct ContentView: View {
                                                 .foregroundStyle(folder.state == "published" ? .white : .gray)
                                                 .lineLimit(1)
                                                 .truncationMode(.middle)
+                                            Link("Web URL", destination: URL(string: folder.webUrl)!)
+                                                .tint(.blue)
                                         } icon: {
                                             Rectangle()
                                                 .fill(folder.state == "published" ? .yellow : .gray)

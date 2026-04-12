@@ -270,6 +270,7 @@ struct ContentView: View {
                     }
 
                     try FileManager.default.removeItem(at: tempFileURL)
+                    try FileManager.default.removeItem(at: zipFilePath)
 
                     newUploadRequest(
                         uuid: uuid,

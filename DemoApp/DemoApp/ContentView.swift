@@ -16,7 +16,7 @@
     IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-/* SwiftUI*/
+/* SwiftUI */
 import SwiftUI
 
 /* VideoPlayer */
@@ -34,6 +34,12 @@ import OSLog
 var logger = Logger()
 
 var formatter = ISO8601DateFormatter()
+
+enum KeychainError: Error {
+    case noPassword
+    case unexpectedPasswordData
+    case unhandledError(status: OSStatus)
+}
 
 class NetworkDelegateClass: NSObject, URLSessionDelegate, URLSessionDataDelegate {
     // URLSessionDataDelegate method to handle response data
@@ -57,7 +63,11 @@ class NetworkDelegateClass: NSObject, URLSessionDelegate, URLSessionDataDelegate
 @available(macOS 14, *)
 @MainActor
 struct ContentView: View {
-    
+
+    /* Credentials */
+    @State private var userCredentials:Credentials = Credentials(account: "", password: "")
+
+    /* Search */
     @State private var searchText: String = ""
 
     /* Media Player */
@@ -155,6 +165,7 @@ struct ContentView: View {
         "aif": "audio/x-aiff",
         "aiff": "audio/x-aiff",
         "flac": "audio/flac",
+        "mka": "audio/x-matroska",
         "mp3": "audio/mpeg",
         "wav": "audio/wav",
         "weba": "audio/webm",
@@ -594,15 +605,6 @@ struct ContentView: View {
         }
     }
 
-    func newGetRequest(url: URL) -> URLRequest {
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        return request
-    }
-
     func getAllUploads() {
         let delegateClass = NetworkDelegateClass()
         let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
@@ -656,27 +658,28 @@ struct ContentView: View {
     }
 
     /* Account */
-    @State var myAccount:Bool = Bool(false)    // My Account
-
-    @State private var signedInUser:User?
+    @State private var registrationAccount:Account?
+    @State private var signedInUser:UserWithAccount?
     @State private var identified:Bool = Bool(false)
 
-    @State var newSession:Bool = Bool(true)             // New Session
+    @State var myAccount:Bool = Bool(false)                 // My Account
+
+    @State var newSession:Bool = Bool(true)                 // New Session
     @State var newSessionComplete:Bool = Bool(false)
 
-    @State var newPassword:Bool = Bool(false)           // New Password
+    @State var newPassword:Bool = Bool(false)               // New Password
     @State var newPasswordComplete:Bool = Bool(false)
 
-    @State var newAccount:Bool = Bool(false)            // New Account
+    @State var newAccount:Bool = Bool(false)                // New Account
     @State var newAccountComplete:Bool = Bool(false)
 
-    @State var editAccount:Bool = Bool(false)           // Edit Account
+    @State var editAccount:Bool = Bool(false)               // Edit Account
     @State var editAccountComplete:Bool = Bool(false)
 
-    @State var editPassword:Bool = Bool(false)          // Edit Password
+    @State var editPassword:Bool = Bool(false)              // Edit Password
     @State var editPasswordComplete:Bool = Bool(false)
 
-    @State var editEmailAddress:Bool = Bool(false)             // Edit Email
+    @State var editEmailAddress:Bool = Bool(false)          // Edit Email
     @State var editEmailAddressComplete:Bool = Bool(false)
 
     /* New Session */
@@ -696,6 +699,18 @@ struct ContentView: View {
 
     @State var newAccountValidationErrors:String = String()
 
+    @State var accountCodeSuccessMessage:Message = Message(message: String())
+
+    @State var accountCodeValidationErrors:String = String()
+
+    @State private var accountCodeRegistrationForm: String = String()
+
+    @State private var accountUuidRegistrationForm: String = String()
+
+    @State private var accountNameRegistrationForm: String = String()
+
+    @State private var accountAddressRegistrationForm: String = String()
+
     @State private var firstNameRegistrationForm: String = String()
 
     @State private var lastNameRegistrationForm: String = String()
@@ -704,10 +719,18 @@ struct ContentView: View {
 
     @State private var passwordRegistrationForm: String = String()
 
+    @State private var passwordConfirmationRegistrationForm: String = String()
+
     /* Edit Account */
     @State var editAccountSuccessMessage:Message = Message(message: String())
 
     @State var editAccountValidationErrors:String = String()
+
+    @State private var accountUuidAccountForm: String = String()
+
+    @State private var accountNameAccountForm: String = String()
+
+    @State private var accountAddressAccountForm: String = String()
 
     @State private var firstNameAccountForm: String = String()
 
@@ -726,33 +749,37 @@ struct ContentView: View {
     @State private var updatedAtAccountForm: String = String()
 
     /* New Password */
-    @State private var emailAddressPasswordForm: String = String()
-
     @State var newPasswordSuccessMessage:Message = Message(message: String())
 
     @State var newPasswordValidationErrors:String = String()
 
+    @State private var emailAddressPasswordForm: String = String()
+
     /* Edit Password */
     @State var editPasswordSuccessMessage:Message = Message(message: String())
+
+    @State var editPasswordValidationErrors:String = String()
 
     @State private var newPasswordEditPasswordForm: String = String()
 
     @State private var newPasswordConfirmationEditPasswordForm: String = String()
 
-    @State var editPasswordValidationErrors:String = String()
-
     /* Edit Email */
     @State var editEmailAddressSuccessMessage:Message = Message(message: String())
+
+    @State var editEmailAddressValidationErrors:String = String()
 
     @State private var emailAddressEditEmailAddressForm: String = String()
 
     @State private var newEmailAddressEditEmailAddressForm: String = String()
 
-    @State var editEmailAddressValidationErrors:String = String()
-
     /*
         Backend URLs
      */
+
+//    @State private var accountsURL:String = "https://appshare.site:4040/accounts"
+    @State private var accountsURL:String = "https://link12.ddns.net:4040/accounts"
+//    @State private var accountsURL:String = "http://192.168.1.11:3000/accounts"
 
 //    @State private var accountURL:String = "https://appshare.site:4040/account"
     @State private var accountURL:String = "https://link12.ddns.net:4040/account"
@@ -818,9 +845,29 @@ struct ContentView: View {
         Backend Requests
      */
 
+    func newGetRequest(url: URL) -> URLRequest {
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        return request
+    }
+
     func newPutRequest(url: URL, data: Data, postLength: String) -> URLRequest {
         var request = URLRequest(url: url)
         request.httpMethod = "PUT"
+        request.httpBody = data
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.addValue(postLength, forHTTPHeaderField: "Content-Length")
+
+        return request
+    }
+
+    func newPostRequest(url: URL, data: Data, postLength: String) -> URLRequest {
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
         request.httpBody = data
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -841,17 +888,6 @@ struct ContentView: View {
         return request
     }
 
-    func newPostRequest(url: URL, data: Data, postLength: String) -> URLRequest {
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.httpBody = data
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.addValue(postLength, forHTTPHeaderField: "Content-Length")
-
-        return request
-    }
-
     func newDeleteRequest(url: URL) -> URLRequest {
         var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
@@ -861,20 +897,13 @@ struct ContentView: View {
         return request
     }
 
-    func newDeleteRequestWithContent(url: URL, data: Data, postLength: String) -> URLRequest {
-        var request = URLRequest(url: url)
-        request.httpMethod = "DELETE"
-        request.httpBody = data
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.addValue(postLength, forHTTPHeaderField: "Content-Length")
-        request.addValue("gzip, deflate", forHTTPHeaderField: "Content-Encoding")
-
-        return request
+    struct AccountResponseWithMessage: Codable {
+        let account: Account?
+        let message: String?
     }
 
     struct UserResponseWithMessage: Codable {
-        let user: User?
+        let user: UserWithAccount?
         let message: String?
     }
 
@@ -884,9 +913,11 @@ struct ContentView: View {
 
     func submitAccountForm() {
         do {
-            let user = User(
+            let user = UserWithAccount(
                 id: self.signedInUser?.id,
-                uuid: UUID(),
+                accountUuid: self.signedInUser?.accountUuid,
+                accountName: accountNameAccountForm,
+                accountAddress: accountAddressAccountForm,
                 firstName: firstNameAccountForm,
                 lastName: lastNameAccountForm,
                 emailAddress: emailAddressAccountForm,
@@ -911,16 +942,17 @@ struct ContentView: View {
 
                     DispatchQueue.main.async {
 
-                        // validation errors
+                        // handle response
                         let httpResponse = response as? HTTPURLResponse
                         let httpResponseUnwrapped = httpResponse!
-
-                        // validation errors
                         if (userResponseWithMessage.user != nil) {
                             let errorsData = userResponseWithMessage.user?.errors!
                             if (errorsData == [] && httpResponseUnwrapped.statusCode == 200) {
+
+                                // callback
                                 self.signedInUser = userResponseWithMessage.user
-                                resetValuesEditAccount()
+                                resetValuesEditAccount(keep_values: true)
+                                handleEmailChange(user: user)
                             } else {
                                 let errorsDataUnwrapped = errorsData!
                                 iterateOverErrorsEditAccount(errors: errorsDataUnwrapped)
@@ -942,6 +974,13 @@ struct ContentView: View {
 
         } catch let error {
             logger.error("[submitAccountForm] Error: \(error)")
+        }
+    }
+
+    func iterateOverErrorsAccountCode(errors: [String?]) {
+        self.accountCodeValidationErrors = String()
+        errors.forEach { error in
+            accountCodeValidationErrors += "\n▫️\(error!)"
         }
     }
 
@@ -989,7 +1028,6 @@ struct ContentView: View {
 
     struct User: Codable, Identifiable {
         let id: Int?
-        let uuid: UUID
         let firstName: String?
         let lastName: String?
         let emailAddress: String?
@@ -1001,11 +1039,40 @@ struct ContentView: View {
         let errors: [String]?
     }
 
+    struct UserWithAccount: Codable, Identifiable {
+        let id: Int?
+        let accountUuid: UUID?
+        let accountName: String?
+        let accountAddress: String?
+        let firstName: String?
+        let lastName: String?
+        let emailAddress: String?
+        let password: String?
+        let deliverNotificationsSignIn: Bool?
+        let deliverNotificationsAccountUpdate: Bool?
+        let createdAt: String?
+        let updatedAt: String?
+        let errors: [String]?
+    }
+
+    struct Account: Codable, Identifiable {
+        let id: Int?
+        let uuid: UUID?
+        let name: String?
+        let address: String?
+        let dataUrl: String?
+        let createdAt: String?
+        let updatedAt: String?
+        let errors: [String]?
+    }
+
     func submitRegistrationForm() {
         do {
-            let user = User(
+            let user = UserWithAccount(
                 id: nil,
-                uuid: UUID(),
+                accountUuid: self.registrationAccount?.uuid,
+                accountName: "",
+                accountAddress: "",
                 firstName: firstNameRegistrationForm,
                 lastName: lastNameRegistrationForm,
                 emailAddress: emailAddressRegistrationForm,
@@ -1029,15 +1096,15 @@ struct ContentView: View {
                     let userResponseWithMessage = try JSONDecoder().decode(UserResponseWithMessage.self, from: data!)
                     DispatchQueue.main.async {
 
-                        // validation errors
+                        // handle response
                         let httpResponse = response as? HTTPURLResponse
                         let httpResponseUnwrapped = httpResponse!
-
-                        // validation errors
                         if (userResponseWithMessage.user != nil) {
                             let errorsData = userResponseWithMessage.user?.errors!
                             if (errorsData == [] && httpResponseUnwrapped.statusCode == 200) {
-                                resetValuesNewAccount()
+
+                                // callback
+                                resetValuesNewAccount(keep_values: true)
                             } else {
                                 let errorsDataUnwrapped = errorsData!
                                 iterateOverErrorsNewAccount(errors: errorsDataUnwrapped)
@@ -1063,19 +1130,126 @@ struct ContentView: View {
         }
     }
 
+    struct UserAccountCode: Codable {
+        let accountCode: String!
+    }
+
+    func submitAccountCode(accountCode: String) {
+        do {
+            let user = UserAccountCode(
+                accountCode: accountCode
+            )
+
+            let data = try JSONEncoder().encode(user)
+            let url = URL(string: "\(accountsURL)")!
+            let delegateClass = NetworkDelegateClass()
+            let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
+            let optimizedData: Data = try! data.gzipped(level: .bestCompression)
+            let postLength = String(format: "%lu", UInt(optimizedData.count))
+            let request = newPostRequest(url: url, data: optimizedData, postLength: postLength)
+            let task = delegateSession.dataTask(with: request) { data, response, error in
+                do {
+                    let accountResponseWithMessage = try JSONDecoder().decode(AccountResponseWithMessage.self, from: data!)
+
+                    DispatchQueue.main.async {
+
+                        // handle response
+                        let httpResponse = response as? HTTPURLResponse
+                        let httpResponseUnwrapped = httpResponse!
+                        let errorsData = accountResponseWithMessage.account?.errors!
+                        if (errorsData == [] && httpResponseUnwrapped.statusCode == 200) {
+
+                            // callback
+                            self.registrationAccount = accountResponseWithMessage.account
+                        } else if errorsData != nil {
+                            let errorsDataUnwrapped = errorsData!
+                            iterateOverErrorsAccountCode(errors: errorsDataUnwrapped)
+                        }
+
+                        // validation message
+                        if (accountResponseWithMessage.message != nil) {
+                            let message = Message(message: accountResponseWithMessage.message)
+                            logger.info("\(message.message!)")
+                            self.accountCodeSuccessMessage = message
+                        }
+                    }
+
+                } catch let error {
+                    logger.error("[submitAccountCode] Request: \(error)")
+                }
+            }
+
+            task.resume()
+
+        } catch let error {
+            logger.error("[submitAccountCode] Error: \(error)")
+        }
+    }
+
     struct UserWithEmailAddressAndPassword: Codable, Identifiable {
         let id: Int?
-        let uuid: UUID
         let emailAddress: String?
         let password: String?
         let errors: [String]?
     }
 
-    func submitSessionForm() {
+    struct Credentials: Codable {
+        let account: String!
+        let password: String!
+    }
+
+    func storeCredentials(username: String, password: String, server: String) {
+        self.userCredentials = Credentials(account: username, password: password)
+        if (self.userCredentials.account != "" && self.userCredentials.password != "") {
+            let query: [String: Any] = [kSecClass as String: kSecClassInternetPassword,
+                                        kSecAttrServer as String: server]
+
+            let accountUnwrapped = userCredentials.account!
+            let passwordUnwrapped = userCredentials.password.data(using: String.Encoding.utf8)!
+
+            let attributes: [String: Any] = [kSecAttrAccount as String: accountUnwrapped,
+                                             kSecValueData as String: passwordUnwrapped]
+
+            SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
+        } else {
+            let accountUnwrapped = username
+            let passwordUnwrapped = password.data(using: String.Encoding.utf8)!
+
+            let query: [String: Any] = [kSecClass as String: kSecClassInternetPassword,
+                                        kSecAttrServer as String: server,
+                                        kSecAttrAccount as String: accountUnwrapped,
+                                        kSecValueData as String: passwordUnwrapped]
+
+            SecItemAdd(query as CFDictionary, nil)
+        }
+    }
+
+    func readCredentials(server: String) -> Credentials {
+        let query: [String: Any] = [kSecClass as String: kSecClassInternetPassword,
+                                    kSecAttrServer as String: server,
+                                    kSecMatchLimit as String: kSecMatchLimitOne,
+                                    kSecReturnAttributes as String: true,
+                                    kSecReturnData as String: true]
+
+        var item: CFTypeRef?
+        _ = SecItemCopyMatching(query as CFDictionary, &item)
+        let existingItem = item as? [String : Any]
+        if (item != nil) {
+            let account = existingItem?[kSecAttrAccount as String] as? String
+            let passwordData = existingItem![kSecValueData as String] as! Data
+            let password = String(data: passwordData, encoding: String.Encoding.utf8)
+            let accountUnwrapped = account!
+            let passwordUnwrapped = password!
+            return Credentials(account: accountUnwrapped, password: passwordUnwrapped)
+        } else {
+            return Credentials(account: "", password: "")
+        }
+    }
+
+    func submitNewSessionForm() {
         do {
             let user = UserWithEmailAddressAndPassword(
                 id: nil,
-                uuid: UUID(),
                 emailAddress: emailAddressSessionForm,
                 password: passwordSessionForm,
                 errors: nil
@@ -1094,19 +1268,21 @@ struct ContentView: View {
 
                     DispatchQueue.main.async {
 
-                        // validation errors
+                        // handle response
                         let httpResponse = response as? HTTPURLResponse
                         let httpResponseUnwrapped = httpResponse!
-
-                        // validation errors
                         let errorsData = userResponseWithMessage.user?.errors!
                         if (errorsData == [] && httpResponseUnwrapped.statusCode == 200) {
 
-                            // set current user
+                            // callback
                             self.signedInUser = userResponseWithMessage.user
                             self.identified = (self.signedInUser?.createdAt != nil)
-
-                            resetValuesNewSession()
+                            resetValuesNewSession(keep_values: false)
+                            storeCredentials(
+                                username: user.emailAddress!,
+                                password: user.password!,
+                                server: "link12.ddns.net"
+                            )
                         } else if errorsData != nil {
                             let errorsDataUnwrapped = errorsData!
                             iterateOverErrorsNewSession(errors: errorsDataUnwrapped)
@@ -1125,14 +1301,14 @@ struct ContentView: View {
                     }
 
                 } catch let error {
-                    logger.error("[submitSessionForm] Request: \(error)")
+                    logger.error("[submitNewSessionForm] Request: \(error)")
                 }
             }
 
             task.resume()
 
         } catch let error {
-            logger.error("[submitSessionForm] Error: \(error)")
+            logger.error("[submitNewSessionForm] Error: \(error)")
         }
     }
 
@@ -1146,18 +1322,19 @@ struct ContentView: View {
                 let message = try JSONDecoder().decode(Message.self, from: data!)
 
                 DispatchQueue.main.async {
+
+                    // handle response
                     let httpResponse = response as? HTTPURLResponse
                     let httpResponseUnwrapped = httpResponse!
-
                     if (httpResponseUnwrapped.statusCode == 200) {
+
+                        // callback
                         self.destroySessionFormResponse = message
                         self.signedInUser = nil
                         self.identified = false
                         self.newSession = true
                         self.newSessionComplete = false
-
                         clearSelectedFolders()
-
                         self.loadedFolders = Array<Folder>()
                         self.selectedFolders = Set()
                     }
@@ -1173,7 +1350,6 @@ struct ContentView: View {
 
     struct UserWithEmailAddress: Codable, Identifiable {
         let id: Int?
-        let uuid: UUID
         let emailAddress: String?
         let errors: [String]?
     }
@@ -1182,7 +1358,6 @@ struct ContentView: View {
         do {
             let user = UserWithEmailAddress(
                 id: nil,
-                uuid: UUID(),
                 emailAddress: emailAddressPasswordForm,
                 errors: nil
             )
@@ -1200,13 +1375,14 @@ struct ContentView: View {
 
                     DispatchQueue.main.async {
 
+                        // handle response
                         let httpResponse = response as? HTTPURLResponse
                         let httpResponseUnwrapped = httpResponse!
-
-                        // validation errors
                         if (userResponseWithMessage.user != nil) {
                             if (httpResponseUnwrapped.statusCode == 200) {
-                                resetValuesNewPassword()
+
+                                // callback
+                                resetValuesNewPassword(keep_values: true)
                             }
                         }
 
@@ -1231,7 +1407,6 @@ struct ContentView: View {
 
     struct UserWithPasswordAndPasswordConfirmation: Codable, Identifiable {
         let id: Int?
-        let uuid: UUID
         let password: String?
         let passwordConfirmation: String?
         let errors: [String]?
@@ -1241,7 +1416,6 @@ struct ContentView: View {
         do {
             let user = UserWithPasswordAndPasswordConfirmation(
                 id: self.signedInUser?.id,
-                uuid: UUID(),
                 password: newPasswordEditPasswordForm,
                 passwordConfirmation: newPasswordConfirmationEditPasswordForm,
                 errors: nil
@@ -1260,14 +1434,20 @@ struct ContentView: View {
 
                     DispatchQueue.main.async {
 
+                        // handle response
                         let httpResponse = response as? HTTPURLResponse
                         let httpResponseUnwrapped = httpResponse!
-
-                        // validation errors
                         if (userResponseWithMessage.user != nil) {
                             let errorsData = userResponseWithMessage.user?.errors!
                             if (errorsData == [] && httpResponseUnwrapped.statusCode == 200) {
-                                resetValuesEditPassword()
+
+                                // callback
+                                resetValuesEditPassword(keep_values: true)
+                                storeCredentials(
+                                    username: self.userCredentials.account,
+                                    password: user.password!,
+                                    server: "link12.ddns.net"
+                                )
                             } else {
                                 let errorsDataUnwrapped = errorsData!
                                 iterateOverErrorsEditPassword(errors: errorsDataUnwrapped)
@@ -1295,7 +1475,6 @@ struct ContentView: View {
 
     struct UserWithEmailAddressAndNewEmailAddress: Codable, Identifiable {
         let id: Int?
-        let uuid: UUID
         let emailAddress: String?
         let errors: [String]?
     }
@@ -1304,7 +1483,6 @@ struct ContentView: View {
         do {
             let user = UserWithEmailAddressAndNewEmailAddress(
                 id: self.signedInUser?.id,
-                uuid: UUID(),
                 emailAddress: newEmailAddressEditEmailAddressForm,
                 errors: nil
             )
@@ -1322,14 +1500,22 @@ struct ContentView: View {
 
                     DispatchQueue.main.async {
 
+                        // handle response
                         let httpResponse = response as? HTTPURLResponse
                         let httpResponseUnwrapped = httpResponse!
-
-                        // validation errors
                         if (userResponseWithMessage.user != nil) {
                             let errorsData = userResponseWithMessage.user?.errors!
                             if (errorsData == [] && httpResponseUnwrapped.statusCode == 200) {
-                                resetValuesEditEmailAddress()
+
+                                // callback
+                                resetValuesEditEmailAddress(keep_values: true)
+                                storeCredentials(
+                                    username: user.emailAddress!,
+                                    password: self.userCredentials.password,
+                                    server: "link12.ddns.net"
+                                )
+                                emailAddressSessionForm = user.emailAddress!
+                                passwordSessionForm = self.userCredentials.password
                             } else {
                                 let errorsDataUnwrapped = errorsData!
                                 iterateOverErrorsEditEmailAddress(errors: errorsDataUnwrapped)
@@ -1374,21 +1560,67 @@ struct ContentView: View {
         // disable other sections
         self.myAccount = false
         self.newAccount = false
-        self.newPassword = false
-        self.editPassword = false
         self.editAccount = false
         self.editEmailAddress = false
+        self.editPassword = false
+        self.newPassword = false
 
         // reset forms
-        resetValuesNewSession()
+        resetFieldsNewAccount(keep_values: false)
+        resetFieldsNewPassword(keep_values: false)
+        resetFieldsNewSession(keep_values: false)
 
-        // enable buttons
+        // enable buttons again
+        self.newAccountComplete = false
+        self.editAccountComplete = false
+        self.editEmailAddressComplete = false
+        self.editPasswordComplete = false
+        self.newPasswordComplete = false
+        self.newSessionComplete = false
+    }
+
+    func backToMyAccount() {
+        // enable my account
+        self.myAccount = true
+
+        // disable other sections
+        self.newAccount = false
+        self.editAccount = false
+        self.editEmailAddress = false
+        self.editPassword = false
+        self.newPassword = false
+        self.newSession = false
+
+        // reset forms
+        resetValuesNewAccount(keep_values: false)
+        resetValuesEditAccount(keep_values: false)
+        resetValuesEditEmailAddress(keep_values: false)
+        resetValuesEditPassword(keep_values: false)
+        resetValuesNewPassword(keep_values: false)
+        resetValuesNewSession(keep_values: false)
+
+        // enable buttons again
+        self.newAccountComplete = false
+        self.editAccountComplete = false
+        self.editEmailAddressComplete = false
+        self.editPasswordComplete = false
+        self.newPasswordComplete = false
         self.newSessionComplete = false
     }
 
     func clickEditAccount() {
         self.editAccount = true
 
+        let accountName = self.signedInUser?.accountName
+        if (accountName != nil) {
+            let accountNameUnWrapped = accountName!
+            self.accountNameAccountForm = accountNameUnWrapped
+        }
+        let accountAddress = self.signedInUser?.accountAddress
+        if (accountAddress != nil) {
+            let accountAddressUnWrapped = accountAddress!
+            self.accountAddressAccountForm = accountAddressUnWrapped
+        }
         let firstName = self.signedInUser?.firstName
         if (firstName != nil) {
             let firstNameUnWrapped = firstName!
@@ -1437,7 +1669,19 @@ struct ContentView: View {
         }
     }
 
-    func resetValuesNewSession() {
+    func handleEmailChange(user: UserWithAccount) {
+        if (user.emailAddress != self.userCredentials.account) {
+            storeCredentials(
+                username: user.emailAddress!,
+                password: self.userCredentials.password!,
+                server: "link12.ddns.net"
+            )
+            emailAddressSessionForm = user.emailAddress!
+            passwordSessionForm = self.userCredentials.password!
+        }
+    }
+
+    func resetValuesNewSession(keep_values: Bool?) {
 //        self.newSession = false
         self.newSessionComplete = true
 
@@ -1448,18 +1692,10 @@ struct ContentView: View {
         self.editAccount = false
         self.editEmailAddress = false
 
-        // reset errors
-        self.newSessionValidationErrors = String()
-
-        // reset message
-        self.newSessionSuccessMessage = Message(message: String())
-        self.destroySessionFormResponse = Message(message: String())
-
-        // reset values
-        self.emailAddressPasswordForm = String()
+        resetFieldsNewSession(keep_values: keep_values!)
     }
 
-    func resetValuesNewPassword() {
+    func resetValuesNewPassword(keep_values: Bool?) {
 //        self.newPassword = false
         self.newPasswordComplete = true
 
@@ -1468,17 +1704,10 @@ struct ContentView: View {
         self.editAccount = false
         self.editEmailAddress = false
 
-        // reset errors
-        self.newPasswordValidationErrors = String()
-
-        // reset message
-        self.newPasswordSuccessMessage = Message(message: String())
-
-        // reset values
-        self.emailAddressPasswordForm = String()
+        resetFieldsNewPassword(keep_values: keep_values!)
     }
 
-    func resetValuesEditPassword() {
+    func resetValuesEditPassword(keep_values: Bool?) {
 //        self.editPassword = false
         self.editPasswordComplete = true
 
@@ -1487,18 +1716,10 @@ struct ContentView: View {
         self.editAccount = false
         self.editEmailAddress = false
 
-        // reset errors
-        self.editPasswordValidationErrors = String()
-
-        // reset message
-        self.editPasswordSuccessMessage = Message(message: String())
-
-        // reset values
-        self.newPasswordEditPasswordForm = String()
-        self.newPasswordConfirmationEditPasswordForm = String()
+        resetFieldsEditPassword(keep_values: keep_values!)
     }
 
-    func resetValuesNewAccount() {
+    func resetValuesNewAccount(keep_values: Bool?) {
 //        self.newAccount = false
         self.newAccountComplete = true
 
@@ -1507,20 +1728,10 @@ struct ContentView: View {
         self.editAccount = false
         self.editEmailAddress = false
 
-        // reset errors
-        self.newAccountValidationErrors = String()
-
-        // reset message
-        self.newAccountSuccessMessage = Message(message: String())
-
-        // reset values
-        self.firstNameRegistrationForm = String()
-        self.lastNameRegistrationForm = String()
-        self.emailAddressRegistrationForm = String()
-        self.passwordRegistrationForm = String()
+        resetFieldsNewAccount(keep_values: keep_values!)
     }
 
-    func resetValuesEditAccount() {
+    func resetValuesEditAccount(keep_values: Bool?) {
 //        self.editAccount = false
         self.editAccountComplete = true
 
@@ -1529,21 +1740,10 @@ struct ContentView: View {
         self.editPassword = false
         self.editEmailAddress = false
 
-        // reset errors
-        self.editAccountValidationErrors = String()
-
-        // reset message
-        self.editAccountSuccessMessage = Message(message: String())
-
-        // reset values
-        self.firstNameAccountForm = String()
-        self.lastNameAccountForm = String()
-        self.emailAddressAccountForm = String()
-//        self.notifyOnSignInAccountForm = false
-//        self.notifyOnAccountUpdateAccountForm = false
+        resetFieldsEditAccount(keep_values: keep_values!)
     }
 
-    func resetValuesEditEmailAddress() {
+    func resetValuesEditEmailAddress(keep_values: Bool?) {
 //        self.editEmailAddress = false
         self.editEmailAddressComplete = true
 
@@ -1552,40 +1752,125 @@ struct ContentView: View {
         self.newPassword = false
         self.editPassword = false
 
+        resetFieldsEditEmailAddress(keep_values: keep_values!)
+    }
+
+    func resetFieldsNewSession(keep_values: Bool) {
+        // reset errors
+        self.newSessionValidationErrors = String()
+
+        // reset message
+        self.newSessionSuccessMessage = Message(message: String())
+        self.destroySessionFormResponse = Message(message: String())
+
+        if (keep_values) {
+            return
+        } else {
+            // reset values
+            self.emailAddressSessionForm = String()
+            self.passwordSessionForm = String()
+        }
+    }
+
+    func resetFieldsNewPassword(keep_values: Bool) {
+        // reset errors
+        self.newPasswordValidationErrors = String()
+
+        // reset message
+        self.newPasswordSuccessMessage = Message(message: String())
+
+        if (keep_values) {
+            return
+        } else {
+            // reset values
+            self.emailAddressPasswordForm = String()
+        }
+    }
+
+    func resetFieldsNewAccount(keep_values: Bool) {
+        // reset errors
+        self.newAccountValidationErrors = String()
+        self.accountCodeValidationErrors = String()
+
+        // reset message
+        self.newAccountSuccessMessage = Message(message: String())
+        self.accountCodeSuccessMessage = Message(message: String())
+
+        if (keep_values) {
+            return
+        } else {
+            resetAccountCode()
+
+            self.firstNameRegistrationForm = String()
+            self.lastNameRegistrationForm = String()
+            self.emailAddressRegistrationForm = String()
+            self.passwordRegistrationForm = String()
+            self.passwordConfirmationRegistrationForm = String()
+        }
+    }
+
+    func resetAccountCode() {
+        // registration account
+        self.registrationAccount = nil
+
+        // reset values
+        self.accountCodeRegistrationForm = String()
+        self.accountUuidRegistrationForm = String()
+        self.accountNameRegistrationForm = String()
+        self.accountAddressRegistrationForm = String()
+    }
+
+    func resetFieldsEditAccount(keep_values: Bool) {
+        // reset errors
+        self.editAccountValidationErrors = String()
+
+        // reset message
+        self.editAccountSuccessMessage = Message(message: String())
+
+        if (keep_values) {
+            return
+        } else {
+            // reset values
+            self.accountNameAccountForm = String()
+            self.accountAddressAccountForm = String()
+            self.firstNameAccountForm = String()
+            self.lastNameAccountForm = String()
+            self.emailAddressAccountForm = String()
+
+            // self.notifyOnSignInAccountForm = false
+            // self.notifyOnAccountUpdateAccountForm = false
+        }
+    }
+    
+    func resetFieldsEditPassword(keep_values: Bool) {
+        // reset errors
+        self.editPasswordValidationErrors = String()
+
+        // reset message
+        self.editPasswordSuccessMessage = Message(message: String())
+
+        if (keep_values) {
+            return
+        } else {
+            // reset values
+            self.newPasswordEditPasswordForm = String()
+            self.newPasswordConfirmationEditPasswordForm = String()
+        }
+    }
+
+    func resetFieldsEditEmailAddress(keep_values: Bool) {
         // reset errors
         self.editEmailAddressValidationErrors = String()
 
         // reset message
         self.editEmailAddressSuccessMessage = Message(message: String())
 
-        // reset values
-        self.emailAddressEditEmailAddressForm = String()
-        self.newEmailAddressEditEmailAddressForm = String()
-    }
-
-    func backToMyAccount() {
-        // enable my account
-        self.myAccount = true
-
-        // disable other sections
-        self.newAccount = false
-        self.newPassword = false
-        self.editPassword = false
-        self.editAccount = false
-        self.editEmailAddress = false
-
-        // reset forms
-        resetValuesEditAccount()
-        resetValuesEditPassword()
-        resetValuesNewSession()
-        resetValuesEditEmailAddress()
-
-        // enable buttons again
-        self.newPasswordComplete = false
-        self.editPasswordComplete = false
-        self.newAccountComplete = false
-        self.editAccountComplete = false
-        self.editEmailAddressComplete = false
+        if (keep_values) {
+            return
+        } else {
+            // reset values
+            self.newEmailAddressEditEmailAddressForm = String()
+        }
     }
 
     /* Navigation */
@@ -1836,6 +2121,8 @@ struct ContentView: View {
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 DispatchQueue.main.async {
                     self.loadedFolders = []
+                    clearSelectedFolders()
+                    clearSelectedFiles()
                     getAllUploads()
                 }
             }
@@ -1860,6 +2147,8 @@ struct ContentView: View {
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 DispatchQueue.main.async {
                     self.loadedFolders = []
+                    clearSelectedFolders()
+                    clearSelectedFiles()
                     getAllUploads()
                 }
             }
@@ -1884,6 +2173,8 @@ struct ContentView: View {
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 DispatchQueue.main.async {
                     self.loadedFolders = []
+                    clearSelectedFolders()
+                    clearSelectedFiles()
                     getAllUploads()
                 }
             }
@@ -1908,6 +2199,8 @@ struct ContentView: View {
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 DispatchQueue.main.async {
                     self.loadedFolders = []
+                    clearSelectedFolders()
+                    clearSelectedFiles()
                     getAllUploads()
                 }
             }
@@ -1946,7 +2239,7 @@ struct ContentView: View {
     }
 
     /*
-        Search folders and files
+        Search Folders
     */
     func fetchSearchResults(for searchQuery: String) {
         logger.info("[fetchSearchResults] \(searchQuery)")
@@ -2109,6 +2402,7 @@ struct ContentView: View {
                             }
                             .textFieldStyle(.roundedBorder)
                         }.padding(20)
+
                     } else if self.editEmailAddress {
                         /*
                             Account: Edit Email Address
@@ -2174,7 +2468,7 @@ struct ContentView: View {
                             VStack {
                                 Spacer()
 
-                                Text("Edit Account")
+                                Text("Edit User Account")
                                     .font(.system(size: 15))
 
                                 if let message = editAccountSuccessMessage.message {
@@ -2186,6 +2480,36 @@ struct ContentView: View {
                                 Text("\(editAccountValidationErrors)\n")
                                     .font(.system(size: 11))
                                     .foregroundStyle(.gray)
+
+                                let accountUuid = self.signedInUser?.accountUuid!.uuidString
+                                if (accountUuid != nil) {
+                                    let accountUuidUnWrapped:String = accountUuid!
+                                    TextField(text: $accountUuidAccountForm, prompt: Text(accountUuidUnWrapped)) {
+                                        Text("Account UUID")
+                                    }
+                                    .disableAutocorrection(true)
+                                    .disabled(true)
+                                }
+
+                                let accountName = self.signedInUser?.accountName
+                                if (accountName != nil) {
+                                    let accountNameUnWrapped:String = accountName!
+                                    TextField(text: $accountNameAccountForm, prompt: Text(accountNameUnWrapped)) {
+                                        Text("Account Name")
+                                    }
+                                    .disableAutocorrection(true)
+                                    .disabled(true)
+                                }
+
+                                let accountAddress = self.signedInUser?.accountAddress
+                                if (accountAddress != nil) {
+                                    let accountAddressUnWrapped:String = accountAddress!
+                                    TextField(text: $accountAddressAccountForm, prompt: Text(accountAddressUnWrapped)) {
+                                        Text("Account Name")
+                                    }
+                                    .disableAutocorrection(true)
+                                    .disabled(true)
+                                }
 
                                 let firstName = self.signedInUser?.firstName
                                 if (firstName != nil) {
@@ -2214,18 +2538,7 @@ struct ContentView: View {
                                         Text("Email Address")
                                     }
                                     .disableAutocorrection(true)
-//                                    .disabled(self.editAccountComplete)
-                                    .disabled(true)
-                                }
-
-                                let uuid = self.signedInUser?.uuid.uuidString
-                                if (uuid != nil) {
-                                    let uuidUnwrapped = uuid!
-                                    TextField(text: $uuidAccountForm, prompt: Text(uuidUnwrapped)) {
-                                        Text("UUID")
-                                    }
-                                    .disableAutocorrection(true)
-                                    .disabled(true)
+                                    .disabled(self.editAccountComplete)
                                 }
 
                                 let createdAt = self.signedInUser?.createdAt
@@ -2327,7 +2640,7 @@ struct ContentView: View {
                                 .foregroundStyle(.blue.gradient)
                         }.buttonStyle(PlainButtonStyle())
 
-                        /* Reset Password */
+                        /* Edit Password */
                         Button(action: clickEditPassword) {
                             Text("Change password")
                                 .foregroundStyle(.blue.gradient)
@@ -2409,6 +2722,64 @@ struct ContentView: View {
                                 .font(.system(size: 11))
                                 .foregroundStyle(.gray)
 
+//                            if let message = accountCodeSuccessMessage.message {
+//                                Text("\(message)")
+//                                    .font(.system(size: 11))
+//                                    .foregroundStyle(Color.secondary)
+//                            }
+
+                            Text("\(accountCodeValidationErrors)\n")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.gray)
+
+                            TextField(text: $accountCodeRegistrationForm, prompt: Text("Account Code")) {
+                                Text("Account Code")
+                            }
+                            .disableAutocorrection(true)
+                            .disabled(self.newAccountComplete)
+                            .onChange(of: accountCodeRegistrationForm) { _, value in
+                                if (value == "") {
+                                    resetAccountCode()
+                                } else {
+                                    submitAccountCode(accountCode: value)
+                                }
+                            }
+
+                            let accountUuid = self.registrationAccount?.uuid!.uuidString
+                            if (accountUuid != nil) {
+                                let accountUuidUnwrapped:String = accountUuid!
+                                TextField(text: $accountUuidRegistrationForm, prompt: Text(accountUuidUnwrapped)) {
+                                    Text("Account UUID")
+                                }
+                                .disableAutocorrection(true)
+                                .disabled(self.newAccountComplete)
+                                .disabled(true)
+                            }
+
+                            let accountName = self.registrationAccount?.name
+                            if (accountName != nil) {
+                                let accountNameUnwrapped:String = accountName!
+                                TextField(text: $accountNameRegistrationForm, prompt: Text(accountNameUnwrapped)) {
+                                    Text("Account Name")
+                                }
+                                .disableAutocorrection(true)
+                                .disabled(self.newAccountComplete)
+                                .disabled(true)
+                            }
+
+                            let accountAddress = self.registrationAccount?.address
+                            if (accountAddress != nil) {
+                                let accountAddressUnwrapped:String = accountAddress!
+                                TextField(text: $accountAddressRegistrationForm, prompt: Text(accountAddressUnwrapped)) {
+                                    Text("Account Address")
+                                }
+                                .disableAutocorrection(true)
+                                .disabled(self.newAccountComplete)
+                                .disabled(true)
+                            }
+
+                            Divider()
+
                             TextField(text: $firstNameRegistrationForm, prompt: Text("John")) {
                                 Text("First Name")
                             }
@@ -2432,6 +2803,12 @@ struct ContentView: View {
                             }
                             .disableAutocorrection(true)
                             .disabled(self.newAccountComplete)
+
+//                            SecureField(text: $passwordConfirmationRegistrationForm, prompt: Text("Required")) {
+//                                Text("Password Confirmation")
+//                            }
+//                            .disableAutocorrection(true)
+//                            .disabled(self.newAccountComplete)
 
                             Button(action: submitRegistrationForm) {
                                 Text("Submit")
@@ -2481,11 +2858,12 @@ struct ContentView: View {
                             .disableAutocorrection(true)
                             .disabled(self.newSessionComplete)
 
-                            Button(action: submitSessionForm) {
+                            Button(action: submitNewSessionForm) {
                                 Text("Submit")
                             }
                             .buttonStyle(PlainButtonStyle())
                             .disabled(self.newSessionComplete)
+                            .keyboardShortcut(KeyboardShortcut(.return, modifiers: []))
 
                             /* Register */
                             Button(action: clickRegisterLink) {
@@ -2544,7 +2922,7 @@ struct ContentView: View {
                         VStack {
                             Button(action: clearFolders) {
                                 Text("Clear")
-                                    .foregroundStyle(.blue.gradient)
+                                    .foregroundStyle(.gray.gradient)
                             }.buttonStyle(PlainButtonStyle())
                         }
 
@@ -2585,7 +2963,7 @@ struct ContentView: View {
                         }
                     }
                     .padding(5)
-                    .navigationTitle("DemoApp (\(String(describing: self.signedInUser?.emailAddress))")
+                    .navigationTitle("DemoApp (\(self.signedInUser?.emailAddress! ?? "")")
                     .toolbar {
                         Button(action: refreshUploads) {
                             Image(systemName: "arrow.clockwise")
@@ -2598,14 +2976,14 @@ struct ContentView: View {
                               selection: $folderSelection,
                               sortOrder: $folderSortOrder) {
 
-                            TableColumn("name", value: \.name) { folder in
+                            TableColumn("Name", value: \.name) { folder in
                                 Label("\(folder.name)",
                                       systemImage: "folder")
                                 .foregroundStyle(.primary)
                                 .labelStyle(.titleAndIcon)
                                 .font(.system(size: 11))
                             }
-                            TableColumn("state", value: \.state) { folder in
+                            TableColumn("State", value: \.state) { folder in
                                 Label {
                                     Text("\(folder.state)")
                                         .font(.system(size: 11))
@@ -2644,7 +3022,7 @@ struct ContentView: View {
                             .frame(height: 250)
                     } header: {
                         Text("Folders")
-                            .searchable(text: $searchText, prompt: "Search folders and files")
+                            .searchable(text: $searchText, prompt: "Search Folders")
                     }.onChange(of: searchText) {
                         DispatchQueue.main.async {
                             fetchSearchResults(for: searchText)
@@ -3069,7 +3447,7 @@ struct ContentView: View {
         } detail: {
             if (selectedSideBarItem == .upload) {
                 HStack {
-                    VStack {
+                    VStack(spacing: 0) {
                         if (self.selectedFolders.count > 0) {
                             HStack {
                                 VStack {
@@ -3085,40 +3463,19 @@ struct ContentView: View {
                                 Button(action: updateSelectedFolders) {
                                     Image(systemName: "chevron.right")
                                         .font(.system(size: 11))
+                                        .foregroundStyle(.black.gradient)
                                     Text("Update \(self.selectedFolders.count > 1 ? "Folders" : "Folder")")
                                         .font(.system(size: 11))
+                                        .foregroundStyle(.black.gradient)
                                 }
                                 .buttonStyle(.borderedProminent)
                                 .tint(.blue)
                                 Text("\(self.selectedFolders.count) \(self.selectedFolders.count > 1 ? "Folders" : "Folder") selected")
                                     .font(.system(size: 11))
                                     .foregroundStyle(.gray)
-                                    .lineLimit(1)
                                     .truncationMode(.middle)
-                                    .padding(5)
-                            }.frame(height: 50)
-
-                            VStack(alignment: .leading, spacing: 0) {
-                                ForEach(self.loadedFolders) { folder in
-                                    if (self.selectedFolders.contains(folder.id)) {
-                                        Label {
-                                            Text("\(folder.name)")
-                                                .font(.system(size: 11))
-                                                .foregroundStyle(folder.state == "published" ? .white : .gray)
-                                                .lineLimit(1)
-                                                .truncationMode(.middle)
-                                            Link("Web URL", destination: URL(string: folder.webUrl)!)
-                                                .tint(.blue)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(folder.state == "published" ? .yellow : .gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-                                        .padding(5)
-                                    }
-                                }
                             }
-                            .frame(minWidth: 0, maxWidth: .infinity, alignment: .topLeading)
+                            .frame(height: 55)
                             .padding(5)
                         }
 
@@ -3128,117 +3485,119 @@ struct ContentView: View {
                             */
                             ForEach(self.selectedImageFiles) { imageFile in
                                 Section {
-                                    Spacer()
+                                    VStack(alignment: .leading, spacing: 5) {
+                                        Label {
+                                            Link("\(imageFile.folder.name)", destination: URL(string: imageFile.folder.webUrl)!)
+                                                .font(.system(size: 11))
+                                                .truncationMode(.middle)
+                                                .tint(.blue)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(imageFile.folder.state == "published" ? .yellow : .gray)
+                                                .frame(width: 8, height: 8)
+                                        }
 
-                                    let fileName = imageFile.fileName
-                                    Label(fileName,
-                                          systemImage: "photo")
-                                    .labelStyle(.titleAndIcon)
-                                    .font(.system(size: 13))
+                                        AsyncImage(url: URL(string: imageFile.fileUrl)) { result in
+                                            result.image?
+                                                .resizable()
+                                                .scaledToFill()
+                                        }
+                                        .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                                    let fileUrl = imageFile.fileUrl
-                                    AsyncImage(url: URL(string: fileUrl)) { result in
-                                        result.image?
-                                            .resizable()
-                                            .scaledToFill()
+                                        Label {
+                                            Link("\(imageFile.fileName)", destination: URL(string: imageFile.webUrl)!)
+                                                .font(.system(size: 11))
+                                                .truncationMode(.middle)
+                                                .tint(.blue)
+                                        } icon: {
+                                            Image(systemName: "photo")
+                                                .font(.system(size: 11))
+                                        }
+
+                                        Label {
+                                            Text("Mime/Type \(imageFile.mimeType ?? "")")
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(.gray)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+
+                                        Label {
+                                            Text("Format \(imageFile.formatInfo ?? "")")
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(.gray)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+
+                                        Label {
+                                            Text("File Size \(imageFile.fileSize ?? "")")
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(.gray)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+
+                                        Label {
+                                            Text("Dimensions \(imageFile.dimensions ?? "")")
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(.gray)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+
+                                        Label {
+                                            Text("Megapixels \(imageFile.megapixels ?? 0)")
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(.gray)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+
+                                        Label {
+                                            Text("Width \(imageFile.width ?? 0)")
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(.gray)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+
+                                        Label {
+                                            Text("Height \(imageFile.height ?? 0)")
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(.gray)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+
+                                        Label {
+                                            Link("File URL", destination: URL(string: imageFile.fileUrl)!)
+                                                .font(.system(size: 11))
+                                                .tint(.blue)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+
+                                        Spacer()
                                     }
-                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                    .padding(10)
-
-                                    Label {
-                                        let mimeType = imageFile.mimeType ?? "--"
-                                        Text("Mime/Type \(mimeType)")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.gray)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Label {
-                                        let formatInfo = imageFile.formatInfo ?? "--"
-                                        Text("Format \(formatInfo)")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.gray)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Label {
-                                        let fileSize = imageFile.fileSize ?? ""
-                                        Text("File Size \(fileSize)")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.gray)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Label {
-                                        let dimensions = imageFile.dimensions ?? "--"
-                                        Text("Dimensions \(dimensions)")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.gray)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Label {
-                                        let megapixels = imageFile.megapixels ?? 0.1
-                                        Text("Megapixels \(megapixels)")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.gray)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Label {
-                                        let width = imageFile.width ?? 0
-                                        Text("Width \(width)")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.gray)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Label {
-                                        let height = imageFile.height ?? 0
-                                        Text("Height \(height)")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.gray)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Label {
-                                        Link("File URL", destination: URL(string: imageFile.fileUrl)!)
-                                            .tint(.blue)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Label {
-                                        Link("Web URL", destination: URL(string: imageFile.webUrl)!)
-                                            .tint(.blue)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
+                                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .topLeading)
+                                    .padding(5)
 
                                     Spacer()
                                 }
@@ -3250,134 +3609,148 @@ struct ContentView: View {
                                 .opacity(0.25)
                             )
 
-                            
                             /*
                               AudioFile
                             */
                             ForEach(self.selectedAudioFiles) { audioFile in
                                 Section {
-                                    Spacer()
+                                    VStack(alignment: .leading, spacing: 5) {
+                                        Label {
+                                            Link("\(audioFile.folder.name)", destination: URL(string: audioFile.folder.webUrl)!)
+                                                .font(.system(size: 11))
+                                                .truncationMode(.middle)
+                                                .tint(.blue)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(audioFile.folder.state == "published" ? .yellow : .gray)
+                                                .frame(width: 8, height: 8)
+                                        }
 
-                                    let fileName = audioFile.fileName
-                                    Label(fileName, systemImage: "waveform.circle")
-                                        .labelStyle(.titleAndIcon)
-                                        .font(.system(size: 13))
+                                        if (audioFile.aasmState == "created") {
+                                            Text("Processing…")
+                                                .font(.system(size: 11))
+                                                .padding(10)
+                                        } else if (audioFile.aasmState == "processed") {
+                                            VideoPlayer(player: player)
+                                                .frame(minWidth: 400, maxWidth: .infinity,
+                                                       minHeight: 150, maxHeight: .infinity)
+                                                .padding(10)
+                                        }
 
-                                    if (audioFile.aasmState == "created") {
-                                        Text("Processing…")
-                                            .padding(10)
-                                    } else if (audioFile.aasmState == "processed") {
-                                        VideoPlayer(player: player)
-                                            .frame(minWidth: 400, maxWidth: .infinity,
-                                                   minHeight: 150, maxHeight: .infinity)
-                                            .padding(10)
+                                        Label {
+                                            Link("\(audioFile.fileName)", destination: URL(string: audioFile.webUrl)!)
+                                                .font(.system(size: 11))
+                                                .truncationMode(.middle)
+                                                .tint(.blue)
+                                        } icon: {
+                                            Image(systemName: "waveform.circle")
+                                                .font(.system(size: 11))
+                                        }
+
+                                        Label {
+                                            Text("Format \(audioFile.formatInfo ?? "")")
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(.gray)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+
+                                        Label {
+                                            Text("Mime/Type \(audioFile.mimeType ?? "")")
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(.gray)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+
+                                        Label {
+                                            Text("File Size \(audioFile.fileSize ?? 0)")
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(.gray)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+
+                                        Label {
+                                            Text("Title \(audioFile.title ?? "")")
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(.gray)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+
+                                        Label {
+                                            Text("Bitrate \(audioFile.bitrate ?? 0)")
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(.gray)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+
+                                        Label {
+                                            Text("Channels \(audioFile.channels ?? 0)")
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(.gray)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+
+                                        Label {
+                                            Text("Length (ms) \(audioFile.length ?? 0)")
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(.gray)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+
+                                        Label {
+                                            Text("Sample Rate \(audioFile.sampleRate ?? 0)")
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(.gray)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+
+                                        Label {
+                                            Link("File URL", destination: URL(string: audioFile.fileUrl)!)
+                                                .font(.system(size: 11))
+                                                .tint(.blue)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+
+                                        Label {
+                                            Link("Web URL", destination: URL(string: audioFile.webUrl)!)
+                                                .font(.system(size: 11))
+                                                .tint(.blue)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+
+                                        Spacer()
                                     }
-
-                                    Label {
-                                        let formatInfo = audioFile.formatInfo ?? "--"
-                                        Text("Format \(formatInfo)")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.gray)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Label {
-                                        let mimeType = audioFile.mimeType ?? "--"
-                                        Text("Mime/Type \(mimeType)")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.gray)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Label {
-                                        let fileSize = audioFile.fileSize ?? 0
-                                        Text("File Size \(fileSize)")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.gray)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Label {
-                                        let title = audioFile.title ?? "--"
-                                        Text("Title \(title)")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.gray)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Label {
-                                        let bitrate = audioFile.bitrate ?? 0
-                                        Text("Bitrate \(bitrate)")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.gray)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Label {
-                                        let channels = audioFile.channels ?? 0
-                                        Text("Channels \(channels)")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.gray)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Label {
-                                        let length = audioFile.length ?? 0
-                                        Text("Length (ms) \(length)")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.gray)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Label {
-                                        let sampleRate = audioFile.sampleRate ?? 0
-                                        Text("Sample Rate \(sampleRate)")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.gray)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Label {
-                                        Link("File URL", destination: URL(string: audioFile.fileUrl)!)
-                                            .tint(.blue)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Label {
-                                        Link("Web URL", destination: URL(string: audioFile.webUrl)!)
-                                            .tint(.blue)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
+                                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .topLeading)
+                                    .padding(5)
 
                                     Spacer()
                                 }
@@ -3394,151 +3767,163 @@ struct ContentView: View {
                             */
                             ForEach(self.selectedVideoFiles) { videoFile in
                                 Section {
-                                    Spacer()
+                                    VStack(alignment: .leading, spacing: 5) {
+                                        Label {
+                                            Link("\(videoFile.folder.name)", destination: URL(string: videoFile.folder.webUrl)!)
+                                                .font(.system(size: 11))
+                                                .truncationMode(.middle)
+                                                .tint(.blue)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(videoFile.folder.state == "published" ? .yellow : .gray)
+                                                .frame(width: 8, height: 8)
+                                        }.padding(5)
 
-                                    let fileName = videoFile.fileName
-                                    Label(fileName,
-                                          systemImage: "video.circle")
-                                        .labelStyle(.titleAndIcon)
-                                        .font(.system(size: 13))
+                                        if (videoFile.aasmState == "created") {
+                                            Text("Processing…")
+                                                .font(.system(size: 11))
+                                                .padding(10)
+                                        } else if (videoFile.aasmState == "processed") {
+                                            VideoPlayer(player: player)
+                                                .frame(minWidth: 400, maxWidth: .infinity,
+                                                       minHeight: 300, maxHeight: .infinity)
+                                                .padding(10)
+                                        }
 
-                                    if (videoFile.aasmState == "created") {
-                                        Text("Processing…")
-                                            .padding(10)
-                                    } else if (videoFile.aasmState == "processed") {
-                                        VideoPlayer(player: player)
-                                            .frame(minWidth: 400, maxWidth: .infinity,
-                                                   minHeight: 300, maxHeight: .infinity)
-                                            .padding(10)
+                                        Label {
+                                            Link("\(videoFile.fileName)", destination: URL(string: videoFile.webUrl)!)
+                                                .font(.system(size: 11))
+                                                .truncationMode(.middle)
+                                                .tint(.blue)
+                                        } icon: {
+                                            Image(systemName: "video.circle")
+                                                .font(.system(size: 11))
+                                        }
+
+                                        Label {
+                                            Text("Format \(videoFile.formatInfo ?? "")")
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(.gray)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+
+                                        Label {
+                                            Text("Mime/Type \(videoFile.mimeType ?? "")")
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(.gray)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+
+                                        Label {
+                                            Text("File Size \(videoFile.fileSize ?? 0)")
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(.gray)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+
+                                        Label {
+                                            Text("Title \(videoFile.title ?? "")")
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(.gray)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+
+                                        Label {
+                                            Text("Bitrate \(videoFile.bitrate ?? 0)")
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(.gray)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+
+                                        Label {
+                                            Text("FrameRate \(videoFile.frameRate ?? 0)")
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(.gray)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+
+                                        Label {
+                                            Text("Length (s) \(videoFile.length ?? 0)")
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(.gray)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+
+                                        Label {
+                                            Text("Width \(videoFile.width ?? 0)")
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(.gray)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+
+                                        Label {
+                                            Text("Height \(videoFile.height ?? 0)")
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(.gray)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+
+                                        Label {
+                                            Text("Aspect Ratio: \(videoFile.aspectRatio ?? 0)")
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(.gray)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+
+                                        Label {
+                                            Link("File URL", destination: URL(string: videoFile.fileUrl)!)
+                                                .font(.system(size: 11))
+                                                .tint(.blue)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+
+                                        Label {
+                                            Link("Web URL", destination: URL(string: videoFile.webUrl)!)
+                                                .font(.system(size: 11))
+                                                .tint(.blue)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+
+                                        Spacer()
                                     }
-
-                                    Label {
-                                        let formatInfo = videoFile.formatInfo ?? ""
-                                        Text("Format \(formatInfo)")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.gray)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Label {
-                                        let mimeType = videoFile.mimeType ?? ""
-                                        Text("Mime/Type \(mimeType)")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.gray)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Label {
-                                        let fileSize = videoFile.fileSize ?? 0
-                                        Text("File Size \(fileSize)")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.gray)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Label {
-                                        let title = videoFile.title ?? "--"
-                                        Text("Title \(title)")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.gray)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Label {
-                                        let bitrate = videoFile.bitrate ?? 0
-                                        Text("Bitrate \(bitrate)")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.gray)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Label {
-                                        let frameRate = videoFile.frameRate ?? 0
-                                        Text("FrameRate \(frameRate)")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.gray)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Label {
-                                        let length = videoFile.length ?? 0
-                                        Text("Length (s) \(length)")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.gray)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Label {
-                                        let width = videoFile.width ?? 0
-                                        Text("Width \(width)")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.gray)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Label {
-                                        let height = videoFile.height ?? 0
-                                        Text("Height \(height)")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.gray)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Label {
-                                        let aspectRatio = videoFile.aspectRatio ?? 0
-                                        Text("Aspect Ratio: \(aspectRatio)")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.gray)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Label {
-                                        Link("File URL", destination: URL(string: videoFile.fileUrl)!)
-                                            .tint(.blue)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Label {
-                                        Link("Web URL", destination: URL(string: videoFile.webUrl)!)
-                                            .tint(.blue)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
+                                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .topLeading)
+                                    .padding(5)
 
                                     Spacer()
                                 }
@@ -3555,83 +3940,106 @@ struct ContentView: View {
                             */
                             ForEach(self.selectedPdfFiles) { pdfFile in
                                 Section {
-                                    Spacer()
+                                    VStack(alignment: .leading, spacing: 5) {
+                                        Label {
+                                            Link("\(pdfFile.folder.name)", destination: URL(string: pdfFile.folder.webUrl)!)
+                                                .font(.system(size: 11))
+                                                .truncationMode(.middle)
+                                                .tint(.blue)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(pdfFile.folder.state == "published" ? .yellow : .gray)
+                                                .frame(width: 8, height: 8)
+                                        }.padding(5)
 
-                                    let fileName = pdfFile.fileName
-                                    Label(fileName, systemImage: "doc.circle.fill")
-                                        .labelStyle(.titleAndIcon)
-                                        .font(.system(size: 13))
+                                        Image(systemName: "square.text.square")
+                                            .font(.system(size: 40))
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                            .padding(10)
 
-                                    Image(systemName: "square.text.square")
-                                        .font(.system(size: 40))
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                        .padding(10)
-
-                                    Label {
-                                        let mimeType = pdfFile.mimeType ?? "--"
-                                        Text("Mime/Type \(mimeType)")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.gray)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Label {
-                                        let formatInfo = pdfFile.formatInfo ?? "--"
-                                        Text("Format \(formatInfo)")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.gray)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Label {
-                                        let fileSize = pdfFile.fileSize ?? ""
-                                        Text("File Size \(fileSize)")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.gray)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Label {
-                                        Link("File URL", destination: URL(string: pdfFile.fileUrl)!)
-                                            .tint(.blue)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Label {
-                                        Link("Web URL", destination: URL(string: pdfFile.webUrl)!)
-                                            .tint(.blue)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Divider()
-
-                                    Button(action: {
-                                        if let url = URL(string: pdfFile.webViewUrl) {
-                                            openURL(url)
+                                        Label {
+                                            Link("\(pdfFile.fileName)", destination: URL(string: pdfFile.webUrl)!)
+                                                .font(.system(size: 11))
+                                                .truncationMode(.middle)
+                                                .tint(.blue)
+                                        } icon: {
+                                            Image(systemName: "doc.circle.fill")
+                                                .font(.system(size: 11))
                                         }
-                                    }) {
-                                        Image(systemName: "globe")
-                                            .font(.system(size: 11))
-                                        Text("Open in web view")
-                                            .font(.system(size: 11))
+
+                                        Label {
+                                            Text("Mime/Type \(pdfFile.mimeType ?? "")")
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(.gray)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+
+                                        Label {
+                                            Text("Format \(pdfFile.formatInfo ?? "")")
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(.gray)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+
+                                        Label {
+                                            Text("File Size \(pdfFile.fileSize ?? "")")
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(.gray)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+
+                                        Label {
+                                            Link("File URL", destination: URL(string: pdfFile.fileUrl)!)
+                                                .font(.system(size: 11))
+                                                .tint(.blue)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+
+                                        Label {
+                                            Link("Web URL", destination: URL(string: pdfFile.webUrl)!)
+                                                .font(.system(size: 11))
+                                                .tint(.blue)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+
+                                        Spacer()
+
+                                        Divider()
+
+                                        Spacer()
+
+                                        Button(action: {
+                                            if let url = URL(string: pdfFile.webViewUrl) {
+                                                openURL(url)
+                                            }
+                                        }) {
+                                            Image(systemName: "globe")
+                                                .font(.system(size: 11))
+
+                                            Text("Open in web view")
+                                                .font(.system(size: 11))
+                                        }
+                                        .buttonStyle(.borderedProminent)
+                                        .tint(.blue)
+                                        .padding(5)
                                     }
-                                    .buttonStyle(.borderedProminent)
-                                    .tint(.blue)
+                                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .topLeading)
+                                    .padding(5)
 
                                     Spacer()
                                 }
@@ -3647,85 +4055,102 @@ struct ContentView: View {
                               TextFile
                             */
                             ForEach(self.selectedTextFiles) { textFile in
-
                                 Section {
-                                    Spacer()
-
-                                    let fileName = textFile.fileName
-                                    Label(fileName, systemImage: "doc.circle")
-                                        .labelStyle(.titleAndIcon)
-                                        .font(.system(size: 13))
-
-                                    Image(systemName: "square.text.square")
-                                        .font(.system(size: 40))
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                        .padding(10)
-
-                                    Label {
-                                        let mimeType = textFile.mimeType ?? ""
-                                        Text("Mime/Type \(mimeType)")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.gray)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Label {
-                                        let formatInfo = textFile.formatInfo ?? ""
-                                        Text("Format \(formatInfo)")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.gray)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Label {
-                                        let fileSize = textFile.fileSize ?? ""
-                                        Text("File Size \(fileSize)")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.gray)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Label {
-                                        Link("File URL", destination: URL(string: textFile.fileUrl)!)
-                                            .tint(.blue)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Label {
-                                        Link("Web URL", destination: URL(string: textFile.webUrl)!)
-                                            .tint(.blue)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(.gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    Divider()
-
-                                    Button(action: {
-                                        if let url = URL(string: textFile.webViewUrl) {
-                                            openURL(url)
+                                    VStack(alignment: .leading, spacing: 5) {
+                                        Label {
+                                            Link("\(textFile.folder.name)", destination: URL(string: textFile.folder.webUrl)!)
+                                                .font(.system(size: 11))
+                                                .truncationMode(.middle)
+                                                .tint(.blue)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(textFile.folder.state == "published" ? .yellow : .gray)
+                                                .frame(width: 8, height: 8)
+                                        }.padding(5)
+                                        
+                                        Label {
+                                            Link("\(textFile.fileName)", destination: URL(string: textFile.webUrl)!)
+                                                .font(.system(size: 11))
+                                                .truncationMode(.middle)
+                                                .tint(.blue)
+                                        } icon: {
+                                            Image(systemName: "doc.circle")
+                                                .font(.system(size: 11))
                                         }
-                                    }) {
-                                        Image(systemName: "globe")
-                                            .font(.system(size: 11))
-                                        Text("Open in web view")
-                                            .font(.system(size: 11))
+                                        
+                                        Label {
+                                            Text("Mime/Type \(textFile.mimeType ?? "")")
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(.gray)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+                                        
+                                        Label {
+                                            Text("Format \(textFile.formatInfo ?? "")")
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(.gray)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+                                        
+                                        Label {
+                                            Text("File Size \(textFile.fileSize ?? "")")
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(.gray)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+                                        
+                                        Label {
+                                            Link("File URL", destination: URL(string: textFile.fileUrl)!)
+                                                .font(.system(size: 11))
+                                                .tint(.blue)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+                                        
+                                        Label {
+                                            Link("Web URL", destination: URL(string: textFile.webUrl)!)
+                                                .font(.system(size: 11))
+                                                .tint(.blue)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(.gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+                                        
+                                        Spacer()
+                                        
+                                        Divider()
+                                        
+                                        Spacer()
+                                        
+                                        Button(action: {
+                                            if let url = URL(string: textFile.webViewUrl) {
+                                                openURL(url)
+                                            }
+                                        }) {
+                                            Image(systemName: "globe")
+                                                .font(.system(size: 11))
+                                            
+                                            Text("Open in web view")
+                                                .font(.system(size: 11))
+                                        }
+                                        .buttonStyle(.borderedProminent)
+                                        .tint(.blue)
+                                        .padding(5)
                                     }
-                                    .buttonStyle(.borderedProminent)
-                                    .tint(.blue)
+                                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .topLeading)
+                                    .padding(5)
 
                                     Spacer()
                                 }
@@ -3748,14 +4173,17 @@ struct ContentView: View {
                             self.selectedTextFiles.count > 0 ||
                             self.selectedFolders.count > 0) {
 
-                            Button(action: clearSelection) {
-                                Image(systemName: "xmark")
-                                    .font(.system(size: 9))
-                                    .foregroundStyle(Color.primary)
-                                Text("Clear selection")
-                                    .font(.system(size: 9))
-                                    .foregroundStyle(Color.primary)
-                            }.buttonStyle(.bordered)
+                            HStack {
+                                Button(action: clearSelection) {
+                                    Image(systemName: "xmark")
+                                        .font(.system(size: 9))
+                                        .foregroundStyle(Color.primary)
+                                    Text("Clear selection")
+                                        .font(.system(size: 9))
+                                        .foregroundStyle(Color.primary)
+                                }.buttonStyle(.bordered)
+                            }
+                            .padding(5)
                         }
                     }
                 }
@@ -3765,7 +4193,13 @@ struct ContentView: View {
                 // default login panel
 
             }
-        }.navigationSplitViewStyle(.prominentDetail)
+        }
+        .navigationSplitViewStyle(.prominentDetail)
+        .onAppear {
+            self.userCredentials = readCredentials(server: "link12.ddns.net")
+            emailAddressSessionForm = self.userCredentials.account
+            passwordSessionForm = self.userCredentials.password
+        }
     }
 }
 

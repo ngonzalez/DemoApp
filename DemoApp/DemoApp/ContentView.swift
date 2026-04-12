@@ -155,6 +155,7 @@ struct ContentView: View {
         "aif": "audio/x-aiff",
         "aiff": "audio/x-aiff",
         "flac": "audio/flac",
+        "mka": "audio/x-matroska",
         "mp3": "audio/mpeg",
         "wav": "audio/wav",
         "weba": "audio/webm",

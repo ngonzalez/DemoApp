@@ -138,34 +138,38 @@ struct ContentView: View {
         "md": "text/markdown",
         "txt": "text/plain",
 
-        /* JPEG */
+        /* IMAGES */
+        "bmp": "image/bmp",
+        "gif": "image/gif",
         "jpg": "image/jpeg",
         "jpeg": "image/jpeg",
+        "png": "image/png",
+        "tif": "image/tiff",
+        "tiff": "image/tiff",
+        "webp": "image/webp",
 
-        /* FLAC */
-        "flac": "audio/flac",
-
-        /* MP3 */
-        "mp3": "audio/mpeg",
-
-        /* AAC MP4 ALAC  **/
-        "aac": "audio/m4a",
-        "m4a": "audio/x-m4a",
-//        "mp4": "audio/mp4",
-
-        /* AIFF */
+        /* AUDIO */
+        "aac": "audio/aac",
+        "m4a": "audio/aac",
         "aff": "audio/x-aiff",
         "aif": "audio/x-aiff",
         "aiff": "audio/x-aiff",
-
-        /* WAV */
+        "flac": "audio/flac",
+        "mp3": "audio/mpeg",
         "wav": "audio/wav",
+        "weba": "audio/webm",
 
-        /* MKV */
+        /* VIDEO */
+        "3gp": "video/3gpp",
         "mkv": "video/x-matroska",
-
-        /* MP4 */
         "mp4": "video/mp4",
+        "mp4v": "video/mp4",
+        "mpg4": "video/mp4",
+        "m1v": "video/mpeg",
+        "m2v": "video/mpeg",
+        "mpg": "video/mpeg",
+        "mpeg": "video/mpeg",
+        "webm": "video/webm",
     ]
 
     @State private var isImporting:Bool = false
@@ -247,14 +251,15 @@ struct ContentView: View {
 
                    let FilePaths = directoryContents.map{ $0.path() }
                    var i = 0
+                   let filesCount = FilePaths.count
 
-                    for counter in 0..<FilePaths.count {
+                    for counter in 0..<filesCount {
                         let fileData = try Data(contentsOf: URL(fileURLWithPath: FilePaths[counter]))
 
                         newUploadRequest(
                             uuid: UUID(),
                             source: source,
-                            path: "\(itemPath).\(i).block",
+                            path: "\(itemPath).\(i + 1)-\(filesCount).block",
                             mimeType: "application/octet-stream",
                             uploadData: fileData,
                             uploadFileUuid: uuid,
@@ -743,12 +748,6 @@ struct ContentView: View {
     @State private var newEmailAddressEditEmailAddressForm: String = String()
 
     @State var editEmailAddressValidationErrors:String = String()
-
-    /* Destroy Attachment */
-    @State var destroyAttachmentResponse:Message = Message(message: String())
-
-    /* Destroy Folder  */
-    @State var destroyFolderResponse:Message = Message(message: String())
 
     /*
         Backend URLs
@@ -1638,27 +1637,11 @@ struct ContentView: View {
             let postLength = String(format: "%lu", UInt(optimizedData.count))
             let request = newPostRequestWithContent(url: url, data: optimizedData, postLength: postLength)
             let task = delegateSession.dataTask(with: request) { data, response, error in
-                do {
-                    let message = try JSONDecoder().decode(Message.self, from: data!)
-
-                    DispatchQueue.main.async {
-                        let httpResponse = response as? HTTPURLResponse
-                        let httpResponseUnwrapped = httpResponse!
-
-                        if (httpResponseUnwrapped.statusCode == 200) {
-                            self.destroyAttachmentResponse = message
-
-                            clearSelectedFolders()
-                            clearSelectedFiles()
-                        }
-                    }
-
-                    DispatchQueue.main.async {
-                        getAllUploads()
-                    }
-
-                } catch let error {
-                    logger.error("[submitDestroyAttachments] Request: \(error)")
+                DispatchQueue.main.async {
+                    self.loadedFolders = []
+                    clearSelectedFolders()
+                    clearSelectedFiles()
+                    getAllUploads()
                 }
             }
 

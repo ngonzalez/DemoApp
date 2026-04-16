@@ -1640,10 +1640,11 @@ struct ContentView: View {
             let request = newPostRequestWithContent(url: url, data: optimizedData, postLength: postLength)
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 DispatchQueue.main.async {
-                    self.loadedFolders = []
-                    clearSelectedFolders()
-                    clearSelectedFiles()
-                    getAllUploads()
+//                    self.loadedFolders = []
+//                    clearSelectedFolders()
+//                    clearSelectedFiles()
+//                    getAllUploads()
+                    refreshUploads()
                 }
             }
 
@@ -2599,14 +2600,14 @@ struct ContentView: View {
                               selection: $folderSelection,
                               sortOrder: $folderSortOrder) {
 
-                            TableColumn("name", value: \.name) { folder in
+                            TableColumn("Name", value: \.name) { folder in
                                 Label("\(folder.name)",
                                       systemImage: "folder")
                                 .foregroundStyle(.primary)
                                 .labelStyle(.titleAndIcon)
                                 .font(.system(size: 11))
                             }
-                            TableColumn("state", value: \.state) { folder in
+                            TableColumn("State", value: \.state) { folder in
                                 Label {
                                     Text("\(folder.state)")
                                         .font(.system(size: 11))
@@ -2645,7 +2646,7 @@ struct ContentView: View {
                             .frame(height: 250)
                     } header: {
                         Text("Folders")
-                            .searchable(text: $searchText, prompt: "Search folders and files")
+                            .searchable(text: $searchText, prompt: "Search Folders")
                     }.onChange(of: searchText) {
                         DispatchQueue.main.async {
                             fetchSearchResults(for: searchText)
@@ -3094,10 +3095,10 @@ struct ContentView: View {
                                 Text("\(self.selectedFolders.count) \(self.selectedFolders.count > 1 ? "Folders" : "Folder") selected")
                                     .font(.system(size: 11))
                                     .foregroundStyle(.gray)
-                                    .lineLimit(1)
                                     .truncationMode(.middle)
-                                    .padding(5)
-                            }.frame(height: 50)
+                            }
+                            .frame(height: 30)
+                            .padding(5)
 
                             VStack(alignment: .leading, spacing: 0) {
                                 ForEach(self.loadedFolders) { folder in
@@ -3106,16 +3107,15 @@ struct ContentView: View {
                                             Text("\(folder.name)")
                                                 .font(.system(size: 11))
                                                 .foregroundStyle(folder.state == "published" ? .white : .gray)
-                                                .lineLimit(1)
                                                 .truncationMode(.middle)
                                             Link("Web URL", destination: URL(string: folder.webUrl)!)
-                                                .tint(.blue)
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(folder.state == "published" ? .blue : .gray)
                                         } icon: {
                                             Rectangle()
                                                 .fill(folder.state == "published" ? .yellow : .gray)
                                                 .frame(width: 8, height: 8)
                                         }
-                                        .padding(5)
                                     }
                                 }
                             }

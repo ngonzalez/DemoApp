@@ -3070,7 +3070,7 @@ struct ContentView: View {
         } detail: {
             if (selectedSideBarItem == .upload) {
                 HStack {
-                    VStack {
+                    VStack(spacing: 0) {
                         if (self.selectedFolders.count > 0) {
                             HStack {
                                 VStack {
@@ -3792,14 +3792,17 @@ struct ContentView: View {
                             self.selectedTextFiles.count > 0 ||
                             self.selectedFolders.count > 0) {
 
-                            Button(action: clearSelection) {
-                                Image(systemName: "xmark")
-                                    .font(.system(size: 9))
-                                    .foregroundStyle(Color.primary)
-                                Text("Clear selection")
-                                    .font(.system(size: 9))
-                                    .foregroundStyle(Color.primary)
-                            }.buttonStyle(.bordered)
+                            HStack {
+                                Button(action: clearSelection) {
+                                    Image(systemName: "xmark")
+                                        .font(.system(size: 9))
+                                        .foregroundStyle(Color.primary)
+                                    Text("Clear selection")
+                                        .font(.system(size: 9))
+                                        .foregroundStyle(Color.primary)
+                                }.buttonStyle(.bordered)
+                            }
+                            .padding(5)
                         }
                     }
                 }

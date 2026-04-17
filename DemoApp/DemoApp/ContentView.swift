@@ -1934,8 +1934,6 @@ struct ContentView: View {
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 DispatchQueue.main.async {
                     self.loadedFolders = []
-                    clearSelectedFolders()
-                    clearSelectedFiles()
                     getAllUploads()
                 }
             }

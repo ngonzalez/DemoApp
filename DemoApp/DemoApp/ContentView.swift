@@ -57,7 +57,7 @@ class NetworkDelegateClass: NSObject, URLSessionDelegate, URLSessionDataDelegate
 @available(macOS 14, *)
 @MainActor
 struct ContentView: View {
-    
+
     @State private var searchText: String = ""
 
     /* Media Player */
@@ -1640,11 +1640,10 @@ struct ContentView: View {
             let request = newPostRequestWithContent(url: url, data: optimizedData, postLength: postLength)
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 DispatchQueue.main.async {
-//                    self.loadedFolders = []
-//                    clearSelectedFolders()
-//                    clearSelectedFiles()
-//                    getAllUploads()
-                    refreshUploads()
+                    self.loadedFolders = []
+                    clearSelectedFolders()
+                    clearSelectedFiles()
+                    getAllUploads()
                 }
             }
 
@@ -1934,6 +1933,8 @@ struct ContentView: View {
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 DispatchQueue.main.async {
                     self.loadedFolders = []
+                    clearSelectedFolders()
+                    clearSelectedFiles()
                     getAllUploads()
                 }
             }
@@ -1946,7 +1947,7 @@ struct ContentView: View {
     }
 
     /*
-        Search folders and files
+        Search Folders
     */
     func fetchSearchResults(for searchQuery: String) {
         logger.info("[fetchSearchResults] \(searchQuery)")

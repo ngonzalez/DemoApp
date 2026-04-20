@@ -659,7 +659,7 @@ struct ContentView: View {
     /* Account */
     @State var myAccount:Bool = Bool(false)    // My Account
 
-    @State private var signedInUser:User?
+    @State private var signedInUser:UserWithAccount?
     @State private var identified:Bool = Bool(false)
 
     @State var newSession:Bool = Bool(true)             // New Session
@@ -697,6 +697,10 @@ struct ContentView: View {
 
     @State var newAccountValidationErrors:String = String()
 
+    @State private var accountNameRegistrationForm: String = String()
+
+    @State private var accountAddressRegistrationForm: String = String()
+
     @State private var firstNameRegistrationForm: String = String()
 
     @State private var lastNameRegistrationForm: String = String()
@@ -709,6 +713,10 @@ struct ContentView: View {
     @State var editAccountSuccessMessage:Message = Message(message: String())
 
     @State var editAccountValidationErrors:String = String()
+
+    @State private var accountNameAccountForm: String = String()
+
+    @State private var accountAddressAccountForm: String = String()
 
     @State private var firstNameAccountForm: String = String()
 
@@ -875,7 +883,7 @@ struct ContentView: View {
     }
 
     struct UserResponseWithMessage: Codable {
-        let user: User?
+        let user: UserWithAccount?
         let message: String?
     }
 
@@ -885,9 +893,11 @@ struct ContentView: View {
 
     func submitAccountForm() {
         do {
-            let user = User(
+            let user = UserWithAccount(
                 id: self.signedInUser?.id,
-                uuid: UUID(),
+                accountUuid: self.signedInUser?.accountUuid,
+                accountName: accountNameAccountForm,
+                accountAddress: accountAddressAccountForm,
                 firstName: firstNameAccountForm,
                 lastName: lastNameAccountForm,
                 emailAddress: emailAddressAccountForm,
@@ -990,7 +1000,22 @@ struct ContentView: View {
 
     struct User: Codable, Identifiable {
         let id: Int?
-        let uuid: UUID
+        let firstName: String?
+        let lastName: String?
+        let emailAddress: String?
+        let password: String?
+        let deliverNotificationsSignIn: Bool?
+        let deliverNotificationsAccountUpdate: Bool?
+        let createdAt: String?
+        let updatedAt: String?
+        let errors: [String]?
+    }
+
+    struct UserWithAccount: Codable, Identifiable {
+        let id: Int?
+        let accountUuid: UUID?
+        let accountName: String?
+        let accountAddress: String?
         let firstName: String?
         let lastName: String?
         let emailAddress: String?
@@ -1004,9 +1029,11 @@ struct ContentView: View {
 
     func submitRegistrationForm() {
         do {
-            let user = User(
+            let user = UserWithAccount(
                 id: nil,
-                uuid: UUID(),
+                accountUuid: UUID(),
+                accountName: accountNameRegistrationForm,
+                accountAddress: accountAddressRegistrationForm,
                 firstName: firstNameRegistrationForm,
                 lastName: lastNameRegistrationForm,
                 emailAddress: emailAddressRegistrationForm,
@@ -1066,7 +1093,6 @@ struct ContentView: View {
 
     struct UserWithEmailAddressAndPassword: Codable, Identifiable {
         let id: Int?
-        let uuid: UUID
         let emailAddress: String?
         let password: String?
         let errors: [String]?
@@ -1076,7 +1102,6 @@ struct ContentView: View {
         do {
             let user = UserWithEmailAddressAndPassword(
                 id: nil,
-                uuid: UUID(),
                 emailAddress: emailAddressSessionForm,
                 password: passwordSessionForm,
                 errors: nil
@@ -1174,7 +1199,6 @@ struct ContentView: View {
 
     struct UserWithEmailAddress: Codable, Identifiable {
         let id: Int?
-        let uuid: UUID
         let emailAddress: String?
         let errors: [String]?
     }
@@ -1183,7 +1207,6 @@ struct ContentView: View {
         do {
             let user = UserWithEmailAddress(
                 id: nil,
-                uuid: UUID(),
                 emailAddress: emailAddressPasswordForm,
                 errors: nil
             )
@@ -1232,7 +1255,6 @@ struct ContentView: View {
 
     struct UserWithPasswordAndPasswordConfirmation: Codable, Identifiable {
         let id: Int?
-        let uuid: UUID
         let password: String?
         let passwordConfirmation: String?
         let errors: [String]?
@@ -1242,7 +1264,6 @@ struct ContentView: View {
         do {
             let user = UserWithPasswordAndPasswordConfirmation(
                 id: self.signedInUser?.id,
-                uuid: UUID(),
                 password: newPasswordEditPasswordForm,
                 passwordConfirmation: newPasswordConfirmationEditPasswordForm,
                 errors: nil
@@ -1296,7 +1317,6 @@ struct ContentView: View {
 
     struct UserWithEmailAddressAndNewEmailAddress: Codable, Identifiable {
         let id: Int?
-        let uuid: UUID
         let emailAddress: String?
         let errors: [String]?
     }
@@ -1305,7 +1325,6 @@ struct ContentView: View {
         do {
             let user = UserWithEmailAddressAndNewEmailAddress(
                 id: self.signedInUser?.id,
-                uuid: UUID(),
                 emailAddress: newEmailAddressEditEmailAddressForm,
                 errors: nil
             )
@@ -1390,6 +1409,16 @@ struct ContentView: View {
     func clickEditAccount() {
         self.editAccount = true
 
+        let accountName = self.signedInUser?.accountName
+        if (accountName != nil) {
+            let accountNameUnWrapped = accountName!
+            self.accountNameAccountForm = accountNameUnWrapped
+        }
+        let accountAddress = self.signedInUser?.accountAddress
+        if (accountAddress != nil) {
+            let accountAddressUnWrapped = accountAddress!
+            self.accountAddressAccountForm = accountAddressUnWrapped
+        }
         let firstName = self.signedInUser?.firstName
         if (firstName != nil) {
             let firstNameUnWrapped = firstName!
@@ -1537,6 +1566,8 @@ struct ContentView: View {
         self.editAccountSuccessMessage = Message(message: String())
 
         // reset values
+        self.accountNameAccountForm = String()
+        self.accountAddressAccountForm = String()
         self.firstNameAccountForm = String()
         self.lastNameAccountForm = String()
         self.emailAddressAccountForm = String()
@@ -2188,6 +2219,26 @@ struct ContentView: View {
                                     .font(.system(size: 11))
                                     .foregroundStyle(.gray)
 
+                                let accountName = self.signedInUser?.accountName
+                                if (accountName != nil) {
+                                    let accountNameUnWrapped:String = accountName!
+                                    TextField(text: $accountNameAccountForm, prompt: Text(accountNameUnWrapped)) {
+                                        Text("Account Name")
+                                    }
+                                    .disableAutocorrection(true)
+                                    .disabled(self.editAccountComplete)
+                                }
+
+                                let accountAddress = self.signedInUser?.accountAddress
+                                if (accountAddress != nil) {
+                                    let accountAddressUnWrapped:String = accountAddress!
+                                    TextField(text: $accountAddressAccountForm, prompt: Text(accountAddressUnWrapped)) {
+                                        Text("Account Name")
+                                    }
+                                    .disableAutocorrection(true)
+                                    .disabled(self.editAccountComplete)
+                                }
+
                                 let firstName = self.signedInUser?.firstName
                                 if (firstName != nil) {
                                     let firstNameUnWrapped:String = firstName!
@@ -2219,7 +2270,7 @@ struct ContentView: View {
                                     .disabled(true)
                                 }
 
-                                let uuid = self.signedInUser?.uuid.uuidString
+                                let uuid = self.signedInUser?.accountUuid!.uuidString
                                 if (uuid != nil) {
                                     let uuidUnwrapped = uuid!
                                     TextField(text: $uuidAccountForm, prompt: Text(uuidUnwrapped)) {
@@ -2409,6 +2460,20 @@ struct ContentView: View {
                             Text("\(newAccountValidationErrors)\n")
                                 .font(.system(size: 11))
                                 .foregroundStyle(.gray)
+
+                            TextField(text: $accountNameRegistrationForm, prompt: Text("Company Name")) {
+                                Text("Company Name")
+                            }
+                            .disableAutocorrection(true)
+                            .disabled(self.newAccountComplete)
+
+                            TextField(text: $accountAddressRegistrationForm, prompt: Text("Company Address")) {
+                                Text("Company Address")
+                            }
+                            .disableAutocorrection(true)
+                            .disabled(self.newAccountComplete)
+
+                            Divider()
 
                             TextField(text: $firstNameRegistrationForm, prompt: Text("John")) {
                                 Text("First Name")
@@ -3592,7 +3657,7 @@ struct ContentView: View {
                                             .tint(.blue)
                                     }
 
-                                    VStack(alignment: .leading, spacing: 0) {
+                                    VStack(alignment: .leading, spacing: 5) {
                                         Label {
                                             Text("Mime/Type \(pdfFile.mimeType ?? "")")
                                                 .font(.system(size: 11))
@@ -3643,7 +3708,11 @@ struct ContentView: View {
                                                 .frame(width: 8, height: 8)
                                         }
 
+                                        Spacer()
+
                                         Divider()
+
+                                        Spacer()
 
                                         Button(action: {
                                             if let url = URL(string: pdfFile.webViewUrl) {
@@ -3658,6 +3727,7 @@ struct ContentView: View {
                                         }
                                         .buttonStyle(.borderedProminent)
                                         .tint(.blue)
+                                        .padding(5)
                                     }
                                     .frame(minWidth: 0, maxWidth: .infinity, alignment: .topLeading)
                                     .padding(5)
@@ -3701,7 +3771,7 @@ struct ContentView: View {
                                             .tint(.blue)
                                     }
 
-                                    VStack(alignment: .leading, spacing: 0) {
+                                    VStack(alignment: .leading, spacing: 5) {
                                         Label {
                                             Text("Mime/Type \(textFile.mimeType ?? "")")
                                                 .font(.system(size: 11))
@@ -3752,7 +3822,11 @@ struct ContentView: View {
                                                 .frame(width: 8, height: 8)
                                         }
 
+                                        Spacer()
+
                                         Divider()
+
+                                        Spacer()
 
                                         Button(action: {
                                             if let url = URL(string: textFile.webViewUrl) {
@@ -3767,6 +3841,7 @@ struct ContentView: View {
                                         }
                                         .buttonStyle(.borderedProminent)
                                         .tint(.blue)
+                                        .padding(5)
                                     }
                                     .frame(minWidth: 0, maxWidth: .infinity, alignment: .topLeading)
                                     .padding(5)

@@ -3202,7 +3202,7 @@ struct ContentView: View {
                                             .tint(.blue)
                                     }
 
-                                    VStack(alignment: .leading, spacing: 0) {
+                                    VStack(alignment: .leading, spacing: 5) {
 
                                         Label {
                                             Text("Mime/Type \(imageFile.mimeType ?? "")")
@@ -3283,6 +3283,9 @@ struct ContentView: View {
                                                 .fill(.gray)
                                                 .frame(width: 8, height: 8)
                                         }
+
+                                        Spacer()
+
                                     }
                                     .frame(minWidth: 0, maxWidth: .infinity, alignment: .topLeading)
                                     .padding(5)
@@ -3337,7 +3340,7 @@ struct ContentView: View {
                                             .tint(.blue)
                                     }
 
-                                    VStack(alignment: .leading, spacing: 0) {
+                                    VStack(alignment: .leading, spacing: 5) {
                                         Label {
                                             Text("Format \(audioFile.formatInfo ?? "")")
                                                 .font(.system(size: 11))
@@ -3437,6 +3440,8 @@ struct ContentView: View {
                                                 .fill(.gray)
                                                 .frame(width: 8, height: 8)
                                         }
+
+                                        Spacer()
                                     }
                                     .frame(minWidth: 0, maxWidth: .infinity, alignment: .topLeading)
                                     .padding(5)
@@ -3490,7 +3495,7 @@ struct ContentView: View {
                                             .tint(.blue)
                                     }
 
-                                    VStack(alignment: .leading, spacing: 0) {
+                                    VStack(alignment: .leading, spacing: 5) {
                                         Label {
                                             Text("Format \(videoFile.formatInfo ?? "")")
                                                 .font(.system(size: 11))
@@ -3610,6 +3615,8 @@ struct ContentView: View {
                                                 .fill(.gray)
                                                 .frame(width: 8, height: 8)
                                         }
+
+                                        Spacer()
                                     }
                                     .frame(minWidth: 0, maxWidth: .infinity, alignment: .topLeading)
                                     .padding(5)

@@ -58,6 +58,7 @@ class NetworkDelegateClass: NSObject, URLSessionDelegate, URLSessionDataDelegate
 @MainActor
 struct ContentView: View {
 
+    /* Search */
     @State private var searchText: String = ""
 
     /* Media Player */
@@ -595,15 +596,6 @@ struct ContentView: View {
         }
     }
 
-    func newGetRequest(url: URL) -> URLRequest {
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        return request
-    }
-
     func getAllUploads() {
         let delegateClass = NetworkDelegateClass()
         let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
@@ -659,6 +651,7 @@ struct ContentView: View {
     /* Account */
     @State var myAccount:Bool = Bool(false)    // My Account
 
+    @State private var registrationAccount:Account?
     @State private var signedInUser:UserWithAccount?
     @State private var identified:Bool = Bool(false)
 
@@ -696,6 +689,14 @@ struct ContentView: View {
     @State var newAccountSuccessMessage:Message = Message(message: String())
 
     @State var newAccountValidationErrors:String = String()
+
+    @State var accountCodeValidationErrors:String = String()
+
+    @State var accountCodeSuccessMessage:Message = Message(message: String())
+
+    @State private var accountCodeRegistrationForm: String = String()
+
+    @State private var accountUuidRegistrationForm: String = String()
 
     @State private var accountNameRegistrationForm: String = String()
 
@@ -763,6 +764,10 @@ struct ContentView: View {
         Backend URLs
      */
 
+//    @State private var accountsURL:String = "https://appshare.site:4040/accounts"
+    @State private var accountsURL:String = "https://link12.ddns.net:4040/accounts"
+//    @State private var accountsURL:String = "http://192.168.1.11:3000/accounts"
+
 //    @State private var accountURL:String = "https://appshare.site:4040/account"
     @State private var accountURL:String = "https://link12.ddns.net:4040/account"
 //    @State private var accountURL:String = "http://192.168.1.11:3000/account"
@@ -827,9 +832,29 @@ struct ContentView: View {
         Backend Requests
      */
 
+    func newGetRequest(url: URL) -> URLRequest {
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        return request
+    }
+
     func newPutRequest(url: URL, data: Data, postLength: String) -> URLRequest {
         var request = URLRequest(url: url)
         request.httpMethod = "PUT"
+        request.httpBody = data
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.addValue(postLength, forHTTPHeaderField: "Content-Length")
+
+        return request
+    }
+
+    func newPostRequest(url: URL, data: Data, postLength: String) -> URLRequest {
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
         request.httpBody = data
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -850,17 +875,6 @@ struct ContentView: View {
         return request
     }
 
-    func newPostRequest(url: URL, data: Data, postLength: String) -> URLRequest {
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.httpBody = data
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.addValue(postLength, forHTTPHeaderField: "Content-Length")
-
-        return request
-    }
-
     func newDeleteRequest(url: URL) -> URLRequest {
         var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
@@ -870,16 +884,9 @@ struct ContentView: View {
         return request
     }
 
-    func newDeleteRequestWithContent(url: URL, data: Data, postLength: String) -> URLRequest {
-        var request = URLRequest(url: url)
-        request.httpMethod = "DELETE"
-        request.httpBody = data
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.addValue(postLength, forHTTPHeaderField: "Content-Length")
-        request.addValue("gzip, deflate", forHTTPHeaderField: "Content-Encoding")
-
-        return request
+    struct AccountResponseWithMessage: Codable {
+        let account: Account?
+        let message: String?
     }
 
     struct UserResponseWithMessage: Codable {
@@ -956,6 +963,13 @@ struct ContentView: View {
         }
     }
 
+    func iterateOverErrorsAccountCode(errors: [String?]) {
+        self.accountCodeValidationErrors = String()
+        errors.forEach { error in
+            accountCodeValidationErrors += "\n▫️\(error!)"
+        }
+    }
+
     func iterateOverErrorsNewSession(errors: [String?]) {
         self.newSessionValidationErrors = String()
         errors.forEach { error in
@@ -1027,6 +1041,17 @@ struct ContentView: View {
         let errors: [String]?
     }
 
+    struct Account: Codable, Identifiable {
+        let id: Int?
+        let uuid: UUID?
+        let name: String?
+        let address: String?
+        let dataUrl: String?
+        let createdAt: String?
+        let updatedAt: String?
+        let errors: [String]?
+    }
+
     func submitRegistrationForm() {
         do {
             let user = UserWithAccount(
@@ -1088,6 +1113,64 @@ struct ContentView: View {
 
         } catch let error {
             logger.error("[submitRegistrationForm] Error: \(error)")
+        }
+    }
+
+    struct UserAccountCode: Codable {
+        let accountCode: String!
+    }
+
+    func submitAccountCode(accountCode: String) {
+        do {
+            let user = UserAccountCode(
+                accountCode: accountCode
+            )
+
+            let data = try JSONEncoder().encode(user)
+            let url = URL(string: "\(accountsURL)")!
+            let delegateClass = NetworkDelegateClass()
+            let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
+            let optimizedData: Data = try! data.gzipped(level: .bestCompression)
+            let postLength = String(format: "%lu", UInt(optimizedData.count))
+            let request = newPostRequest(url: url, data: optimizedData, postLength: postLength)
+            let task = delegateSession.dataTask(with: request) { data, response, error in
+                do {
+                    let accountResponseWithMessage = try JSONDecoder().decode(AccountResponseWithMessage.self, from: data!)
+
+                    DispatchQueue.main.async {
+
+                        // validation errors
+                        let httpResponse = response as? HTTPURLResponse
+                        let httpResponseUnwrapped = httpResponse!
+
+                        // validation errors
+                        let errorsData = accountResponseWithMessage.account?.errors!
+                        if (errorsData == [] && httpResponseUnwrapped.statusCode == 200) {
+
+                            // set registration account
+                            self.registrationAccount = accountResponseWithMessage.account
+                        } else if errorsData != nil {
+                            let errorsDataUnwrapped = errorsData!
+                            iterateOverErrorsAccountCode(errors: errorsDataUnwrapped)
+                        }
+
+                        // validation message
+                        if (accountResponseWithMessage.message != nil) {
+                            let message = Message(message: accountResponseWithMessage.message)
+                            logger.info("\(message.message!)")
+                            self.accountCodeSuccessMessage = message
+                        }
+                    }
+
+                } catch let error {
+                    logger.error("[submitAccountCode] Request: \(error)")
+                }
+            }
+
+            task.resume()
+
+        } catch let error {
+            logger.error("[submitAccountCode] Error: \(error)")
         }
     }
 
@@ -2461,13 +2544,38 @@ struct ContentView: View {
                                 .font(.system(size: 11))
                                 .foregroundStyle(.gray)
 
-                            TextField(text: $accountNameRegistrationForm, prompt: Text("Company Name")) {
+                            Text("\(accountCodeValidationErrors)\n")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.gray)
+
+                            TextField(text: $accountCodeRegistrationForm, prompt: Text("Account invitation code")) {
+                                Text("Account Code")
+                            }
+                            .disableAutocorrection(true)
+                            .disabled(self.newAccountComplete)
+                            .onChange(of: accountCodeRegistrationForm) { _, value in
+                                print(value)
+                                submitAccountCode(accountCode: value)
+                            }
+
+                            let accountUuid = self.registrationAccount?.uuid!.uuidString
+                            if (accountUuid != nil) {
+                                let accountUuidUnwrapped:String = accountUuid!
+                                TextField(text: $accountUuidRegistrationForm, prompt: Text(accountUuidUnwrapped)) {
+                                    Text("Account UUID")
+                                }
+                                .disableAutocorrection(true)
+                                .disabled(self.newAccountComplete)
+                                .disabled(true)
+                            }
+
+                            TextField(text: $accountNameRegistrationForm, prompt: Text("Company name")) {
                                 Text("Company Name")
                             }
                             .disableAutocorrection(true)
                             .disabled(self.newAccountComplete)
 
-                            TextField(text: $accountAddressRegistrationForm, prompt: Text("Company Address")) {
+                            TextField(text: $accountAddressRegistrationForm, prompt: Text("Company address")) {
                                 Text("Company Address")
                             }
                             .disableAutocorrection(true)

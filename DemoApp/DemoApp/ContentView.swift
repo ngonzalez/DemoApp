@@ -710,6 +710,8 @@ struct ContentView: View {
 
     @State private var passwordRegistrationForm: String = String()
 
+    @State private var passwordConfirmationRegistrationForm: String = String()
+
     /* Edit Account */
     @State var editAccountSuccessMessage:Message = Message(message: String())
 
@@ -1056,9 +1058,9 @@ struct ContentView: View {
         do {
             let user = UserWithAccount(
                 id: nil,
-                accountUuid: UUID(),
-                accountName: accountNameRegistrationForm,
-                accountAddress: accountAddressRegistrationForm,
+                accountUuid: self.registrationAccount?.uuid,
+                accountName: self.registrationAccount?.name,
+                accountAddress: self.registrationAccount?.address,
                 firstName: firstNameRegistrationForm,
                 lastName: lastNameRegistrationForm,
                 emailAddress: emailAddressRegistrationForm,
@@ -1627,10 +1629,15 @@ struct ContentView: View {
         self.newAccountSuccessMessage = Message(message: String())
 
         // reset values
+        self.accountCodeRegistrationForm = String()
+        self.accountUuidRegistrationForm = String()
+        self.accountNameRegistrationForm = String()
+        self.accountAddressRegistrationForm = String()
         self.firstNameRegistrationForm = String()
         self.lastNameRegistrationForm = String()
         self.emailAddressRegistrationForm = String()
         self.passwordRegistrationForm = String()
+        self.passwordConfirmationRegistrationForm = String()
     }
 
     func resetValuesEditAccount() {
@@ -2569,17 +2576,27 @@ struct ContentView: View {
                                 .disabled(true)
                             }
 
-                            TextField(text: $accountNameRegistrationForm, prompt: Text("Company name")) {
-                                Text("Company Name")
+                            let accountName = self.registrationAccount?.name
+                            if (accountName != nil) {
+                                let accountNameUnwrapped:String = accountName!
+                                TextField(text: $accountNameRegistrationForm, prompt: Text(accountNameUnwrapped)) {
+                                    Text("Account Name")
+                                }
+                                .disableAutocorrection(true)
+                                .disabled(self.newAccountComplete)
+                                .disabled(true)
                             }
-                            .disableAutocorrection(true)
-                            .disabled(self.newAccountComplete)
 
-                            TextField(text: $accountAddressRegistrationForm, prompt: Text("Company address")) {
-                                Text("Company Address")
+                            let accountAddress = self.registrationAccount?.address
+                            if (accountAddress != nil) {
+                                let accountAddressUnwrapped:String = accountAddress!
+                                TextField(text: $accountAddressRegistrationForm, prompt: Text(accountAddressUnwrapped)) {
+                                    Text("Account Address")
+                                }
+                                .disableAutocorrection(true)
+                                .disabled(self.newAccountComplete)
+                                .disabled(true)
                             }
-                            .disableAutocorrection(true)
-                            .disabled(self.newAccountComplete)
 
                             Divider()
 
@@ -2602,6 +2619,12 @@ struct ContentView: View {
                             .disabled(self.newAccountComplete)
 
                             SecureField(text: $passwordRegistrationForm, prompt: Text("Required")) {
+                                Text("Password")
+                            }
+                            .disableAutocorrection(true)
+                            .disabled(self.newAccountComplete)
+
+                            SecureField(text: $passwordConfirmationRegistrationForm, prompt: Text("Required")) {
                                 Text("Password")
                             }
                             .disableAutocorrection(true)

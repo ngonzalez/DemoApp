@@ -2555,7 +2555,7 @@ struct ContentView: View {
                                 .font(.system(size: 11))
                                 .foregroundStyle(.gray)
 
-                            TextField(text: $accountCodeRegistrationForm, prompt: Text("Account invitation code")) {
+                            TextField(text: $accountCodeRegistrationForm, prompt: Text("Account Code")) {
                                 Text("Account Code")
                             }
                             .disableAutocorrection(true)
@@ -2625,7 +2625,7 @@ struct ContentView: View {
                             .disabled(self.newAccountComplete)
 
                             SecureField(text: $passwordConfirmationRegistrationForm, prompt: Text("Required")) {
-                                Text("Password")
+                                Text("Password Confirmation")
                             }
                             .disableAutocorrection(true)
                             .disabled(self.newAccountComplete)

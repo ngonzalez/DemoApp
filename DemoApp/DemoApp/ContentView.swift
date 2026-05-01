@@ -911,6 +911,7 @@ struct ContentView: View {
                 lastName: lastNameAccountForm,
                 emailAddress: emailAddressAccountForm,
                 password: "",
+                passwordConfirmation: "",
                 deliverNotificationsSignIn: notifyOnSignInAccountForm,
                 deliverNotificationsAccountUpdate: notifyOnAccountUpdateAccountForm,
                 createdAt: self.signedInUser?.createdAt,
@@ -1036,6 +1037,7 @@ struct ContentView: View {
         let lastName: String?
         let emailAddress: String?
         let password: String?
+        let passwordConfirmation: String?
         let deliverNotificationsSignIn: Bool?
         let deliverNotificationsAccountUpdate: Bool?
         let createdAt: String?
@@ -1059,12 +1061,13 @@ struct ContentView: View {
             let user = UserWithAccount(
                 id: nil,
                 accountUuid: self.registrationAccount?.uuid,
-                accountName: self.registrationAccount?.name,
-                accountAddress: self.registrationAccount?.address,
+                accountName: "",
+                accountAddress: "",
                 firstName: firstNameRegistrationForm,
                 lastName: lastNameRegistrationForm,
                 emailAddress: emailAddressRegistrationForm,
                 password: passwordRegistrationForm,
+                passwordConfirmation: passwordConfirmationRegistrationForm,
                 deliverNotificationsSignIn: false,
                 deliverNotificationsAccountUpdate: false,
                 createdAt: nil,

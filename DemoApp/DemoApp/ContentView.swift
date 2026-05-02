@@ -1154,6 +1154,7 @@ struct ContentView: View {
                             // set registration account
                             self.registrationAccount = accountResponseWithMessage.account
                         } else if errorsData != nil {
+
                             let errorsDataUnwrapped = errorsData!
                             iterateOverErrorsAccountCode(errors: errorsDataUnwrapped)
                         }
@@ -1481,10 +1482,10 @@ struct ContentView: View {
         // disable other sections
         self.myAccount = false
         self.newAccount = false
-        self.newPassword = false
-        self.editPassword = false
         self.editAccount = false
         self.editEmailAddress = false
+        self.editPassword = false
+        self.newPassword = false
 
         // reset forms
         resetValuesNewSession()
@@ -1693,23 +1694,27 @@ struct ContentView: View {
 
         // disable other sections
         self.newAccount = false
-        self.newPassword = false
-        self.editPassword = false
         self.editAccount = false
         self.editEmailAddress = false
+        self.editPassword = false
+        self.newPassword = false
+        self.newSession = false
 
         // reset forms
+        resetValuesNewAccount()
         resetValuesEditAccount()
-        resetValuesEditPassword()
-        resetValuesNewSession()
         resetValuesEditEmailAddress()
+        resetValuesEditPassword()
+        resetValuesNewPassword()
+        resetValuesNewSession()
 
         // enable buttons again
-        self.newPasswordComplete = false
-        self.editPasswordComplete = false
         self.newAccountComplete = false
         self.editAccountComplete = false
         self.editEmailAddressComplete = false
+        self.editPasswordComplete = false
+        self.newPasswordComplete = false
+        self.newSessionComplete = false
     }
 
     /* Navigation */
@@ -2563,7 +2568,6 @@ struct ContentView: View {
                             .disableAutocorrection(true)
                             .disabled(self.newAccountComplete)
                             .onChange(of: accountCodeRegistrationForm) { _, value in
-                                print(value)
                                 submitAccountCode(accountCode: value)
                             }
 

@@ -1492,11 +1492,15 @@ struct ContentView: View {
         resetFieldsNewPassword(keep_values: false)
         resetFieldsNewSession(keep_values: false)
 
-        // enable buttons
+        // enable buttons again
+        self.newAccountComplete = false
+        self.editAccountComplete = false
+        self.editEmailAddressComplete = false
+        self.editPasswordComplete = false
+        self.newPasswordComplete = false
         self.newSessionComplete = false
     }
 
-    
     func backToMyAccount() {
         // enable my account
         self.myAccount = true
@@ -1702,11 +1706,12 @@ struct ContentView: View {
         self.newAccountSuccessMessage = Message(message: String())
         self.accountCodeSuccessMessage = Message(message: String())
 
-        // registration account
-        self.registrationAccount = nil
         if (keep_values) {
             return
         } else {
+            // registration account
+            self.registrationAccount = nil
+
             // reset values
             self.accountCodeRegistrationForm = String()
             self.accountUuidRegistrationForm = String()

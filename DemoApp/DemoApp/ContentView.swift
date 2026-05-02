@@ -717,6 +717,8 @@ struct ContentView: View {
 
     @State var editAccountValidationErrors:String = String()
 
+    @State private var accountUuidAccountForm: String = String()
+
     @State private var accountNameAccountForm: String = String()
 
     @State private var accountAddressAccountForm: String = String()
@@ -911,7 +913,6 @@ struct ContentView: View {
                 lastName: lastNameAccountForm,
                 emailAddress: emailAddressAccountForm,
                 password: "",
-                passwordConfirmation: "",
                 deliverNotificationsSignIn: notifyOnSignInAccountForm,
                 deliverNotificationsAccountUpdate: notifyOnAccountUpdateAccountForm,
                 createdAt: self.signedInUser?.createdAt,
@@ -1037,7 +1038,6 @@ struct ContentView: View {
         let lastName: String?
         let emailAddress: String?
         let password: String?
-        let passwordConfirmation: String?
         let deliverNotificationsSignIn: Bool?
         let deliverNotificationsAccountUpdate: Bool?
         let createdAt: String?
@@ -1067,7 +1067,6 @@ struct ContentView: View {
                 lastName: lastNameRegistrationForm,
                 emailAddress: emailAddressRegistrationForm,
                 password: passwordRegistrationForm,
-                passwordConfirmation: passwordConfirmationRegistrationForm,
                 deliverNotificationsSignIn: false,
                 deliverNotificationsAccountUpdate: false,
                 createdAt: nil,
@@ -2299,7 +2298,7 @@ struct ContentView: View {
                             VStack {
                                 Spacer()
 
-                                Text("Edit Account")
+                                Text("Edit User Account")
                                     .font(.system(size: 15))
 
                                 if let message = editAccountSuccessMessage.message {
@@ -2312,6 +2311,16 @@ struct ContentView: View {
                                     .font(.system(size: 11))
                                     .foregroundStyle(.gray)
 
+                                let accountUuid = self.signedInUser?.accountUuid!.uuidString
+                                if (accountUuid != nil) {
+                                    let accountUuidUnWrapped:String = accountUuid!
+                                    TextField(text: $accountUuidAccountForm, prompt: Text(accountUuidUnWrapped)) {
+                                        Text("Account UUID")
+                                    }
+                                    .disableAutocorrection(true)
+                                    .disabled(true)
+                                }
+
                                 let accountName = self.signedInUser?.accountName
                                 if (accountName != nil) {
                                     let accountNameUnWrapped:String = accountName!
@@ -2319,7 +2328,7 @@ struct ContentView: View {
                                         Text("Account Name")
                                     }
                                     .disableAutocorrection(true)
-                                    .disabled(self.editAccountComplete)
+                                    .disabled(true)
                                 }
 
                                 let accountAddress = self.signedInUser?.accountAddress
@@ -2329,7 +2338,7 @@ struct ContentView: View {
                                         Text("Account Name")
                                     }
                                     .disableAutocorrection(true)
-                                    .disabled(self.editAccountComplete)
+                                    .disabled(true)
                                 }
 
                                 let firstName = self.signedInUser?.firstName
@@ -2360,16 +2369,6 @@ struct ContentView: View {
                                     }
                                     .disableAutocorrection(true)
 //                                    .disabled(self.editAccountComplete)
-                                    .disabled(true)
-                                }
-
-                                let uuid = self.signedInUser?.accountUuid!.uuidString
-                                if (uuid != nil) {
-                                    let uuidUnwrapped = uuid!
-                                    TextField(text: $uuidAccountForm, prompt: Text(uuidUnwrapped)) {
-                                        Text("UUID")
-                                    }
-                                    .disableAutocorrection(true)
                                     .disabled(true)
                                 }
 
@@ -2627,11 +2626,11 @@ struct ContentView: View {
                             .disableAutocorrection(true)
                             .disabled(self.newAccountComplete)
 
-                            SecureField(text: $passwordConfirmationRegistrationForm, prompt: Text("Required")) {
-                                Text("Password Confirmation")
-                            }
-                            .disableAutocorrection(true)
-                            .disabled(self.newAccountComplete)
+//                            SecureField(text: $passwordConfirmationRegistrationForm, prompt: Text("Required")) {
+//                                Text("Password Confirmation")
+//                            }
+//                            .disableAutocorrection(true)
+//                            .disabled(self.newAccountComplete)
 
                             Button(action: submitRegistrationForm) {
                                 Text("Submit")

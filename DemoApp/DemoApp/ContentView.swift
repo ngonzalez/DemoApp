@@ -649,28 +649,28 @@ struct ContentView: View {
     }
 
     /* Account */
-    @State var myAccount:Bool = Bool(false)    // My Account
-
     @State private var registrationAccount:Account?
     @State private var signedInUser:UserWithAccount?
     @State private var identified:Bool = Bool(false)
 
-    @State var newSession:Bool = Bool(true)             // New Session
+    @State var myAccount:Bool = Bool(false)                 // My Account
+
+    @State var newSession:Bool = Bool(true)                 // New Session
     @State var newSessionComplete:Bool = Bool(false)
 
-    @State var newPassword:Bool = Bool(false)           // New Password
+    @State var newPassword:Bool = Bool(false)               // New Password
     @State var newPasswordComplete:Bool = Bool(false)
 
-    @State var newAccount:Bool = Bool(false)            // New Account
+    @State var newAccount:Bool = Bool(false)                // New Account
     @State var newAccountComplete:Bool = Bool(false)
 
-    @State var editAccount:Bool = Bool(false)           // Edit Account
+    @State var editAccount:Bool = Bool(false)               // Edit Account
     @State var editAccountComplete:Bool = Bool(false)
 
-    @State var editPassword:Bool = Bool(false)          // Edit Password
+    @State var editPassword:Bool = Bool(false)              // Edit Password
     @State var editPasswordComplete:Bool = Bool(false)
 
-    @State var editEmailAddress:Bool = Bool(false)             // Edit Email
+    @State var editEmailAddress:Bool = Bool(false)          // Edit Email
     @State var editEmailAddressComplete:Bool = Bool(false)
 
     /* New Session */
@@ -690,9 +690,9 @@ struct ContentView: View {
 
     @State var newAccountValidationErrors:String = String()
 
-    @State var accountCodeValidationErrors:String = String()
-
     @State var accountCodeSuccessMessage:Message = Message(message: String())
+
+    @State var accountCodeValidationErrors:String = String()
 
     @State private var accountCodeRegistrationForm: String = String()
 
@@ -740,29 +740,29 @@ struct ContentView: View {
     @State private var updatedAtAccountForm: String = String()
 
     /* New Password */
-    @State private var emailAddressPasswordForm: String = String()
-
     @State var newPasswordSuccessMessage:Message = Message(message: String())
 
     @State var newPasswordValidationErrors:String = String()
 
+    @State private var emailAddressPasswordForm: String = String()
+
     /* Edit Password */
     @State var editPasswordSuccessMessage:Message = Message(message: String())
+
+    @State var editPasswordValidationErrors:String = String()
 
     @State private var newPasswordEditPasswordForm: String = String()
 
     @State private var newPasswordConfirmationEditPasswordForm: String = String()
 
-    @State var editPasswordValidationErrors:String = String()
-
     /* Edit Email */
     @State var editEmailAddressSuccessMessage:Message = Message(message: String())
+
+    @State var editEmailAddressValidationErrors:String = String()
 
     @State private var emailAddressEditEmailAddressForm: String = String()
 
     @State private var newEmailAddressEditEmailAddressForm: String = String()
-
-    @State var editEmailAddressValidationErrors:String = String()
 
     /*
         Backend URLs

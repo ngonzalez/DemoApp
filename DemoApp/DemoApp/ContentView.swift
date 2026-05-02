@@ -1488,9 +1488,41 @@ struct ContentView: View {
         self.newPassword = false
 
         // reset forms
-        resetValuesNewSession()
+        resetFieldsNewAccount(keep_values: false)
+        resetFieldsNewPassword(keep_values: false)
+        resetFieldsNewSession(keep_values: false)
 
         // enable buttons
+        self.newSessionComplete = false
+    }
+
+    
+    func backToMyAccount() {
+        // enable my account
+        self.myAccount = true
+
+        // disable other sections
+        self.newAccount = false
+        self.editAccount = false
+        self.editEmailAddress = false
+        self.editPassword = false
+        self.newPassword = false
+        self.newSession = false
+
+        // reset forms
+        resetValuesNewAccount()
+        resetValuesEditAccount()
+        resetValuesEditEmailAddress()
+        resetValuesEditPassword()
+        resetValuesNewPassword()
+        resetValuesNewSession()
+
+        // enable buttons again
+        self.newAccountComplete = false
+        self.editAccountComplete = false
+        self.editEmailAddressComplete = false
+        self.editPasswordComplete = false
+        self.newPasswordComplete = false
         self.newSessionComplete = false
     }
 
@@ -1566,15 +1598,7 @@ struct ContentView: View {
         self.editAccount = false
         self.editEmailAddress = false
 
-        // reset errors
-        self.newSessionValidationErrors = String()
-
-        // reset message
-        self.newSessionSuccessMessage = Message(message: String())
-        self.destroySessionFormResponse = Message(message: String())
-
-        // reset values
-        self.emailAddressPasswordForm = String()
+        resetFieldsNewSession(keep_values: true)
     }
 
     func resetValuesNewPassword() {
@@ -1586,14 +1610,7 @@ struct ContentView: View {
         self.editAccount = false
         self.editEmailAddress = false
 
-        // reset errors
-        self.newPasswordValidationErrors = String()
-
-        // reset message
-        self.newPasswordSuccessMessage = Message(message: String())
-
-        // reset values
-        self.emailAddressPasswordForm = String()
+        resetFieldsNewPassword(keep_values: true)
     }
 
     func resetValuesEditPassword() {
@@ -1605,15 +1622,7 @@ struct ContentView: View {
         self.editAccount = false
         self.editEmailAddress = false
 
-        // reset errors
-        self.editPasswordValidationErrors = String()
-
-        // reset message
-        self.editPasswordSuccessMessage = Message(message: String())
-
-        // reset values
-        self.newPasswordEditPasswordForm = String()
-        self.newPasswordConfirmationEditPasswordForm = String()
+        resetFieldsEditPassword()
     }
 
     func resetValuesNewAccount() {
@@ -1625,22 +1634,7 @@ struct ContentView: View {
         self.editAccount = false
         self.editEmailAddress = false
 
-        // reset errors
-        self.newAccountValidationErrors = String()
-
-        // reset message
-        self.newAccountSuccessMessage = Message(message: String())
-
-        // reset values
-        self.accountCodeRegistrationForm = String()
-        self.accountUuidRegistrationForm = String()
-        self.accountNameRegistrationForm = String()
-        self.accountAddressRegistrationForm = String()
-        self.firstNameRegistrationForm = String()
-        self.lastNameRegistrationForm = String()
-        self.emailAddressRegistrationForm = String()
-        self.passwordRegistrationForm = String()
-        self.passwordConfirmationRegistrationForm = String()
+        resetFieldsNewAccount(keep_values: true)
     }
 
     func resetValuesEditAccount() {
@@ -1652,6 +1646,81 @@ struct ContentView: View {
         self.editPassword = false
         self.editEmailAddress = false
 
+        resetFieldsEditAccount()
+    }
+
+    func resetValuesEditEmailAddress() {
+//        self.editEmailAddress = false
+        self.editEmailAddressComplete = true
+
+        self.editAccount = false
+        self.newAccount = false
+        self.newPassword = false
+        self.editPassword = false
+
+        resetFieldsEditEmailAddress()
+    }
+
+    func resetFieldsNewSession(keep_values: Bool) {
+        // reset errors
+        self.newSessionValidationErrors = String()
+
+        // reset message
+        self.newSessionSuccessMessage = Message(message: String())
+        self.destroySessionFormResponse = Message(message: String())
+
+        if (keep_values) {
+            return
+        } else {
+            // reset values
+            self.emailAddressSessionForm = String()
+            self.passwordSessionForm = String()
+        }
+    }
+
+    func resetFieldsNewPassword(keep_values: Bool) {
+        // reset errors
+        self.newPasswordValidationErrors = String()
+
+        // reset message
+        self.newPasswordSuccessMessage = Message(message: String())
+
+        if (keep_values) {
+            return
+        } else {
+            // reset values
+            self.emailAddressPasswordForm = String()
+        }
+    }
+
+    func resetFieldsNewAccount(keep_values: Bool) {
+        // reset errors
+        self.newAccountValidationErrors = String()
+        self.accountCodeValidationErrors = String()
+
+        // reset message
+        self.newAccountSuccessMessage = Message(message: String())
+        self.accountCodeSuccessMessage = Message(message: String())
+
+        // registration account
+        self.registrationAccount = nil
+        if (keep_values) {
+            return
+        } else {
+            // reset values
+            self.accountCodeRegistrationForm = String()
+            self.accountUuidRegistrationForm = String()
+            self.accountNameRegistrationForm = String()
+            self.accountAddressRegistrationForm = String()
+            self.firstNameRegistrationForm = String()
+            self.lastNameRegistrationForm = String()
+            self.emailAddressRegistrationForm = String()
+            self.passwordRegistrationForm = String()
+            self.passwordConfirmationRegistrationForm = String()
+        }
+    }
+
+    func resetFieldsEditAccount() {
         // reset errors
         self.editAccountValidationErrors = String()
 
@@ -1664,19 +1733,24 @@ struct ContentView: View {
         self.firstNameAccountForm = String()
         self.lastNameAccountForm = String()
         self.emailAddressAccountForm = String()
-//        self.notifyOnSignInAccountForm = false
-//        self.notifyOnAccountUpdateAccountForm = false
+
+        // self.notifyOnSignInAccountForm = false
+        // self.notifyOnAccountUpdateAccountForm = false
+    }
+    
+    func resetFieldsEditPassword() {
+        // reset errors
+        self.editPasswordValidationErrors = String()
+
+        // reset message
+        self.editPasswordSuccessMessage = Message(message: String())
+
+        // reset values
+        self.newPasswordEditPasswordForm = String()
+        self.newPasswordConfirmationEditPasswordForm = String()
     }
 
-    func resetValuesEditEmailAddress() {
-//        self.editEmailAddress = false
-        self.editEmailAddressComplete = true
-
-        self.editAccount = false
-        self.newAccount = false
-        self.newPassword = false
-        self.editPassword = false
-
+    func resetFieldsEditEmailAddress() {
         // reset errors
         self.editEmailAddressValidationErrors = String()
 
@@ -1686,35 +1760,6 @@ struct ContentView: View {
         // reset values
         self.emailAddressEditEmailAddressForm = String()
         self.newEmailAddressEditEmailAddressForm = String()
-    }
-
-    func backToMyAccount() {
-        // enable my account
-        self.myAccount = true
-
-        // disable other sections
-        self.newAccount = false
-        self.editAccount = false
-        self.editEmailAddress = false
-        self.editPassword = false
-        self.newPassword = false
-        self.newSession = false
-
-        // reset forms
-        resetValuesNewAccount()
-        resetValuesEditAccount()
-        resetValuesEditEmailAddress()
-        resetValuesEditPassword()
-        resetValuesNewPassword()
-        resetValuesNewSession()
-
-        // enable buttons again
-        self.newAccountComplete = false
-        self.editAccountComplete = false
-        self.editEmailAddressComplete = false
-        self.editPasswordComplete = false
-        self.newPasswordComplete = false
-        self.newSessionComplete = false
     }
 
     /* Navigation */
@@ -2557,6 +2602,12 @@ struct ContentView: View {
                             Text("\(newAccountValidationErrors)\n")
                                 .font(.system(size: 11))
                                 .foregroundStyle(.gray)
+
+//                            if let message = accountCodeSuccessMessage.message {
+//                                Text("\(message)")
+//                                    .font(.system(size: 11))
+//                                    .foregroundStyle(Color.secondary)
+//                            }
 
                             Text("\(accountCodeValidationErrors)\n")
                                 .font(.system(size: 11))

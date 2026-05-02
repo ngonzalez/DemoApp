@@ -933,14 +933,14 @@ struct ContentView: View {
 
                     DispatchQueue.main.async {
 
-                        // validation errors
+                        // handle response
                         let httpResponse = response as? HTTPURLResponse
                         let httpResponseUnwrapped = httpResponse!
-
-                        // validation errors
                         if (userResponseWithMessage.user != nil) {
                             let errorsData = userResponseWithMessage.user?.errors!
                             if (errorsData == [] && httpResponseUnwrapped.statusCode == 200) {
+
+                                // callback
                                 self.signedInUser = userResponseWithMessage.user
                                 resetValuesEditAccount()
                             } else {
@@ -1086,14 +1086,14 @@ struct ContentView: View {
                     let userResponseWithMessage = try JSONDecoder().decode(UserResponseWithMessage.self, from: data!)
                     DispatchQueue.main.async {
 
-                        // validation errors
+                        // handle response
                         let httpResponse = response as? HTTPURLResponse
                         let httpResponseUnwrapped = httpResponse!
-
-                        // validation errors
                         if (userResponseWithMessage.user != nil) {
                             let errorsData = userResponseWithMessage.user?.errors!
                             if (errorsData == [] && httpResponseUnwrapped.statusCode == 200) {
+
+                                // callback
                                 resetValuesNewAccount()
                             } else {
                                 let errorsDataUnwrapped = errorsData!
@@ -1143,18 +1143,15 @@ struct ContentView: View {
 
                     DispatchQueue.main.async {
 
-                        // validation errors
+                        // handle response
                         let httpResponse = response as? HTTPURLResponse
                         let httpResponseUnwrapped = httpResponse!
-
-                        // validation errors
                         let errorsData = accountResponseWithMessage.account?.errors!
                         if (errorsData == [] && httpResponseUnwrapped.statusCode == 200) {
 
-                            // set registration account
+                            // callback
                             self.registrationAccount = accountResponseWithMessage.account
                         } else if errorsData != nil {
-
                             let errorsDataUnwrapped = errorsData!
                             iterateOverErrorsAccountCode(errors: errorsDataUnwrapped)
                         }
@@ -1208,18 +1205,15 @@ struct ContentView: View {
 
                     DispatchQueue.main.async {
 
-                        // validation errors
+                        // handle response
                         let httpResponse = response as? HTTPURLResponse
                         let httpResponseUnwrapped = httpResponse!
-
-                        // validation errors
                         let errorsData = userResponseWithMessage.user?.errors!
                         if (errorsData == [] && httpResponseUnwrapped.statusCode == 200) {
 
-                            // set current user
+                            // callback
                             self.signedInUser = userResponseWithMessage.user
                             self.identified = (self.signedInUser?.createdAt != nil)
-
                             resetValuesNewSession()
                         } else if errorsData != nil {
                             let errorsDataUnwrapped = errorsData!
@@ -1260,18 +1254,19 @@ struct ContentView: View {
                 let message = try JSONDecoder().decode(Message.self, from: data!)
 
                 DispatchQueue.main.async {
+
+                    // handle response
                     let httpResponse = response as? HTTPURLResponse
                     let httpResponseUnwrapped = httpResponse!
-
                     if (httpResponseUnwrapped.statusCode == 200) {
+
+                        // callback
                         self.destroySessionFormResponse = message
                         self.signedInUser = nil
                         self.identified = false
                         self.newSession = true
                         self.newSessionComplete = false
-
                         clearSelectedFolders()
-
                         self.loadedFolders = Array<Folder>()
                         self.selectedFolders = Set()
                     }
@@ -1312,12 +1307,13 @@ struct ContentView: View {
 
                     DispatchQueue.main.async {
 
+                        // handle response
                         let httpResponse = response as? HTTPURLResponse
                         let httpResponseUnwrapped = httpResponse!
-
-                        // validation errors
                         if (userResponseWithMessage.user != nil) {
                             if (httpResponseUnwrapped.statusCode == 200) {
+
+                                // callback
                                 resetValuesNewPassword()
                             }
                         }
@@ -1370,13 +1366,14 @@ struct ContentView: View {
 
                     DispatchQueue.main.async {
 
+                        // handle response
                         let httpResponse = response as? HTTPURLResponse
                         let httpResponseUnwrapped = httpResponse!
-
-                        // validation errors
                         if (userResponseWithMessage.user != nil) {
                             let errorsData = userResponseWithMessage.user?.errors!
                             if (errorsData == [] && httpResponseUnwrapped.statusCode == 200) {
+
+                                // callback
                                 resetValuesEditPassword()
                             } else {
                                 let errorsDataUnwrapped = errorsData!
@@ -1430,13 +1427,14 @@ struct ContentView: View {
 
                     DispatchQueue.main.async {
 
+                        // handle response
                         let httpResponse = response as? HTTPURLResponse
                         let httpResponseUnwrapped = httpResponse!
-
-                        // validation errors
                         if (userResponseWithMessage.user != nil) {
                             let errorsData = userResponseWithMessage.user?.errors!
                             if (errorsData == [] && httpResponseUnwrapped.statusCode == 200) {
+
+                                // callback
                                 resetValuesEditEmailAddress()
                             } else {
                                 let errorsDataUnwrapped = errorsData!
@@ -1709,20 +1707,25 @@ struct ContentView: View {
         if (keep_values) {
             return
         } else {
-            // registration account
-            self.registrationAccount = nil
+            resetAccountCode()
 
-            // reset values
-            self.accountCodeRegistrationForm = String()
-            self.accountUuidRegistrationForm = String()
-            self.accountNameRegistrationForm = String()
-            self.accountAddressRegistrationForm = String()
             self.firstNameRegistrationForm = String()
             self.lastNameRegistrationForm = String()
             self.emailAddressRegistrationForm = String()
             self.passwordRegistrationForm = String()
             self.passwordConfirmationRegistrationForm = String()
         }
+    }
+
+    func resetAccountCode() {
+        // registration account
+        self.registrationAccount = nil
+
+        // reset values
+        self.accountCodeRegistrationForm = String()
+        self.accountUuidRegistrationForm = String()
+        self.accountNameRegistrationForm = String()
+        self.accountAddressRegistrationForm = String()
     }
 
     func resetFieldsEditAccount() {
@@ -2624,7 +2627,11 @@ struct ContentView: View {
                             .disableAutocorrection(true)
                             .disabled(self.newAccountComplete)
                             .onChange(of: accountCodeRegistrationForm) { _, value in
-                                submitAccountCode(accountCode: value)
+                                if (value == "") {
+                                    resetAccountCode()
+                                } else {
+                                    submitAccountCode(accountCode: value)
+                                }
                             }
 
                             let accountUuid = self.registrationAccount?.uuid!.uuidString

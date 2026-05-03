@@ -35,6 +35,12 @@ var logger = Logger()
 
 var formatter = ISO8601DateFormatter()
 
+enum KeychainError: Error {
+    case noPassword
+    case unexpectedPasswordData
+    case unhandledError(status: OSStatus)
+}
+
 class NetworkDelegateClass: NSObject, URLSessionDelegate, URLSessionDataDelegate {
     // URLSessionDataDelegate method to handle response data
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
@@ -57,6 +63,9 @@ class NetworkDelegateClass: NSObject, URLSessionDelegate, URLSessionDataDelegate
 @available(macOS 14, *)
 @MainActor
 struct ContentView: View {
+
+    /* Credentials */
+    @State private var userCredentials:Credentials = Credentials(account: "", password: "")
 
     /* Search */
     @State private var searchText: String = ""
@@ -942,7 +951,7 @@ struct ContentView: View {
 
                                 // callback
                                 self.signedInUser = userResponseWithMessage.user
-                                resetValuesEditAccount()
+                                resetValuesEditAccount(keep_values: true)
                             } else {
                                 let errorsDataUnwrapped = errorsData!
                                 iterateOverErrorsEditAccount(errors: errorsDataUnwrapped)
@@ -1094,7 +1103,7 @@ struct ContentView: View {
                             if (errorsData == [] && httpResponseUnwrapped.statusCode == 200) {
 
                                 // callback
-                                resetValuesNewAccount()
+                                resetValuesNewAccount(keep_values: true)
                             } else {
                                 let errorsDataUnwrapped = errorsData!
                                 iterateOverErrorsNewAccount(errors: errorsDataUnwrapped)
@@ -1183,6 +1192,58 @@ struct ContentView: View {
         let errors: [String]?
     }
 
+    struct Credentials: Codable {
+        let account: String!
+        let password: String!
+    }
+
+    func storeCredentials(username: String, password: String, server: String) {
+        if (self.userCredentials.account != "" && self.userCredentials.password != "") {
+            let query: [String: Any] = [kSecClass as String: kSecClassInternetPassword,
+                                        kSecAttrServer as String: server]
+
+            let accountUnwrapped = userCredentials.account!
+            let passwordUnwrapped = userCredentials.password.data(using: String.Encoding.utf8)!
+
+            let attributes: [String: Any] = [kSecAttrAccount as String: accountUnwrapped,
+                                             kSecValueData as String: passwordUnwrapped]
+
+            SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
+        } else {
+            let accountUnwrapped = username
+            let passwordUnwrapped = password.data(using: String.Encoding.utf8)!
+
+            let query: [String: Any] = [kSecClass as String: kSecClassInternetPassword,
+                                        kSecAttrServer as String: server,
+                                        kSecAttrAccount as String: username,
+                                        kSecValueData as String: password]
+
+            SecItemAdd(query as CFDictionary, nil)
+        }
+    }
+
+    func readCredentials(server: String) -> Credentials {
+        let query: [String: Any] = [kSecClass as String: kSecClassInternetPassword,
+                                    kSecAttrServer as String: server,
+                                    kSecMatchLimit as String: kSecMatchLimitOne,
+                                    kSecReturnAttributes as String: true,
+                                    kSecReturnData as String: true]
+
+        var item: CFTypeRef?
+        _ = SecItemCopyMatching(query as CFDictionary, &item)
+        let existingItem = item as? [String : Any]
+        if (item != nil) {
+            let account = existingItem?[kSecAttrAccount as String] as? String
+            let passwordData = existingItem![kSecValueData as String] as! Data
+            let password = String(data: passwordData, encoding: String.Encoding.utf8)
+            let accountUnwrapped = account!
+            let passwordUnwrapped = password!
+            return Credentials(account: accountUnwrapped, password: passwordUnwrapped)
+        } else {
+            return Credentials(account: "", password: "")
+        }
+    }
+
     func submitSessionForm() {
         do {
             let user = UserWithEmailAddressAndPassword(
@@ -1214,7 +1275,16 @@ struct ContentView: View {
                             // callback
                             self.signedInUser = userResponseWithMessage.user
                             self.identified = (self.signedInUser?.createdAt != nil)
-                            resetValuesNewSession()
+                            resetValuesNewSession(keep_values: false)
+                            storeCredentials(
+                                username: user.emailAddress!,
+                                password: user.password!,
+                                server: "link12.ddns.net"
+                            )
+                            self.userCredentials = Credentials(account: user.emailAddress!, password: user.password!)
+                            emailAddressSessionForm = user.emailAddress!
+                            passwordSessionForm = user.password!
+
                         } else if errorsData != nil {
                             let errorsDataUnwrapped = errorsData!
                             iterateOverErrorsNewSession(errors: errorsDataUnwrapped)
@@ -1314,7 +1384,7 @@ struct ContentView: View {
                             if (httpResponseUnwrapped.statusCode == 200) {
 
                                 // callback
-                                resetValuesNewPassword()
+                                resetValuesNewPassword(keep_values: true)
                             }
                         }
 
@@ -1374,7 +1444,15 @@ struct ContentView: View {
                             if (errorsData == [] && httpResponseUnwrapped.statusCode == 200) {
 
                                 // callback
-                                resetValuesEditPassword()
+                                resetValuesEditPassword(keep_values: true)
+                                storeCredentials(
+                                    username: self.userCredentials.account,
+                                    password: user.password!,
+                                    server: "link12.ddns.net"
+                                )
+                                self.userCredentials = Credentials(account: self.userCredentials.account, password: user.password!)
+                                emailAddressSessionForm = self.userCredentials.account
+                                passwordSessionForm = user.password!
                             } else {
                                 let errorsDataUnwrapped = errorsData!
                                 iterateOverErrorsEditPassword(errors: errorsDataUnwrapped)
@@ -1435,7 +1513,15 @@ struct ContentView: View {
                             if (errorsData == [] && httpResponseUnwrapped.statusCode == 200) {
 
                                 // callback
-                                resetValuesEditEmailAddress()
+                                resetValuesEditEmailAddress(keep_values: true)
+                                storeCredentials(
+                                    username: user.emailAddress!,
+                                    password: self.userCredentials.password,
+                                    server: "link12.ddns.net"
+                                )
+                                self.userCredentials = Credentials(account: user.emailAddress!, password: self.userCredentials.password)
+                                emailAddressSessionForm = user.emailAddress!
+                                passwordSessionForm = self.userCredentials.password
                             } else {
                                 let errorsDataUnwrapped = errorsData!
                                 iterateOverErrorsEditEmailAddress(errors: errorsDataUnwrapped)
@@ -1512,12 +1598,12 @@ struct ContentView: View {
         self.newSession = false
 
         // reset forms
-        resetValuesNewAccount()
-        resetValuesEditAccount()
-        resetValuesEditEmailAddress()
-        resetValuesEditPassword()
-        resetValuesNewPassword()
-        resetValuesNewSession()
+        resetValuesNewAccount(keep_values: false)
+        resetValuesEditAccount(keep_values: false)
+        resetValuesEditEmailAddress(keep_values: false)
+        resetValuesEditPassword(keep_values: false)
+        resetValuesNewPassword(keep_values: false)
+        resetValuesNewSession(keep_values: false)
 
         // enable buttons again
         self.newAccountComplete = false
@@ -1589,7 +1675,7 @@ struct ContentView: View {
         }
     }
 
-    func resetValuesNewSession() {
+    func resetValuesNewSession(keep_values: Bool?) {
 //        self.newSession = false
         self.newSessionComplete = true
 
@@ -1600,10 +1686,10 @@ struct ContentView: View {
         self.editAccount = false
         self.editEmailAddress = false
 
-        resetFieldsNewSession(keep_values: true)
+        resetFieldsNewSession(keep_values: keep_values!)
     }
 
-    func resetValuesNewPassword() {
+    func resetValuesNewPassword(keep_values: Bool?) {
 //        self.newPassword = false
         self.newPasswordComplete = true
 
@@ -1612,10 +1698,10 @@ struct ContentView: View {
         self.editAccount = false
         self.editEmailAddress = false
 
-        resetFieldsNewPassword(keep_values: true)
+        resetFieldsNewPassword(keep_values: keep_values!)
     }
 
-    func resetValuesEditPassword() {
+    func resetValuesEditPassword(keep_values: Bool?) {
 //        self.editPassword = false
         self.editPasswordComplete = true
 
@@ -1624,10 +1710,10 @@ struct ContentView: View {
         self.editAccount = false
         self.editEmailAddress = false
 
-        resetFieldsEditPassword()
+        resetFieldsEditPassword(keep_values: keep_values!)
     }
 
-    func resetValuesNewAccount() {
+    func resetValuesNewAccount(keep_values: Bool?) {
 //        self.newAccount = false
         self.newAccountComplete = true
 
@@ -1636,10 +1722,10 @@ struct ContentView: View {
         self.editAccount = false
         self.editEmailAddress = false
 
-        resetFieldsNewAccount(keep_values: true)
+        resetFieldsNewAccount(keep_values: keep_values!)
     }
 
-    func resetValuesEditAccount() {
+    func resetValuesEditAccount(keep_values: Bool?) {
 //        self.editAccount = false
         self.editAccountComplete = true
 
@@ -1648,10 +1734,10 @@ struct ContentView: View {
         self.editPassword = false
         self.editEmailAddress = false
 
-        resetFieldsEditAccount()
+        resetFieldsEditAccount(keep_values: keep_values!)
     }
 
-    func resetValuesEditEmailAddress() {
+    func resetValuesEditEmailAddress(keep_values: Bool?) {
 //        self.editEmailAddress = false
         self.editEmailAddressComplete = true
 
@@ -1660,7 +1746,7 @@ struct ContentView: View {
         self.newPassword = false
         self.editPassword = false
 
-        resetFieldsEditEmailAddress()
+        resetFieldsEditEmailAddress(keep_values: keep_values!)
     }
 
     func resetFieldsNewSession(keep_values: Bool) {
@@ -1728,46 +1814,57 @@ struct ContentView: View {
         self.accountAddressRegistrationForm = String()
     }
 
-    func resetFieldsEditAccount() {
+    func resetFieldsEditAccount(keep_values: Bool) {
         // reset errors
         self.editAccountValidationErrors = String()
 
         // reset message
         self.editAccountSuccessMessage = Message(message: String())
 
-        // reset values
-        self.accountNameAccountForm = String()
-        self.accountAddressAccountForm = String()
-        self.firstNameAccountForm = String()
-        self.lastNameAccountForm = String()
-        self.emailAddressAccountForm = String()
+        if (keep_values) {
+            return
+        } else {
+            // reset values
+            self.accountNameAccountForm = String()
+            self.accountAddressAccountForm = String()
+            self.firstNameAccountForm = String()
+            self.lastNameAccountForm = String()
+            self.emailAddressAccountForm = String()
 
-        // self.notifyOnSignInAccountForm = false
-        // self.notifyOnAccountUpdateAccountForm = false
+            // self.notifyOnSignInAccountForm = false
+            // self.notifyOnAccountUpdateAccountForm = false
+        }
     }
     
-    func resetFieldsEditPassword() {
+    func resetFieldsEditPassword(keep_values: Bool) {
         // reset errors
         self.editPasswordValidationErrors = String()
 
         // reset message
         self.editPasswordSuccessMessage = Message(message: String())
 
-        // reset values
-        self.newPasswordEditPasswordForm = String()
-        self.newPasswordConfirmationEditPasswordForm = String()
+        if (keep_values) {
+            return
+        } else {
+            // reset values
+            self.newPasswordEditPasswordForm = String()
+            self.newPasswordConfirmationEditPasswordForm = String()
+        }
     }
 
-    func resetFieldsEditEmailAddress() {
+    func resetFieldsEditEmailAddress(keep_values: Bool) {
         // reset errors
         self.editEmailAddressValidationErrors = String()
 
         // reset message
         self.editEmailAddressSuccessMessage = Message(message: String())
 
-        // reset values
-        self.emailAddressEditEmailAddressForm = String()
-        self.newEmailAddressEditEmailAddressForm = String()
+        if (keep_values) {
+            return
+        } else {
+            // reset values
+            self.newEmailAddressEditEmailAddressForm = String()
+        }
     }
 
     /* Navigation */
@@ -2291,6 +2388,7 @@ struct ContentView: View {
                             }
                             .textFieldStyle(.roundedBorder)
                         }.padding(20)
+
                     } else if self.editEmailAddress {
                         /*
                             Account: Edit Email Address
@@ -2731,10 +2829,6 @@ struct ContentView: View {
                             Text("New Session")
                                 .font(.system(size: 15))
 
-                            Text("\(newSessionValidationErrors)\n")
-                                .font(.system(size: 11))
-                                .foregroundStyle(.gray)
-
                             TextField(text: $emailAddressSessionForm, prompt: Text("johnatan@apple.com")) {
                                 Text("Email")
                             }
@@ -2752,6 +2846,7 @@ struct ContentView: View {
                             }
                             .buttonStyle(PlainButtonStyle())
                             .disabled(self.newSessionComplete)
+                            .keyboardShortcut(KeyboardShortcut(.return, modifiers: []))
 
                             /* Register */
                             Button(action: clickRegisterLink) {
@@ -4094,7 +4189,13 @@ struct ContentView: View {
                 // default login panel
 
             }
-        }.navigationSplitViewStyle(.prominentDetail)
+        }
+        .navigationSplitViewStyle(.prominentDetail)
+        .onAppear {
+            self.userCredentials = readCredentials(server: "link12.ddns.net")
+            emailAddressSessionForm = self.userCredentials.account
+            passwordSessionForm = self.userCredentials.password
+        }
     }
 }
 

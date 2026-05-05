@@ -1217,8 +1217,8 @@ struct ContentView: View {
 
             let query: [String: Any] = [kSecClass as String: kSecClassInternetPassword,
                                         kSecAttrServer as String: server,
-                                        kSecAttrAccount as String: username,
-                                        kSecValueData as String: password]
+                                        kSecAttrAccount as String: accountUnwrapped,
+                                        kSecValueData as String: passwordUnwrapped]
 
             SecItemAdd(query as CFDictionary, nil)
         }
@@ -1448,9 +1448,6 @@ struct ContentView: View {
                                     password: user.password!,
                                     server: "link12.ddns.net"
                                 )
-                                self.userCredentials = Credentials(account: self.userCredentials.account, password: user.password!)
-                                emailAddressSessionForm = self.userCredentials.account
-                                passwordSessionForm = user.password!
                             } else {
                                 let errorsDataUnwrapped = errorsData!
                                 iterateOverErrorsEditPassword(errors: errorsDataUnwrapped)

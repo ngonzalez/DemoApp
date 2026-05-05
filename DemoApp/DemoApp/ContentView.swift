@@ -952,6 +952,7 @@ struct ContentView: View {
                                 // callback
                                 self.signedInUser = userResponseWithMessage.user
                                 resetValuesEditAccount(keep_values: true)
+                                handleEmailChange(user: user)
                             } else {
                                 let errorsDataUnwrapped = errorsData!
                                 iterateOverErrorsEditAccount(errors: errorsDataUnwrapped)
@@ -1198,6 +1199,7 @@ struct ContentView: View {
     }
 
     func storeCredentials(username: String, password: String, server: String) {
+        self.userCredentials = Credentials(account: username, password: password)
         if (self.userCredentials.account != "" && self.userCredentials.password != "") {
             let query: [String: Any] = [kSecClass as String: kSecClassInternetPassword,
                                         kSecAttrServer as String: server]
@@ -1672,6 +1674,18 @@ struct ContentView: View {
         if (emailAddress != nil) {
             let emailAddressUnwrapped = emailAddress!
             self.emailAddressEditEmailAddressForm = emailAddressUnwrapped
+        }
+    }
+
+    func handleEmailChange(user: UserWithAccount) {
+        if (user.emailAddress != self.userCredentials.account) {
+            storeCredentials(
+                username: user.emailAddress!,
+                password: self.userCredentials.password!,
+                server: "link12.ddns.net"
+            )
+            emailAddressSessionForm = user.emailAddress!
+            passwordSessionForm = self.userCredentials.password!
         }
     }
 
@@ -2524,8 +2538,7 @@ struct ContentView: View {
                                         Text("Email Address")
                                     }
                                     .disableAutocorrection(true)
-//                                    .disabled(self.editAccountComplete)
-                                    .disabled(true)
+                                    .disabled(self.editAccountComplete)
                                 }
 
                                 let createdAt = self.signedInUser?.createdAt

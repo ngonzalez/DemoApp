@@ -2121,6 +2121,8 @@ struct ContentView: View {
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 DispatchQueue.main.async {
                     self.loadedFolders = []
+                    clearSelectedFolders()
+                    clearSelectedFiles()
                     getAllUploads()
                 }
             }
@@ -2145,6 +2147,8 @@ struct ContentView: View {
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 DispatchQueue.main.async {
                     self.loadedFolders = []
+                    clearSelectedFolders()
+                    clearSelectedFiles()
                     getAllUploads()
                 }
             }
@@ -2169,6 +2173,8 @@ struct ContentView: View {
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 DispatchQueue.main.async {
                     self.loadedFolders = []
+                    clearSelectedFolders()
+                    clearSelectedFiles()
                     getAllUploads()
                 }
             }
@@ -2193,6 +2199,8 @@ struct ContentView: View {
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 DispatchQueue.main.async {
                     self.loadedFolders = []
+                    clearSelectedFolders()
+                    clearSelectedFiles()
                     getAllUploads()
                 }
             }
@@ -2639,10 +2647,10 @@ struct ContentView: View {
                         }.buttonStyle(PlainButtonStyle())
 
                         /* Edit Email Address */
-//                        Button(action: clickEditEmailAddress) {
-//                            Text("Change Email Address")
-//                                .foregroundStyle(.blue.gradient)
-//                        }.buttonStyle(PlainButtonStyle())
+                        Button(action: clickEditEmailAddress) {
+                            Text("Change Email Address")
+                                .foregroundStyle(.blue.gradient)
+                        }.buttonStyle(PlainButtonStyle())
                     }
 
                 } else if self.newPassword {

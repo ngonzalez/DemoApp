@@ -1246,7 +1246,7 @@ struct ContentView: View {
         }
     }
 
-    func submitSessionForm() {
+    func submitNewSessionForm() {
         do {
             let user = UserWithEmailAddressAndPassword(
                 id: nil,
@@ -1283,10 +1283,6 @@ struct ContentView: View {
                                 password: user.password!,
                                 server: "link12.ddns.net"
                             )
-                            self.userCredentials = Credentials(account: user.emailAddress!, password: user.password!)
-                            emailAddressSessionForm = user.emailAddress!
-                            passwordSessionForm = user.password!
-
                         } else if errorsData != nil {
                             let errorsDataUnwrapped = errorsData!
                             iterateOverErrorsNewSession(errors: errorsDataUnwrapped)
@@ -1305,14 +1301,14 @@ struct ContentView: View {
                     }
 
                 } catch let error {
-                    logger.error("[submitSessionForm] Request: \(error)")
+                    logger.error("[submitNewSessionForm] Request: \(error)")
                 }
             }
 
             task.resume()
 
         } catch let error {
-            logger.error("[submitSessionForm] Error: \(error)")
+            logger.error("[submitNewSessionForm] Error: \(error)")
         }
     }
 
@@ -1521,7 +1517,6 @@ struct ContentView: View {
                                     password: self.userCredentials.password,
                                     server: "link12.ddns.net"
                                 )
-                                self.userCredentials = Credentials(account: user.emailAddress!, password: self.userCredentials.password)
                                 emailAddressSessionForm = user.emailAddress!
                                 passwordSessionForm = self.userCredentials.password
                             } else {
@@ -2640,17 +2635,17 @@ struct ContentView: View {
                                 .foregroundStyle(.blue.gradient)
                         }.buttonStyle(PlainButtonStyle())
 
-                        /* Reset Password */
+                        /* Update Password */
                         Button(action: clickEditPassword) {
                             Text("Change password")
                                 .foregroundStyle(.blue.gradient)
                         }.buttonStyle(PlainButtonStyle())
 
                         /* Edit Email Address */
-                        Button(action: clickEditEmailAddress) {
-                            Text("Change Email Address")
-                                .foregroundStyle(.blue.gradient)
-                        }.buttonStyle(PlainButtonStyle())
+//                        Button(action: clickEditEmailAddress) {
+//                            Text("Change Email Address")
+//                                .foregroundStyle(.blue.gradient)
+//                        }.buttonStyle(PlainButtonStyle())
                     }
 
                 } else if self.newPassword {
@@ -2842,6 +2837,10 @@ struct ContentView: View {
                             Text("New Session")
                                 .font(.system(size: 15))
 
+                            Text("\(newSessionValidationErrors)\n")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.gray)
+
                             TextField(text: $emailAddressSessionForm, prompt: Text("johnatan@apple.com")) {
                                 Text("Email")
                             }
@@ -2854,7 +2853,7 @@ struct ContentView: View {
                             .disableAutocorrection(true)
                             .disabled(self.newSessionComplete)
 
-                            Button(action: submitSessionForm) {
+                            Button(action: submitNewSessionForm) {
                                 Text("Submit")
                             }
                             .buttonStyle(PlainButtonStyle())

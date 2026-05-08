@@ -2640,7 +2640,7 @@ struct ContentView: View {
                                 .foregroundStyle(.blue.gradient)
                         }.buttonStyle(PlainButtonStyle())
 
-                        /* Update Password */
+                        /* Edit Password */
                         Button(action: clickEditPassword) {
                             Text("Change password")
                                 .foregroundStyle(.blue.gradient)
@@ -2922,7 +2922,7 @@ struct ContentView: View {
                         VStack {
                             Button(action: clearFolders) {
                                 Text("Clear")
-                                    .foregroundStyle(.blue.gradient)
+                                    .foregroundStyle(.gray.gradient)
                             }.buttonStyle(PlainButtonStyle())
                         }
 
@@ -2963,7 +2963,7 @@ struct ContentView: View {
                         }
                     }
                     .padding(5)
-                    .navigationTitle("DemoApp (\(String(describing: self.signedInUser?.emailAddress))")
+                    .navigationTitle("DemoApp (\(self.signedInUser?.emailAddress! ?? "")")
                     .toolbar {
                         Button(action: refreshUploads) {
                             Image(systemName: "arrow.clockwise")
@@ -3463,8 +3463,10 @@ struct ContentView: View {
                                 Button(action: updateSelectedFolders) {
                                     Image(systemName: "chevron.right")
                                         .font(.system(size: 11))
+                                        .foregroundStyle(.black.gradient)
                                     Text("Update \(self.selectedFolders.count > 1 ? "Folders" : "Folder")")
                                         .font(.system(size: 11))
+                                        .foregroundStyle(.black.gradient)
                                 }
                                 .buttonStyle(.borderedProminent)
                                 .tint(.blue)
@@ -3473,7 +3475,7 @@ struct ContentView: View {
                                     .foregroundStyle(.gray)
                                     .truncationMode(.middle)
                             }
-                            .frame(height: 30)
+                            .frame(height: 55)
                             .padding(5)
                         }
 
@@ -3483,38 +3485,34 @@ struct ContentView: View {
                             */
                             ForEach(self.selectedImageFiles) { imageFile in
                                 Section {
-
-                                    Spacer()
-
-                                    Label {
-                                        Link("\(imageFile.folder.name)", destination: URL(string: imageFile.folder.webUrl)!)
-                                            .font(.system(size: 11))
-                                            .truncationMode(.middle)
-                                            .tint(.blue)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(imageFile.folder.state == "published" ? .yellow : .gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    AsyncImage(url: URL(string: imageFile.fileUrl)) { result in
-                                        result.image?
-                                            .resizable()
-                                            .scaledToFill()
-                                    }
-                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-                                    HStack {
-                                        Image(systemName: "photo")
-                                            .font(.system(size: 13))
-
-                                        Link("\(imageFile.fileName)", destination: URL(string: imageFile.webUrl)!)
-                                            .font(.system(size: 13))
-                                            .truncationMode(.middle)
-                                            .tint(.blue)
-                                    }
-
                                     VStack(alignment: .leading, spacing: 5) {
+                                        Label {
+                                            Link("\(imageFile.folder.name)", destination: URL(string: imageFile.folder.webUrl)!)
+                                                .font(.system(size: 11))
+                                                .truncationMode(.middle)
+                                                .tint(.blue)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(imageFile.folder.state == "published" ? .yellow : .gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+
+                                        AsyncImage(url: URL(string: imageFile.fileUrl)) { result in
+                                            result.image?
+                                                .resizable()
+                                                .scaledToFill()
+                                        }
+                                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                                        Label {
+                                            Link("\(imageFile.fileName)", destination: URL(string: imageFile.webUrl)!)
+                                                .font(.system(size: 11))
+                                                .truncationMode(.middle)
+                                                .tint(.blue)
+                                        } icon: {
+                                            Image(systemName: "photo")
+                                                .font(.system(size: 11))
+                                        }
 
                                         Label {
                                             Text("Mime/Type \(imageFile.mimeType ?? "")")
@@ -3597,7 +3595,6 @@ struct ContentView: View {
                                         }
 
                                         Spacer()
-
                                     }
                                     .frame(minWidth: 0, maxWidth: .infinity, alignment: .topLeading)
                                     .padding(5)
@@ -3612,47 +3609,44 @@ struct ContentView: View {
                                 .opacity(0.25)
                             )
 
-                            
                             /*
                               AudioFile
                             */
                             ForEach(self.selectedAudioFiles) { audioFile in
                                 Section {
-                                    Spacer()
-
-                                    Label {
-                                        Link("\(audioFile.folder.name)", destination: URL(string: audioFile.folder.webUrl)!)
-                                            .font(.system(size: 11))
-                                            .truncationMode(.middle)
-                                            .tint(.blue)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(audioFile.folder.state == "published" ? .yellow : .gray)
-                                            .frame(width: 8, height: 8)
-                                    }
-
-                                    if (audioFile.aasmState == "created") {
-                                        Text("Processing…")
-                                            .font(.system(size: 13))
-                                            .padding(10)
-                                    } else if (audioFile.aasmState == "processed") {
-                                        VideoPlayer(player: player)
-                                            .frame(minWidth: 400, maxWidth: .infinity,
-                                                   minHeight: 150, maxHeight: .infinity)
-                                            .padding(10)
-                                    }
-
-                                    HStack {
-                                        Image(systemName: "waveform.circle")
-                                            .font(.system(size: 13))
-
-                                        Link("\(audioFile.fileName)", destination: URL(string: audioFile.webUrl)!)
-                                            .font(.system(size: 13))
-                                            .truncationMode(.middle)
-                                            .tint(.blue)
-                                    }
-
                                     VStack(alignment: .leading, spacing: 5) {
+                                        Label {
+                                            Link("\(audioFile.folder.name)", destination: URL(string: audioFile.folder.webUrl)!)
+                                                .font(.system(size: 11))
+                                                .truncationMode(.middle)
+                                                .tint(.blue)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(audioFile.folder.state == "published" ? .yellow : .gray)
+                                                .frame(width: 8, height: 8)
+                                        }
+
+                                        if (audioFile.aasmState == "created") {
+                                            Text("Processing…")
+                                                .font(.system(size: 11))
+                                                .padding(10)
+                                        } else if (audioFile.aasmState == "processed") {
+                                            VideoPlayer(player: player)
+                                                .frame(minWidth: 400, maxWidth: .infinity,
+                                                       minHeight: 150, maxHeight: .infinity)
+                                                .padding(10)
+                                        }
+
+                                        Label {
+                                            Link("\(audioFile.fileName)", destination: URL(string: audioFile.webUrl)!)
+                                                .font(.system(size: 11))
+                                                .truncationMode(.middle)
+                                                .tint(.blue)
+                                        } icon: {
+                                            Image(systemName: "waveform.circle")
+                                                .font(.system(size: 11))
+                                        }
+
                                         Label {
                                             Text("Format \(audioFile.formatInfo ?? "")")
                                                 .font(.system(size: 11))
@@ -3773,41 +3767,39 @@ struct ContentView: View {
                             */
                             ForEach(self.selectedVideoFiles) { videoFile in
                                 Section {
-                                    Spacer()
-
-                                    Label {
-                                        Link("\(videoFile.folder.name)", destination: URL(string: videoFile.folder.webUrl)!)
-                                            .font(.system(size: 11))
-                                            .truncationMode(.middle)
-                                            .tint(.blue)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(videoFile.folder.state == "published" ? .yellow : .gray)
-                                            .frame(width: 8, height: 8)
-                                    }.padding(5)
-
-                                    if (videoFile.aasmState == "created") {
-                                        Text("Processing…")
-                                            .font(.system(size: 13))
-                                            .padding(10)
-                                    } else if (videoFile.aasmState == "processed") {
-                                        VideoPlayer(player: player)
-                                            .frame(minWidth: 400, maxWidth: .infinity,
-                                                   minHeight: 300, maxHeight: .infinity)
-                                            .padding(10)
-                                    }
-
-                                    HStack {
-                                        Image(systemName: "video.circle")
-                                            .font(.system(size: 13))
-
-                                        Link("\(videoFile.fileName)", destination: URL(string: videoFile.webUrl)!)
-                                            .font(.system(size: 13))
-                                            .truncationMode(.middle)
-                                            .tint(.blue)
-                                    }
-
                                     VStack(alignment: .leading, spacing: 5) {
+                                        Label {
+                                            Link("\(videoFile.folder.name)", destination: URL(string: videoFile.folder.webUrl)!)
+                                                .font(.system(size: 11))
+                                                .truncationMode(.middle)
+                                                .tint(.blue)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(videoFile.folder.state == "published" ? .yellow : .gray)
+                                                .frame(width: 8, height: 8)
+                                        }.padding(5)
+
+                                        if (videoFile.aasmState == "created") {
+                                            Text("Processing…")
+                                                .font(.system(size: 11))
+                                                .padding(10)
+                                        } else if (videoFile.aasmState == "processed") {
+                                            VideoPlayer(player: player)
+                                                .frame(minWidth: 400, maxWidth: .infinity,
+                                                       minHeight: 300, maxHeight: .infinity)
+                                                .padding(10)
+                                        }
+
+                                        Label {
+                                            Link("\(videoFile.fileName)", destination: URL(string: videoFile.webUrl)!)
+                                                .font(.system(size: 11))
+                                                .truncationMode(.middle)
+                                                .tint(.blue)
+                                        } icon: {
+                                            Image(systemName: "video.circle")
+                                                .font(.system(size: 11))
+                                        }
+
                                         Label {
                                             Text("Format \(videoFile.formatInfo ?? "")")
                                                 .font(.system(size: 11))
@@ -3948,35 +3940,33 @@ struct ContentView: View {
                             */
                             ForEach(self.selectedPdfFiles) { pdfFile in
                                 Section {
-                                    Spacer()
-
-                                    Label {
-                                        Link("\(pdfFile.folder.name)", destination: URL(string: pdfFile.folder.webUrl)!)
-                                            .font(.system(size: 11))
-                                            .truncationMode(.middle)
-                                            .tint(.blue)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(pdfFile.folder.state == "published" ? .yellow : .gray)
-                                            .frame(width: 8, height: 8)
-                                    }.padding(5)
-
-                                    Image(systemName: "square.text.square")
-                                        .font(.system(size: 40))
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                        .padding(10)
-
-                                    HStack {
-                                        Image(systemName: "doc.circle.fill")
-                                            .font(.system(size: 13))
-
-                                        Link("\(pdfFile.fileName)", destination: URL(string: pdfFile.webUrl)!)
-                                            .font(.system(size: 13))
-                                            .truncationMode(.middle)
-                                            .tint(.blue)
-                                    }
-
                                     VStack(alignment: .leading, spacing: 5) {
+                                        Label {
+                                            Link("\(pdfFile.folder.name)", destination: URL(string: pdfFile.folder.webUrl)!)
+                                                .font(.system(size: 11))
+                                                .truncationMode(.middle)
+                                                .tint(.blue)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(pdfFile.folder.state == "published" ? .yellow : .gray)
+                                                .frame(width: 8, height: 8)
+                                        }.padding(5)
+
+                                        Image(systemName: "square.text.square")
+                                            .font(.system(size: 40))
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                            .padding(10)
+
+                                        Label {
+                                            Link("\(pdfFile.fileName)", destination: URL(string: pdfFile.webUrl)!)
+                                                .font(.system(size: 11))
+                                                .truncationMode(.middle)
+                                                .tint(.blue)
+                                        } icon: {
+                                            Image(systemName: "doc.circle.fill")
+                                                .font(.system(size: 11))
+                                        }
+
                                         Label {
                                             Text("Mime/Type \(pdfFile.mimeType ?? "")")
                                                 .font(.system(size: 11))
@@ -4065,32 +4055,29 @@ struct ContentView: View {
                               TextFile
                             */
                             ForEach(self.selectedTextFiles) { textFile in
-
                                 Section {
-                                    Spacer()
-
-                                    Label {
-                                        Link("\(textFile.folder.name)", destination: URL(string: textFile.folder.webUrl)!)
-                                            .font(.system(size: 11))
-                                            .truncationMode(.middle)
-                                            .tint(.blue)
-                                    } icon: {
-                                        Rectangle()
-                                            .fill(textFile.folder.state == "published" ? .yellow : .gray)
-                                            .frame(width: 8, height: 8)
-                                    }.padding(5)
-
-                                    HStack {
-                                        Image(systemName: "doc.circle")
-                                            .font(.system(size: 13))
-
-                                        Link("\(textFile.fileName)", destination: URL(string: textFile.webUrl)!)
-                                            .font(.system(size: 13))
-                                            .truncationMode(.middle)
-                                            .tint(.blue)
-                                    }
-
                                     VStack(alignment: .leading, spacing: 5) {
+                                        Label {
+                                            Link("\(textFile.folder.name)", destination: URL(string: textFile.folder.webUrl)!)
+                                                .font(.system(size: 11))
+                                                .truncationMode(.middle)
+                                                .tint(.blue)
+                                        } icon: {
+                                            Rectangle()
+                                                .fill(textFile.folder.state == "published" ? .yellow : .gray)
+                                                .frame(width: 8, height: 8)
+                                        }.padding(5)
+                                        
+                                        Label {
+                                            Link("\(textFile.fileName)", destination: URL(string: textFile.webUrl)!)
+                                                .font(.system(size: 11))
+                                                .truncationMode(.middle)
+                                                .tint(.blue)
+                                        } icon: {
+                                            Image(systemName: "doc.circle")
+                                                .font(.system(size: 11))
+                                        }
+                                        
                                         Label {
                                             Text("Mime/Type \(textFile.mimeType ?? "")")
                                                 .font(.system(size: 11))
@@ -4100,7 +4087,7 @@ struct ContentView: View {
                                                 .fill(.gray)
                                                 .frame(width: 8, height: 8)
                                         }
-
+                                        
                                         Label {
                                             Text("Format \(textFile.formatInfo ?? "")")
                                                 .font(.system(size: 11))
@@ -4110,7 +4097,7 @@ struct ContentView: View {
                                                 .fill(.gray)
                                                 .frame(width: 8, height: 8)
                                         }
-
+                                        
                                         Label {
                                             Text("File Size \(textFile.fileSize ?? "")")
                                                 .font(.system(size: 11))
@@ -4120,7 +4107,7 @@ struct ContentView: View {
                                                 .fill(.gray)
                                                 .frame(width: 8, height: 8)
                                         }
-
+                                        
                                         Label {
                                             Link("File URL", destination: URL(string: textFile.fileUrl)!)
                                                 .font(.system(size: 11))
@@ -4130,7 +4117,7 @@ struct ContentView: View {
                                                 .fill(.gray)
                                                 .frame(width: 8, height: 8)
                                         }
-
+                                        
                                         Label {
                                             Link("Web URL", destination: URL(string: textFile.webUrl)!)
                                                 .font(.system(size: 11))
@@ -4140,13 +4127,13 @@ struct ContentView: View {
                                                 .fill(.gray)
                                                 .frame(width: 8, height: 8)
                                         }
-
+                                        
                                         Spacer()
-
+                                        
                                         Divider()
-
+                                        
                                         Spacer()
-
+                                        
                                         Button(action: {
                                             if let url = URL(string: textFile.webViewUrl) {
                                                 openURL(url)
@@ -4154,7 +4141,7 @@ struct ContentView: View {
                                         }) {
                                             Image(systemName: "globe")
                                                 .font(.system(size: 11))
-
+                                            
                                             Text("Open in web view")
                                                 .font(.system(size: 11))
                                         }

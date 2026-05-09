@@ -1,5 +1,5 @@
 /*
-    Copyright 2024,2025,2026 Nicolas GONZALEZ
+    Copyright (c) 2026 Nicolas GONZALEZ
 
     MIT License
 
@@ -31,9 +31,9 @@ import Zip
 /* Logger */
 import OSLog
 
-var logger = Logger()
+nonisolated(unsafe) var logger = Logger()
 
-var formatter = ISO8601DateFormatter()
+nonisolated(unsafe) var formatter = ISO8601DateFormatter()
 
 enum KeychainError: Error {
     case noPassword
@@ -41,7 +41,7 @@ enum KeychainError: Error {
     case unhandledError(status: OSStatus)
 }
 
-class NetworkDelegateClass: NSObject, URLSessionDelegate, URLSessionDataDelegate {
+final class NetworkDelegateClass: NSObject, URLSessionDelegate, URLSessionDataDelegate {
     // URLSessionDataDelegate method to handle response data
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
         // Process the received data
@@ -188,6 +188,7 @@ struct ContentView: View {
     struct UploadItem: Codable {
         var id: Int?
         var uuid: UUID
+        var userId: Int
         var filePath: String
         var mimeType: String
         var source: String
@@ -203,8 +204,11 @@ struct ContentView: View {
             dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZZZZZ"
             let createdAtFormatted = dateFormatter.string(from: createdAt)
             let updatedAtFormatted = dateFormatter.string(from: updatedAt)
+            let userId = self.signedInUser?.id
+            let userIdUnwrapped = userId!
             let uploadItem = UploadItem(
                 uuid: uuid,
+                userId: userIdUnwrapped,
                 filePath: path,
                 mimeType: mimeType,
                 source: source,
@@ -220,7 +224,7 @@ struct ContentView: View {
             let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
             let optimizedData: Data = try! data.gzipped(level: .bestCompression)
             let postLength = String(format: "%lu", UInt(optimizedData.count))
-            let request = newPostRequest(url: url, data: optimizedData, postLength: postLength)
+            let request = newPostRequestWithContent(url: url, data: optimizedData, postLength: postLength)
             let task = delegateSession.uploadTask(withStreamedRequest: request)
 
             task.resume()
@@ -236,33 +240,33 @@ struct ContentView: View {
             let allowedMimeTypes = mimeTypes.map { (key, value) in return key }
 
             if allowedMimeTypes.contains(fileExt) {
-               let mimeType = String(mimeTypes[fileExt]!).lowercased()
-               let data = try Data(contentsOf: URL(fileURLWithPath: itemPath))
-               let chunkSize = 104857600 // 100MB
+                let mimeType = String(mimeTypes[fileExt]!).lowercased()
+                let data = try Data(contentsOf: URL(fileURLWithPath: itemPath))
+                let chunkSize = 104857600 // 100MB
 
-               if (data.count > chunkSize) {
-                   let zipFilePath = try Zip.quickZipFiles([URL(fileURLWithPath: itemPath)], fileName: "archive")
+                if (data.count > chunkSize) {
+                    let zipFilePath = try Zip.quickZipFiles([URL(fileURLWithPath: itemPath)], fileName: "archive")
 
-                   let tempDir = FileManager.default.temporaryDirectory
-                   let tempFileURL = tempDir.appendingPathComponent("sample")
+                    let tempDir = FileManager.default.temporaryDirectory
+                    let tempFileURL = tempDir.appendingPathComponent("sample")
 
-                   let chunker = FileChunker.init(input: zipFilePath, outputDirectory: tempFileURL, chunkSize: chunkSize)
-                   let _ = try chunker.chunk()
+                    let chunker = FileChunker.init(input: zipFilePath, outputDirectory: tempFileURL, chunkSize: chunkSize)
+                    let _ = try chunker.chunk()
 
-                   let directoryContents = try
-                      FileManager.default.contentsOfDirectory(at: tempFileURL,
-                             includingPropertiesForKeys:[.contentModificationDateKey],
-                             options: [.skipsHiddenFiles, .skipsSubdirectoryDescendants])
-                          .filter { $0.lastPathComponent.hasSuffix(".block") }
-                          .sorted(by: {
-                              let date0 = try $0.promisedItemResourceValues(forKeys:[.contentModificationDateKey]).contentModificationDate!
-                              let date1 = try $1.promisedItemResourceValues(forKeys:[.contentModificationDateKey]).contentModificationDate!
-                              return date0.compare(date1) == .orderedAscending
-                           })
+                    let directoryContents = try
+                        FileManager.default.contentsOfDirectory(at: tempFileURL,
+                                includingPropertiesForKeys:[.contentModificationDateKey],
+                                options: [.skipsHiddenFiles, .skipsSubdirectoryDescendants])
+                            .filter { $0.lastPathComponent.hasSuffix(".block") }
+                            .sorted(by: {
+                                let date0 = try $0.promisedItemResourceValues(forKeys:[.contentModificationDateKey]).contentModificationDate!
+                                let date1 = try $1.promisedItemResourceValues(forKeys:[.contentModificationDateKey]).contentModificationDate!
+                                return date0.compare(date1) == .orderedAscending
+                            })
 
-                   let FilePaths = directoryContents.map{ $0.path() }
-                   var i = 0
-                   let filesCount = FilePaths.count
+                    let FilePaths = directoryContents.map{ $0.path() }
+                    var i = 0
+                    let filesCount = FilePaths.count
 
                     for counter in 0..<filesCount {
                         let fileData = try Data(contentsOf: URL(fileURLWithPath: FilePaths[counter]))
@@ -283,6 +287,14 @@ struct ContentView: View {
                     try FileManager.default.removeItem(at: tempFileURL)
                     try FileManager.default.removeItem(at: zipFilePath)
 
+                    let uploadDetails = UploadDetails(
+                        fileSize: data.count,
+                        fileName: itemPath,
+                        mimeType: mimeType
+                    )
+
+                    createEvent(url: "\(backendURL)/\(uuid)", eventType: "upload", uploadDetails: uploadDetails)
+
                     newUploadRequest(
                         uuid: uuid,
                         source: source,
@@ -296,9 +308,18 @@ struct ContentView: View {
 
                } else {
                     let fileData = try Data(contentsOf: URL(fileURLWithPath: itemPath))
+                    let uuid = UUID()
+
+                    let uploadDetails = UploadDetails(
+                        fileSize: data.count,
+                        fileName: itemPath,
+                        mimeType: mimeType
+                    )
+
+                    createEvent(url: "\(backendURL)/\(uuid)", eventType: "upload", uploadDetails: uploadDetails)
 
                     newUploadRequest(
-                        uuid: UUID(),
+                        uuid: uuid,
                         source: source,
                         path: itemPath,
                         mimeType: mimeType,
@@ -438,8 +459,6 @@ struct ContentView: View {
         let name: String
         let state: String
         let dataUrl: String
-        let folder: String?
-        let subfolder: String?
         let webUrl: String
     }
 
@@ -548,19 +567,64 @@ struct ContentView: View {
         self.uploadTextFiles = []
 
         for upload in self.uploadsWithFiles {
-            self.uploadImageFiles += upload.imageFiles
+            // ImageFile
+            var i = 0
+            var imageFiles = upload.imageFiles
+            for imageFileItem in imageFiles {
+                if (imageFileItem.folder.state == "archived") {
+                    imageFiles.remove(at: i)
+                }
+                i += 1
+            }
+            self.uploadImageFiles += imageFiles
             for imageFile in upload.imageFiles {
                 if !self.loadedFolders.map({ $0.id }).contains(imageFile.folder.id) {
                     self.loadedFolders.append(imageFile.folder)
                 }
             }
-            self.uploadPdfFiles += upload.pdfFiles
+
+            // PdfFile
+            i = 0
+            var pdfFiles = upload.pdfFiles
+            for pdfFileItem in pdfFiles {
+                if (pdfFileItem.folder.state == "archived") {
+                    pdfFiles.remove(at: i)
+                }
+                i += 1
+            }
+            self.uploadPdfFiles += pdfFiles
             for pdfFile in upload.pdfFiles {
                 if !self.loadedFolders.map({ $0.id }).contains(pdfFile.folder.id) {
                     self.loadedFolders.append(pdfFile.folder)
                 }
             }
-            self.uploadAudioFiles += upload.audioFiles
+
+            // TextFile
+            i = 0
+            var textFiles = upload.textFiles
+            for textFileItem in textFiles {
+                if (textFileItem.folder.state == "archived") {
+                    textFiles.remove(at: i)
+                }
+                i += 1
+            }
+            self.uploadTextFiles += textFiles
+            for textFile in upload.textFiles {
+                if !self.loadedFolders.map({ $0.id }).contains(textFile.folder.id) {
+                    self.loadedFolders.append(textFile.folder)
+                }
+            }
+
+            // AudioFile
+            i = 0
+            var audioFiles = upload.audioFiles
+            for audioFileItem in audioFiles {
+                if (audioFileItem.folder.state == "archived") {
+                    audioFiles.remove(at: i)
+                }
+                i += 1
+            }
+            self.uploadAudioFiles += audioFiles
             for audioFile in upload.audioFiles {
                 if !self.loadedFolders.map({ $0.id }).contains(audioFile.folder.id) {
                     self.loadedFolders.append(audioFile.folder)
@@ -569,19 +633,23 @@ struct ContentView: View {
                     getAudioStream(audioFile: audioFile)
                 }
             }
-            self.uploadVideoFiles += upload.videoFiles
+
+            // VideoFile
+            i = 0
+            var videoFiles = upload.videoFiles
+            for videoFileItem in videoFiles {
+                if (videoFileItem.folder.state == "archived") {
+                    videoFiles.remove(at: i)
+                }
+                i += 1
+            }
+            self.uploadVideoFiles += videoFiles
             for videoFile in upload.videoFiles {
                 if !self.loadedFolders.map({ $0.id }).contains(videoFile.folder.id) {
                     self.loadedFolders.append(videoFile.folder)
                 }
                 DispatchQueue.main.async {
                     getVideoStream(videoFile: videoFile)
-                }
-            }
-            self.uploadTextFiles += upload.textFiles
-            for textFile in upload.textFiles {
-                if !self.loadedFolders.map({ $0.id }).contains(textFile.folder.id) {
-                    self.loadedFolders.append(textFile.folder)
                 }
             }
         }
@@ -591,29 +659,34 @@ struct ContentView: View {
         if (uploadImageFiles.count > 0) {
             searchableImageFiles = uploadImageFiles.map { $0 }
         }
-        if (uploadVideoFiles.count > 0) {
-            searchableVideoFiles = uploadVideoFiles.map { $0 }
-        }
-        if (uploadAudioFiles.count > 0) {
-            searchableAudioFiles = uploadAudioFiles.map { $0 }
-        }
         if (uploadPdfFiles.count > 0) {
             searchablePdfFiles = uploadPdfFiles.map { $0 }
         }
         if (uploadTextFiles.count > 0) {
             searchableTextFiles = uploadTextFiles.map { $0 }
         }
+        if (uploadAudioFiles.count > 0) {
+            searchableAudioFiles = uploadAudioFiles.map { $0 }
+        }
+        if (uploadVideoFiles.count > 0) {
+            searchableVideoFiles = uploadVideoFiles.map { $0 }
+        }
     }
 
     func getAllUploads() {
+        logger.info("[getAllUploads] New Request")
         let delegateClass = NetworkDelegateClass()
         let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
-        let request = newGetRequest(url: URL(string: "\(backendURL)")!)
+        let accountUuid = self.signedInUser?.accountUuid!.uuidString
+        let accountUuidUnwrapped = (accountUuid ?? "")!
+        let request = newGetRequest(url: URL(string: "\(backendURL)/\(accountUuidUnwrapped)")!)
         let task = delegateSession.dataTask(with: request) { data, response, error in
             do {
                 let response = try JSONDecoder().decode([UploadWithFiles].self, from: data!)
 
                 DispatchQueue.main.async {
+                    self.loadedFolders = Array<Folder>()
+                    self.selectedFolders = Set()
                     setUploads(results: response)
                 }
             } catch let error {
@@ -625,6 +698,10 @@ struct ContentView: View {
     }
 
     func getSelectedUploadsRequest() -> URL {
+        let accountUuid = self.signedInUser?.accountUuid!.uuidString
+        let accountUuidUnwrapped = (accountUuid ?? "")!
+        let url = URL(string: "\(backendURL)/\(accountUuidUnwrapped)")!
+
         if (selectedFolders.count > 0) {
             var str:String = ""
             for folderId in selectedFolders {
@@ -632,9 +709,11 @@ struct ContentView: View {
             }
             let strData:Data = str.data(using: .utf8)!
             let base64str:String = strData.base64EncodedString()
-            return URL(string: "\(backendURL)" + "?folderIds=\(base64str)")!
+
+            return URL(string: "\(url)" + "?folderIds=\(base64str)")!
         } else {
-            return URL(string: "\(backendURL)")!
+
+            return URL(string: "\(url)")!
         }
     }
 
@@ -841,6 +920,10 @@ struct ContentView: View {
     @State private var playlistsServiceURL:String = "https://link12.ddns.net:5050/playlists"
 //    @State private var playlistsServiceURL:String = "http://192.168.1.11:3001/playlists"
 
+//    @State private var eventURL:String = "https://appshare.site:4040/event"
+    @State private var eventURL:String = "https://link12.ddns.net:4040/event"
+//    @State private var eventURL:String = "http://192.168.1.11:3000/event"
+
     /*
         Backend Requests
      */
@@ -921,6 +1004,7 @@ struct ContentView: View {
                 firstName: firstNameAccountForm,
                 lastName: lastNameAccountForm,
                 emailAddress: emailAddressAccountForm,
+                emailAddressValidatedAt: "",
                 password: "",
                 deliverNotificationsSignIn: notifyOnSignInAccountForm,
                 deliverNotificationsAccountUpdate: notifyOnAccountUpdateAccountForm,
@@ -974,6 +1058,113 @@ struct ContentView: View {
 
         } catch let error {
             logger.error("[submitAccountForm] Error: \(error)")
+        }
+    }
+
+    struct Event: Codable, Identifiable {
+        let id: Int?
+        let accountUuid: String
+        let url: String
+        let eventType: String
+        let parameters: Data
+    }
+
+    struct PlatformDetails: Codable {
+        let CFBundleDevelopmentRegion: String
+        let DTSDKName: String
+        let DTXcodeBuild: String
+        let CFBundleIdentifier: String
+        let DTCompiler: String
+        let BuildMachineOSBuild: String
+        let LSMinimumSystemVersion: String
+        let DTSDKBuild: String
+        let CFBundleInfoDictionaryVersion: String
+        let DTPlatformName: String
+        let DTPlatformBuild: String
+        let DTPlatformVersion: String
+        let CFBundleName: String
+        let CFBundleShortVersionString: String
+        let CFBundlePackageType: String
+        let DTXcode: String
+        let CFBundleExecutable: String
+    }
+
+    struct UploadDetails: Codable {
+        let fileSize: Int
+        let fileName: String
+        let mimeType: String
+    }
+
+    struct EventParameters: Codable {
+        let id: Int?
+        let OpenAt: String
+        let platformDetails: PlatformDetails
+        let uploadDetails: UploadDetails
+    }
+
+    func createEvent(url: String, eventType: String, uploadDetails: UploadDetails) {
+        do {
+            let infoDictionary:[String:Any]? = Bundle.main.infoDictionary ?? [:]
+            let infoDictionaryUnwrapped = infoDictionary!
+
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZZZZZ"
+            let openAtFormatted = dateFormatter.string(from: Date())
+
+            let platformDetails = PlatformDetails(
+                CFBundleDevelopmentRegion: infoDictionaryUnwrapped["CFBundleDevelopmentRegion"] as! String,
+                DTSDKName: infoDictionaryUnwrapped["DTSDKName"] as! String,
+                DTXcodeBuild: infoDictionaryUnwrapped["DTXcodeBuild"] as! String,
+                CFBundleIdentifier: infoDictionaryUnwrapped["CFBundleIdentifier"] as! String,
+                DTCompiler: infoDictionaryUnwrapped["DTCompiler"] as! String,
+                BuildMachineOSBuild: infoDictionaryUnwrapped["BuildMachineOSBuild"] as! String,
+                LSMinimumSystemVersion: infoDictionaryUnwrapped["LSMinimumSystemVersion"] as! String,
+                DTSDKBuild: infoDictionaryUnwrapped["DTSDKBuild"] as! String,
+                CFBundleInfoDictionaryVersion: infoDictionaryUnwrapped["CFBundleInfoDictionaryVersion"] as! String,
+                DTPlatformName: infoDictionaryUnwrapped["DTPlatformName"] as! String,
+                DTPlatformBuild: infoDictionaryUnwrapped["DTPlatformBuild"] as! String,
+                DTPlatformVersion: infoDictionaryUnwrapped["DTPlatformVersion"] as! String,
+                CFBundleName: infoDictionaryUnwrapped["CFBundleName"] as! String,
+                CFBundleShortVersionString: infoDictionaryUnwrapped["CFBundleShortVersionString"] as! String,
+                CFBundlePackageType: infoDictionaryUnwrapped["CFBundlePackageType"] as! String,
+                DTXcode: infoDictionaryUnwrapped["DTXcode"] as! String,
+                CFBundleExecutable: infoDictionaryUnwrapped["CFBundleExecutable"] as! String,
+            )
+
+            let parameters = EventParameters(
+                id: nil,
+                OpenAt: openAtFormatted,
+                platformDetails: platformDetails,
+                uploadDetails: uploadDetails
+            )
+
+            let parametersData = try JSONEncoder().encode(parameters)
+            let accountUuid = self.signedInUser?.accountUuid!.uuidString
+            let accountUuidUnwrapped = accountUuid!
+
+            let event = Event(
+                id: nil,
+                accountUuid: accountUuidUnwrapped,
+                url: url,
+                eventType: eventType,
+                parameters: parametersData
+            )
+            let data = try JSONEncoder().encode(event)
+
+            let url = URL(string: "\(eventURL)")!
+            let delegateClass = NetworkDelegateClass()
+            let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
+            let optimizedData: Data = try! data.gzipped(level: .bestCompression)
+            let postLength = String(format: "%lu", UInt(optimizedData.count))
+            let request = newPostRequestWithContent(url: url, data: optimizedData, postLength: postLength)
+            let task = delegateSession.dataTask(with: request) { data, response, error in
+                //
+            }
+
+            task.resume()
+
+        } catch let error {
+            logger.error("[createEvent] Error: \(error)")
         }
     }
 
@@ -1047,6 +1238,7 @@ struct ContentView: View {
         let firstName: String?
         let lastName: String?
         let emailAddress: String?
+        let emailAddressValidatedAt: String?
         let password: String?
         let deliverNotificationsSignIn: Bool?
         let deliverNotificationsAccountUpdate: Bool?
@@ -1076,6 +1268,7 @@ struct ContentView: View {
                 firstName: firstNameRegistrationForm,
                 lastName: lastNameRegistrationForm,
                 emailAddress: emailAddressRegistrationForm,
+                emailAddressValidatedAt: "",
                 password: passwordRegistrationForm,
                 deliverNotificationsSignIn: false,
                 deliverNotificationsAccountUpdate: false,
@@ -1276,13 +1469,15 @@ struct ContentView: View {
 
                             // callback
                             self.signedInUser = userResponseWithMessage.user
-                            self.identified = (self.signedInUser?.createdAt != nil)
-                            resetValuesNewSession(keep_values: false)
-                            storeCredentials(
-                                username: user.emailAddress!,
-                                password: user.password!,
-                                server: "link12.ddns.net"
-                            )
+                            if (self.signedInUser?.emailAddressValidatedAt != nil) {
+                                self.identified = true
+                                resetValuesNewSession(keep_values: false)
+                                storeCredentials(
+                                    username: user.emailAddress!,
+                                    password: user.password!,
+                                    server: "link12.ddns.net"
+                                )
+                            }
                         } else if errorsData != nil {
                             let errorsDataUnwrapped = errorsData!
                             iterateOverErrorsNewSession(errors: errorsDataUnwrapped)
@@ -1981,12 +2176,6 @@ struct ContentView: View {
     func getFolderName(folder: Folder) -> String {
         var folderNames:[String] = []
         folderNames += [folder.name]
-        if folder.folder != nil && (folder.folder != folder.name) {
-            folderNames += [folder.folder!]
-        }
-        if folder.subfolder != nil {
-            folderNames += [folder.subfolder!]
-        }
         return folderNames.joined(separator: ", ")
     }
 
@@ -2090,7 +2279,10 @@ struct ContentView: View {
     @State private var selectedFolderAction: FolderAction = .none
 
     func updateSelectedFolders() {
-        self.searchText = "";
+        // Reset search text
+        self.searchText = ""
+
+        logger.info("[updateSelectedFolders] Update Folders")
         if ($selectedFolderAction.wrappedValue == FolderAction.publish) {
             publishSelectedFolders()
         } else if ($selectedFolderAction.wrappedValue == FolderAction.unpublish) {
@@ -2244,7 +2436,8 @@ struct ContentView: View {
     func fetchSearchResults(for searchQuery: String) {
         logger.info("[fetchSearchResults] \(searchQuery)")
 
-        if (searchQuery == "" || searchQuery.count <= 3) {
+        if (searchQuery == "") {
+            // Reload Folders
             refreshUploads()
         } else {
             loadedFolders = searchableFolders.filter { folder in
@@ -2253,7 +2446,7 @@ struct ContentView: View {
                     .contains(searchQuery.lowercased())
             }
             uploadImageFiles = searchableImageFiles.filter { imageFile in
-                imageFile.fileName
+                imageFile.folder.name
                     .lowercased()
                     .contains(searchQuery.lowercased())
             }
@@ -2268,7 +2461,7 @@ struct ContentView: View {
                 self.loadedFolders.append(imageFile.folder)
             }
             uploadVideoFiles = searchableVideoFiles.filter { videoFile in
-                videoFile.fileName
+                videoFile.folder.name
                     .lowercased()
                     .contains(searchQuery.lowercased())
             }
@@ -2283,7 +2476,7 @@ struct ContentView: View {
                 self.loadedFolders.append(videoFile.folder)
             }
             uploadAudioFiles = searchableAudioFiles.filter { audioFile in
-                audioFile.fileName
+                audioFile.folder.name
                     .lowercased()
                     .contains(searchQuery.lowercased())
             }
@@ -2298,7 +2491,7 @@ struct ContentView: View {
                 self.loadedFolders.append(audioFile.folder)
             }
             uploadPdfFiles = searchablePdfFiles.filter { pdfFile in
-                pdfFile.fileName
+                pdfFile.folder.name
                     .lowercased()
                     .contains(searchQuery.lowercased())
             }
@@ -2313,7 +2506,7 @@ struct ContentView: View {
                 self.loadedFolders.append(pdfFile.folder)
             }
             uploadTextFiles = searchableTextFiles.filter { textFile in
-                textFile.fileName
+                textFile.folder.name
                     .lowercased()
                     .contains(searchQuery.lowercased())
             }
@@ -2331,8 +2524,12 @@ struct ContentView: View {
     }
 
     func refreshUploads() {
-        clearSelectedFolders()
-        getAllUploads()
+        if (isImporting) {
+            logger.error("[refreshUploads] $isImporting is set to true, which means the refresh action will happen after that.")
+        } else {
+            clearSelectedFolders()
+            getAllUploads()
+        }
     }
 
     @Environment(\.openURL) var openURL
@@ -2385,8 +2582,13 @@ struct ContentView: View {
                                 Button(action: submitEditPasswordForm) {
                                     Text("Submit")
                                 }
-                                .buttonStyle(PlainButtonStyle())
+//                                .buttonStyle(PlainButtonStyle())
                                 .disabled(self.editPasswordComplete)
+                                .font(.system(size: 11))
+                                .padding(5)
+                                .opacity(0.9)
+                                .glassEffect(.regular.tint(.clear).interactive(), in: .capsule)
+                                .buttonStyle(.glassProminent)
 
                                 Spacer()
 
@@ -2442,8 +2644,13 @@ struct ContentView: View {
                                 Button(action: submitEditEmailAddressForm) {
                                     Text("Submit")
                                 }
-                                .buttonStyle(PlainButtonStyle())
+//                                .buttonStyle(PlainButtonStyle())
                                 .disabled(self.editEmailAddressComplete)
+                                .font(.system(size: 11))
+                                .padding(5)
+                                .opacity(0.9)
+                                .glassEffect(.regular.tint(.clear).interactive(), in: .capsule)
+                                .buttonStyle(.glassProminent)
 
                                 Spacer()
 
@@ -2550,7 +2757,7 @@ struct ContentView: View {
                                     .disableAutocorrection(true)
                                     .disabled(true)
                                 }
-//
+
                                 let updatedAt = self.signedInUser?.updatedAt
                                 if (updatedAt != nil) {
                                     let updatedAtUnwrapped = updatedAt!
@@ -2590,8 +2797,13 @@ struct ContentView: View {
                                 Button(action: submitAccountForm) {
                                     Text("Submit")
                                 }
-                                .buttonStyle(PlainButtonStyle())
+//                                .buttonStyle(PlainButtonStyle())
                                 .disabled(self.editAccountComplete)
+                                .font(.system(size: 11))
+                                .padding(5)
+                                .opacity(0.9)
+                                .glassEffect(.regular.tint(.clear).interactive(), in: .capsule)
+                                .buttonStyle(.glassProminent)
 
                                 Spacer()
 
@@ -2651,7 +2863,7 @@ struct ContentView: View {
                             Text("Change Email Address")
                                 .foregroundStyle(.blue.gradient)
                         }.buttonStyle(PlainButtonStyle())
-                    }
+                  }
 
                 } else if self.newPassword {
                     /*
@@ -2683,8 +2895,13 @@ struct ContentView: View {
                             Button(action: submitNewPasswordForm) {
                                 Text("Submit")
                             }
-                            .buttonStyle(PlainButtonStyle())
+//                            .buttonStyle(PlainButtonStyle())
                             .disabled(self.newPasswordComplete)
+                            .font(.system(size: 11))
+                            .padding(5)
+                            .opacity(0.9)
+                            .glassEffect(.regular.tint(.clear).interactive(), in: .capsule)
+                            .buttonStyle(.glassProminent)
 
                             Spacer()
 
@@ -2813,8 +3030,13 @@ struct ContentView: View {
                             Button(action: submitRegistrationForm) {
                                 Text("Submit")
                             }
-                            .buttonStyle(PlainButtonStyle())
+//                            .buttonStyle(PlainButtonStyle())
                             .disabled(self.newAccountComplete)
+                            .font(.system(size: 11))
+                            .padding(5)
+                            .opacity(0.9)
+                            .glassEffect(.regular.tint(.clear).interactive(), in: .capsule)
+                            .buttonStyle(.glassProminent)
 
                             Spacer()
 
@@ -2861,8 +3083,13 @@ struct ContentView: View {
                             Button(action: submitNewSessionForm) {
                                 Text("Submit")
                             }
-                            .buttonStyle(PlainButtonStyle())
+//                            .buttonStyle(PlainButtonStyle())
                             .disabled(self.newSessionComplete)
+                            .font(.system(size: 11))
+                            .padding(5)
+                            .opacity(0.9)
+                            .glassEffect(.regular.tint(.clear).interactive(), in: .capsule)
+                            .buttonStyle(.glassProminent)
                             .keyboardShortcut(KeyboardShortcut(.return, modifiers: []))
 
                             /* Register */
@@ -2902,7 +3129,17 @@ struct ContentView: View {
 
             case .upload:
                 if !self.identified {
-                    Text("You need to be identified. Please sign-in.")
+                    List {
+                        Section {
+                            Spacer()
+
+                            Text("You need to be identified. Please sign-in.")
+                                .padding(10)
+
+                            Spacer()
+                        }
+                    }
+                    .navigationSplitViewColumnWidth(min: .infinity, ideal: .infinity, max: .infinity)
                 } else {
                     /*
                         Main Upload Panel
@@ -2960,10 +3197,15 @@ struct ContentView: View {
                                     }
                                 }
                             }
+                            .font(.system(size: 11))
+                            .padding(5)
+                            .opacity(0.9)
+                            .glassEffect(.regular.tint(.clear).interactive(), in: .capsule)
+                            .buttonStyle(.glassProminent)
                         }
                     }
                     .padding(5)
-                    .navigationTitle("DemoApp (\(self.signedInUser?.emailAddress! ?? "")")
+                    .navigationTitle("DemoApp \(self.signedInUser?.emailAddress! ?? "")")
                     .toolbar {
                         Button(action: refreshUploads) {
                             Image(systemName: "arrow.clockwise")
@@ -2977,8 +3219,12 @@ struct ContentView: View {
                               sortOrder: $folderSortOrder) {
 
                             TableColumn("Name", value: \.name) { folder in
-                                Label("\(folder.name)",
-                                      systemImage: "folder")
+                                Label {
+                                    Text("\(folder.name)")
+                                } icon: {
+                                    Image(systemName: "folder")
+                                        .font(.system(size: 11))
+                                }
                                 .foregroundStyle(.primary)
                                 .labelStyle(.titleAndIcon)
                                 .font(.system(size: 11))
@@ -3015,6 +3261,9 @@ struct ContentView: View {
                                         }
                                     }
                                 }
+                                if (self.selectedFolders.count == 0) {
+                                    self.searchText = ""
+                                }
                                 getSelectedUploads()
                             }
                         }
@@ -3042,7 +3291,7 @@ struct ContentView: View {
                                       sortOrder: $imageFileSortOrder) {
 
                                     TableColumn("fileName") { imageFile in
-                                        Label((imageFile.fileName), systemImage: "doc")
+                                        Label(imageFile.fileName, systemImage: "doc")
                                             .labelStyle(.titleAndIcon)
                                             .font(.system(size: 11))
                                     }
@@ -3118,7 +3367,7 @@ struct ContentView: View {
                                       sortOrder: $audioFileSortOrder) {
 
                                     TableColumn("fileName") { audioFile in
-                                        Label((audioFile.fileName), systemImage: "doc")
+                                        Label(audioFile.fileName, systemImage: "doc")
                                             .labelStyle(.titleAndIcon)
                                             .font(.system(size: 11))
                                     }
@@ -3209,7 +3458,7 @@ struct ContentView: View {
                                       sortOrder: $videoFileSortOrder) {
 
                                     TableColumn("fileName") { videoFile in
-                                        Label((videoFile.fileName), systemImage: "doc")
+                                        Label(videoFile.fileName, systemImage: "doc")
                                             .labelStyle(.titleAndIcon)
                                             .font(.system(size: 11))
                                     }
@@ -3359,7 +3608,7 @@ struct ContentView: View {
                                       sortOrder: $textFileSortOrder) {
 
                                     TableColumn("fileName") { textFile in
-                                        Label((textFile.fileName), systemImage: "doc")
+                                        Label(textFile.fileName, systemImage: "doc")
                                             .labelStyle(.titleAndIcon)
                                             .font(.system(size: 11))
                                     }
@@ -3445,753 +3694,786 @@ struct ContentView: View {
                 }
             }
         } detail: {
-            if (selectedSideBarItem == .upload) {
-                HStack {
-                    VStack(spacing: 0) {
-                        if (self.selectedFolders.count > 0) {
-                            HStack {
-                                VStack {
+            if self.identified {
+                if (selectedSideBarItem == .upload) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 0) {
+                            if (self.selectedFolders.count > 0) {
+                                HStack {
+                                    /*
+                                     Folder Actions: Publish, Unpublish, Archive, Unarchive, Delete
+                                     */
                                     Picker("Folder actions", selection: $selectedFolderAction) {
                                         ForEach(FolderAction.allCases) { action in
                                             Text((action == FolderAction.none) ? "" : action.rawValue.capitalized)
                                                 .font(.system(size: 11))
                                         }
                                     }
+                                    .font(.system(size: 11))
+                                    .padding(5)
+                                    .opacity(0.9)
                                     .pickerStyle(MenuPickerStyle())
                                     .tint(.blue)
-                                }.frame(width: 250)
-                                Button(action: updateSelectedFolders) {
-                                    Image(systemName: "chevron.right")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.black.gradient)
-                                    Text("Update \(self.selectedFolders.count > 1 ? "Folders" : "Folder")")
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.black.gradient)
-                                }
-                                .buttonStyle(.borderedProminent)
-                                .tint(.blue)
-                                Text("\(self.selectedFolders.count) \(self.selectedFolders.count > 1 ? "Folders" : "Folder") selected")
+
+                                    Button(action: updateSelectedFolders) {
+                                        Image(systemName: "chevron.right")
+                                        Text("Update \(self.selectedFolders.count > 1 ? "Folders" : "Folder")")
+                                    }
                                     .font(.system(size: 11))
-                                    .foregroundStyle(.gray)
-                                    .truncationMode(.middle)
-                            }
-                            .frame(height: 55)
-                            .padding(5)
-                        }
-
-                        List {
-                            /*
-                              ImageFile
-                            */
-                            ForEach(self.selectedImageFiles) { imageFile in
-                                Section {
-                                    VStack(alignment: .leading, spacing: 5) {
-                                        Label {
-                                            Link("\(imageFile.folder.name)", destination: URL(string: imageFile.folder.webUrl)!)
-                                                .font(.system(size: 11))
-                                                .truncationMode(.middle)
-                                                .tint(.blue)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(imageFile.folder.state == "published" ? .yellow : .gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-
-                                        AsyncImage(url: URL(string: imageFile.fileUrl)) { result in
-                                            result.image?
-                                                .resizable()
-                                                .scaledToFill()
-                                        }
-                                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-                                        Label {
-                                            Link("\(imageFile.fileName)", destination: URL(string: imageFile.webUrl)!)
-                                                .font(.system(size: 11))
-                                                .truncationMode(.middle)
-                                                .tint(.blue)
-                                        } icon: {
-                                            Image(systemName: "photo")
-                                                .font(.system(size: 11))
-                                        }
-
-                                        Label {
-                                            Text("Mime/Type \(imageFile.mimeType ?? "")")
-                                                .font(.system(size: 11))
-                                                .foregroundStyle(.gray)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-
-                                        Label {
-                                            Text("Format \(imageFile.formatInfo ?? "")")
-                                                .font(.system(size: 11))
-                                                .foregroundStyle(.gray)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-
-                                        Label {
-                                            Text("File Size \(imageFile.fileSize ?? "")")
-                                                .font(.system(size: 11))
-                                                .foregroundStyle(.gray)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-
-                                        Label {
-                                            Text("Dimensions \(imageFile.dimensions ?? "")")
-                                                .font(.system(size: 11))
-                                                .foregroundStyle(.gray)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-
-                                        Label {
-                                            Text("Megapixels \(imageFile.megapixels ?? 0)")
-                                                .font(.system(size: 11))
-                                                .foregroundStyle(.gray)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-
-                                        Label {
-                                            Text("Width \(imageFile.width ?? 0)")
-                                                .font(.system(size: 11))
-                                                .foregroundStyle(.gray)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-
-                                        Label {
-                                            Text("Height \(imageFile.height ?? 0)")
-                                                .font(.system(size: 11))
-                                                .foregroundStyle(.gray)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-
-                                        Label {
-                                            Link("File URL", destination: URL(string: imageFile.fileUrl)!)
-                                                .font(.system(size: 11))
-                                                .tint(.blue)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-
-                                        Spacer()
-                                    }
-                                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .topLeading)
                                     .padding(5)
-
-                                    Spacer()
+                                    .opacity(0.9)
+                                    .glassEffect(.regular.tint(.clear).interactive(), in: .capsule)
+                                    .buttonStyle(.glassProminent)
                                 }
+                                .frame(height: 55)
+                                .padding(5)
                             }
-                            .listRowSeparator(.hidden)
-                            .listRowBackground(Ellipse()
-                                .background(Color.black)
-                                .foregroundColor(Color.clear)
-                                .opacity(0.25)
-                            )
 
-                            /*
-                              AudioFile
-                            */
-                            ForEach(self.selectedAudioFiles) { audioFile in
+                            List {
+                                /*
+                                 Selected Folders
+                                 */
                                 Section {
-                                    VStack(alignment: .leading, spacing: 5) {
-                                        Label {
-                                            Link("\(audioFile.folder.name)", destination: URL(string: audioFile.folder.webUrl)!)
-                                                .font(.system(size: 11))
-                                                .truncationMode(.middle)
-                                                .tint(.blue)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(audioFile.folder.state == "published" ? .yellow : .gray)
-                                                .frame(width: 8, height: 8)
-                                        }
+                                    VStack(alignment: .leading, spacing: 5){
+                                        Text("\(self.selectedFolders.count) \(self.selectedFolders.count > 1 ? "Folders" : "Folder") selected")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.gray)
+                                            .truncationMode(.middle)
+                                            .padding(5)
 
-                                        if (audioFile.aasmState == "created") {
-                                            Text("Processing…")
-                                                .font(.system(size: 11))
-                                                .padding(10)
-                                        } else if (audioFile.aasmState == "processed") {
-                                            VideoPlayer(player: player)
-                                                .frame(minWidth: 400, maxWidth: .infinity,
-                                                       minHeight: 150, maxHeight: .infinity)
-                                                .padding(10)
-                                        }
-
-                                        Label {
-                                            Link("\(audioFile.fileName)", destination: URL(string: audioFile.webUrl)!)
-                                                .font(.system(size: 11))
-                                                .truncationMode(.middle)
-                                                .tint(.blue)
-                                        } icon: {
-                                            Image(systemName: "waveform.circle")
-                                                .font(.system(size: 11))
-                                        }
-
-                                        Label {
-                                            Text("Format \(audioFile.formatInfo ?? "")")
-                                                .font(.system(size: 11))
-                                                .foregroundStyle(.gray)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-
-                                        Label {
-                                            Text("Mime/Type \(audioFile.mimeType ?? "")")
-                                                .font(.system(size: 11))
-                                                .foregroundStyle(.gray)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-
-                                        Label {
-                                            Text("File Size \(audioFile.fileSize ?? 0)")
-                                                .font(.system(size: 11))
-                                                .foregroundStyle(.gray)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-
-                                        Label {
-                                            Text("Title \(audioFile.title ?? "")")
-                                                .font(.system(size: 11))
-                                                .foregroundStyle(.gray)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-
-                                        Label {
-                                            Text("Bitrate \(audioFile.bitrate ?? 0)")
-                                                .font(.system(size: 11))
-                                                .foregroundStyle(.gray)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-
-                                        Label {
-                                            Text("Channels \(audioFile.channels ?? 0)")
-                                                .font(.system(size: 11))
-                                                .foregroundStyle(.gray)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-
-                                        Label {
-                                            Text("Length (ms) \(audioFile.length ?? 0)")
-                                                .font(.system(size: 11))
-                                                .foregroundStyle(.gray)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-
-                                        Label {
-                                            Text("Sample Rate \(audioFile.sampleRate ?? 0)")
-                                                .font(.system(size: 11))
-                                                .foregroundStyle(.gray)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-
-                                        Label {
-                                            Link("File URL", destination: URL(string: audioFile.fileUrl)!)
-                                                .font(.system(size: 11))
-                                                .tint(.blue)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-
-                                        Label {
-                                            Link("Web URL", destination: URL(string: audioFile.webUrl)!)
-                                                .font(.system(size: 11))
-                                                .tint(.blue)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-
-                                        Spacer()
-                                    }
-                                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .topLeading)
-                                    .padding(5)
-
-                                    Spacer()
-                                }
-                            }
-                            .listRowSeparator(.hidden)
-                            .listRowBackground(Ellipse()
-                                .background(Color.black)
-                                .foregroundColor(Color.clear)
-                                .opacity(0.25)
-                            )
-
-                            /*
-                              VideoFile
-                            */
-                            ForEach(self.selectedVideoFiles) { videoFile in
-                                Section {
-                                    VStack(alignment: .leading, spacing: 5) {
-                                        Label {
-                                            Link("\(videoFile.folder.name)", destination: URL(string: videoFile.folder.webUrl)!)
-                                                .font(.system(size: 11))
-                                                .truncationMode(.middle)
-                                                .tint(.blue)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(videoFile.folder.state == "published" ? .yellow : .gray)
-                                                .frame(width: 8, height: 8)
-                                        }.padding(5)
-
-                                        if (videoFile.aasmState == "created") {
-                                            Text("Processing…")
-                                                .font(.system(size: 11))
-                                                .padding(10)
-                                        } else if (videoFile.aasmState == "processed") {
-                                            VideoPlayer(player: player)
-                                                .frame(minWidth: 400, maxWidth: .infinity,
-                                                       minHeight: 300, maxHeight: .infinity)
-                                                .padding(10)
-                                        }
-
-                                        Label {
-                                            Link("\(videoFile.fileName)", destination: URL(string: videoFile.webUrl)!)
-                                                .font(.system(size: 11))
-                                                .truncationMode(.middle)
-                                                .tint(.blue)
-                                        } icon: {
-                                            Image(systemName: "video.circle")
-                                                .font(.system(size: 11))
-                                        }
-
-                                        Label {
-                                            Text("Format \(videoFile.formatInfo ?? "")")
-                                                .font(.system(size: 11))
-                                                .foregroundStyle(.gray)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-
-                                        Label {
-                                            Text("Mime/Type \(videoFile.mimeType ?? "")")
-                                                .font(.system(size: 11))
-                                                .foregroundStyle(.gray)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-
-                                        Label {
-                                            Text("File Size \(videoFile.fileSize ?? 0)")
-                                                .font(.system(size: 11))
-                                                .foregroundStyle(.gray)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-
-                                        Label {
-                                            Text("Title \(videoFile.title ?? "")")
-                                                .font(.system(size: 11))
-                                                .foregroundStyle(.gray)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-
-                                        Label {
-                                            Text("Bitrate \(videoFile.bitrate ?? 0)")
-                                                .font(.system(size: 11))
-                                                .foregroundStyle(.gray)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-
-                                        Label {
-                                            Text("FrameRate \(videoFile.frameRate ?? 0)")
-                                                .font(.system(size: 11))
-                                                .foregroundStyle(.gray)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-
-                                        Label {
-                                            Text("Length (s) \(videoFile.length ?? 0)")
-                                                .font(.system(size: 11))
-                                                .foregroundStyle(.gray)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-
-                                        Label {
-                                            Text("Width \(videoFile.width ?? 0)")
-                                                .font(.system(size: 11))
-                                                .foregroundStyle(.gray)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-
-                                        Label {
-                                            Text("Height \(videoFile.height ?? 0)")
-                                                .font(.system(size: 11))
-                                                .foregroundStyle(.gray)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-
-                                        Label {
-                                            Text("Aspect Ratio: \(videoFile.aspectRatio ?? 0)")
-                                                .font(.system(size: 11))
-                                                .foregroundStyle(.gray)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-
-                                        Label {
-                                            Link("File URL", destination: URL(string: videoFile.fileUrl)!)
-                                                .font(.system(size: 11))
-                                                .tint(.blue)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-
-                                        Label {
-                                            Link("Web URL", destination: URL(string: videoFile.webUrl)!)
-                                                .font(.system(size: 11))
-                                                .tint(.blue)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-
-                                        Spacer()
-                                    }
-                                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .topLeading)
-                                    .padding(5)
-
-                                    Spacer()
-                                }
-                            }
-                            .listRowSeparator(.hidden)
-                            .listRowBackground(Ellipse()
-                                .background(Color.black)
-                                .foregroundColor(Color.clear)
-                                .opacity(0.25)
-                            )
-
-                            /*
-                              PdfFile
-                            */
-                            ForEach(self.selectedPdfFiles) { pdfFile in
-                                Section {
-                                    VStack(alignment: .leading, spacing: 5) {
-                                        Label {
-                                            Link("\(pdfFile.folder.name)", destination: URL(string: pdfFile.folder.webUrl)!)
-                                                .font(.system(size: 11))
-                                                .truncationMode(.middle)
-                                                .tint(.blue)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(pdfFile.folder.state == "published" ? .yellow : .gray)
-                                                .frame(width: 8, height: 8)
-                                        }.padding(5)
-
-                                        Image(systemName: "square.text.square")
-                                            .font(.system(size: 40))
-                                            .frame(maxWidth: .infinity, alignment: .leading)
-                                            .padding(10)
-
-                                        Label {
-                                            Link("\(pdfFile.fileName)", destination: URL(string: pdfFile.webUrl)!)
-                                                .font(.system(size: 11))
-                                                .truncationMode(.middle)
-                                                .tint(.blue)
-                                        } icon: {
-                                            Image(systemName: "doc.circle.fill")
-                                                .font(.system(size: 11))
-                                        }
-
-                                        Label {
-                                            Text("Mime/Type \(pdfFile.mimeType ?? "")")
-                                                .font(.system(size: 11))
-                                                .foregroundStyle(.gray)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-
-                                        Label {
-                                            Text("Format \(pdfFile.formatInfo ?? "")")
-                                                .font(.system(size: 11))
-                                                .foregroundStyle(.gray)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-
-                                        Label {
-                                            Text("File Size \(pdfFile.fileSize ?? "")")
-                                                .font(.system(size: 11))
-                                                .foregroundStyle(.gray)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-
-                                        Label {
-                                            Link("File URL", destination: URL(string: pdfFile.fileUrl)!)
-                                                .font(.system(size: 11))
-                                                .tint(.blue)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-
-                                        Label {
-                                            Link("Web URL", destination: URL(string: pdfFile.webUrl)!)
-                                                .font(.system(size: 11))
-                                                .tint(.blue)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-
-                                        Spacer()
-
-                                        Divider()
-
-                                        Spacer()
-
-                                        Button(action: {
-                                            if let url = URL(string: pdfFile.webViewUrl) {
-                                                openURL(url)
+                                        ForEach(self.loadedFolders) { folder in
+                                            if (self.selectedFolders.map { $0 }.contains(folder.id)) {
+                                                Label {
+                                                    Link("\(folder.name)", destination: URL(string: folder.webUrl)!)
+                                                        .font(.system(size: 11))
+                                                        .truncationMode(.middle)
+                                                        .tint(.blue)
+                                                } icon: {
+                                                    Rectangle()
+                                                        .fill(folder.state == "published" ? .yellow : .gray)
+                                                        .frame(width: 8, height: 8)
+                                                }
                                             }
-                                        }) {
-                                            Image(systemName: "globe")
-                                                .font(.system(size: 11))
-
-                                            Text("Open in web view")
-                                                .font(.system(size: 11))
                                         }
-                                        .buttonStyle(.borderedProminent)
-                                        .tint(.blue)
-                                        .padding(5)
                                     }
-                                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .topLeading)
-                                    .padding(5)
-
-                                    Spacer()
                                 }
+
+                                /*
+                                 ImageFile
+                                 */
+                                ForEach(self.selectedImageFiles) { imageFile in
+                                    Section {
+                                        VStack(alignment: .leading, spacing: 5) {
+                                            Label {
+                                                Link("\(imageFile.folder.name)", destination: URL(string: imageFile.folder.webUrl)!)
+                                                    .font(.system(size: 11))
+                                                    .truncationMode(.middle)
+                                                    .tint(.blue)
+
+                                                Text(" / ")
+                                                    .foregroundStyle(.gray)
+
+                                                Link("\(imageFile.fileName)", destination: URL(string: imageFile.webUrl)!)
+                                                    .font(.system(size: 11))
+                                                    .truncationMode(.middle)
+                                                    .tint(.blue)
+                                            } icon: {
+                                                Image(systemName: "doc.circle.fill")
+                                                    .font(.system(size: 11))
+                                            }
+
+                                            AsyncImage(url: URL(string: imageFile.fileUrl)) { result in
+                                                result.image?
+                                                    .resizable()
+                                                    .scaledToFill()
+                                            }
+                                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                                            Label {
+                                                Text("Mime/Type \(imageFile.mimeType ?? "")")
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(.gray)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
+
+                                            Label {
+                                                Text("Format \(imageFile.formatInfo ?? "")")
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(.gray)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
+
+                                            Label {
+                                                Text("File Size \(imageFile.fileSize ?? "")")
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(.gray)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
+
+                                            Label {
+                                                Text("Dimensions \(imageFile.dimensions ?? "")")
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(.gray)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
+
+                                            Label {
+                                                Text("Megapixels \(imageFile.megapixels ?? 0)")
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(.gray)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
+
+                                            Label {
+                                                Text("Width \(imageFile.width ?? 0)")
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(.gray)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
+
+                                            Label {
+                                                Text("Height \(imageFile.height ?? 0)")
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(.gray)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
+
+                                            Label {
+                                                Link("File URL", destination: URL(string: imageFile.fileUrl)!)
+                                                    .font(.system(size: 11))
+                                                    .tint(.blue)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
+
+                                            Spacer()
+                                        }
+                                        .frame(minWidth: 0, maxWidth: .infinity, alignment: .topLeading)
+                                        .padding(5)
+
+                                        Spacer()
+                                    }
+                                }
+                                .listRowSeparator(.hidden)
+                                .listRowBackground(Ellipse()
+                                    .background(Color.black)
+                                    .foregroundColor(Color.clear)
+                                    .opacity(0.25)
+                                )
+
+                                /*
+                                 AudioFile
+                                 */
+                                ForEach(self.selectedAudioFiles) { audioFile in
+                                    Section {
+                                        VStack(alignment: .leading, spacing: 5) {
+                                            Label {
+                                                Link("\(audioFile.folder.name)", destination: URL(string: audioFile.folder.webUrl)!)
+                                                    .font(.system(size: 11))
+                                                    .truncationMode(.middle)
+                                                    .tint(.blue)
+
+                                                Text(" / ")
+                                                    .foregroundStyle(.gray)
+
+                                                Link("\(audioFile.fileName)", destination: URL(string: audioFile.webUrl)!)
+                                                    .font(.system(size: 11))
+                                                    .truncationMode(.middle)
+                                                    .tint(.blue)
+                                            } icon: {
+                                                Image(systemName: "doc.circle.fill")
+                                                    .font(.system(size: 11))
+                                            }
+
+                                            if (audioFile.aasmState == "created") {
+                                                Text("Processing…")
+                                                    .font(.system(size: 11))
+                                                    .padding(10)
+                                            } else if (audioFile.aasmState == "processed") {
+                                                VideoPlayer(player: player)
+                                                    .frame(minWidth: 400, maxWidth: .infinity,
+                                                           minHeight: 150, maxHeight: .infinity)
+                                                    .padding(10)
+                                            }
+
+                                            Label {
+                                                Text("Format \(audioFile.formatInfo ?? "")")
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(.gray)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
+
+                                            Label {
+                                                Text("Mime/Type \(audioFile.mimeType ?? "")")
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(.gray)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
+
+                                            Label {
+                                                Text("File Size \(audioFile.fileSize ?? 0)")
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(.gray)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
+
+                                            Label {
+                                                Text("Title \(audioFile.title ?? "")")
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(.gray)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
+
+                                            Label {
+                                                Text("Bitrate \(audioFile.bitrate ?? 0)")
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(.gray)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
+
+                                            Label {
+                                                Text("Channels \(audioFile.channels ?? 0)")
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(.gray)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
+
+                                            Label {
+                                                Text("Length (ms) \(audioFile.length ?? 0)")
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(.gray)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
+
+                                            Label {
+                                                Text("Sample Rate \(audioFile.sampleRate ?? 0)")
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(.gray)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
+
+                                            Label {
+                                                Link("File URL", destination: URL(string: audioFile.fileUrl)!)
+                                                    .font(.system(size: 11))
+                                                    .tint(.blue)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
+
+                                            Label {
+                                                Link("Web URL", destination: URL(string: audioFile.webUrl)!)
+                                                    .font(.system(size: 11))
+                                                    .tint(.blue)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
+
+                                            Spacer()
+                                        }
+                                        .frame(minWidth: 0, maxWidth: .infinity, alignment: .topLeading)
+                                        .padding(5)
+
+                                        Spacer()
+                                    }
+                                }
+                                .listRowSeparator(.hidden)
+                                .listRowBackground(Ellipse()
+                                    .background(Color.black)
+                                    .foregroundColor(Color.clear)
+                                    .opacity(0.25)
+                                )
+
+                                /*
+                                 VideoFile
+                                 */
+                                ForEach(self.selectedVideoFiles) { videoFile in
+                                    Section {
+                                        VStack(alignment: .leading, spacing: 5) {
+                                            Label {
+                                                Link("\(videoFile.folder.name)", destination: URL(string: videoFile.folder.webUrl)!)
+                                                    .font(.system(size: 11))
+                                                    .truncationMode(.middle)
+                                                    .tint(.blue)
+
+                                                Text(" / ")
+                                                    .foregroundStyle(.gray)
+
+                                                Link("\(videoFile.fileName)", destination: URL(string: videoFile.webUrl)!)
+                                                    .font(.system(size: 11))
+                                                    .truncationMode(.middle)
+                                                    .tint(.blue)
+                                            } icon: {
+                                                Image(systemName: "doc.circle.fill")
+                                                    .font(.system(size: 11))
+                                            }
+
+                                            if (videoFile.aasmState == "created") {
+                                                Text("Processing…")
+                                                    .font(.system(size: 11))
+                                                    .padding(10)
+                                            } else if (videoFile.aasmState == "processed") {
+                                                VideoPlayer(player: player)
+                                                    .frame(minWidth: 400, maxWidth: .infinity,
+                                                           minHeight: 300, maxHeight: .infinity)
+                                                    .padding(10)
+                                            }
+
+                                            Label {
+                                                Text("Format \(videoFile.formatInfo ?? "")")
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(.gray)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
+
+                                            Label {
+                                                Text("Mime/Type \(videoFile.mimeType ?? "")")
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(.gray)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
+
+                                            Label {
+                                                Text("File Size \(videoFile.fileSize ?? 0)")
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(.gray)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
+
+                                            Label {
+                                                Text("Title \(videoFile.title ?? "")")
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(.gray)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
+
+                                            Label {
+                                                Text("Bitrate \(videoFile.bitrate ?? 0)")
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(.gray)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
+
+                                            Label {
+                                                Text("FrameRate \(videoFile.frameRate ?? 0)")
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(.gray)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
+
+                                            Label {
+                                                Text("Length (s) \(videoFile.length ?? 0)")
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(.gray)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
+
+                                            Label {
+                                                Text("Width \(videoFile.width ?? 0)")
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(.gray)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
+
+                                            Label {
+                                                Text("Height \(videoFile.height ?? 0)")
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(.gray)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
+
+                                            Label {
+                                                Text("Aspect Ratio: \(videoFile.aspectRatio ?? 0)")
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(.gray)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
+
+                                            Label {
+                                                Link("File URL", destination: URL(string: videoFile.fileUrl)!)
+                                                    .font(.system(size: 11))
+                                                    .tint(.blue)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
+
+                                            Label {
+                                                Link("Web URL", destination: URL(string: videoFile.webUrl)!)
+                                                    .font(.system(size: 11))
+                                                    .tint(.blue)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
+
+                                            Spacer()
+                                        }
+                                        .frame(minWidth: 0, maxWidth: .infinity, alignment: .topLeading)
+                                        .padding(5)
+
+                                        Spacer()
+                                    }
+                                }
+                                .listRowSeparator(.hidden)
+                                .listRowBackground(Ellipse()
+                                    .background(Color.black)
+                                    .foregroundColor(Color.clear)
+                                    .opacity(0.25)
+                                )
+
+                                /*
+                                 PdfFile
+                                 */
+                                ForEach(self.selectedPdfFiles) { pdfFile in
+                                    Section {
+                                        VStack(alignment: .leading, spacing: 5) {
+                                            Label {
+                                                Link("\(pdfFile.folder.name)", destination: URL(string: pdfFile.folder.webUrl)!)
+                                                    .font(.system(size: 11))
+                                                    .truncationMode(.middle)
+                                                    .tint(.blue)
+
+                                                Text(" / ")
+                                                    .foregroundStyle(.gray)
+
+                                                Link("\(pdfFile.fileName)", destination: URL(string: pdfFile.webUrl)!)
+                                                    .font(.system(size: 11))
+                                                    .truncationMode(.middle)
+                                                    .tint(.blue)
+                                            } icon: {
+                                                Image(systemName: "doc.circle.fill")
+                                                    .font(.system(size: 11))
+                                            }
+
+                                            Image(systemName: "square.text.square")
+                                                .font(.system(size: 40))
+                                                .frame(maxWidth: .infinity, alignment: .leading)
+                                                .padding(10)
+
+                                            Label {
+                                                Text("Mime/Type \(pdfFile.mimeType ?? "")")
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(.gray)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
+
+                                            Label {
+                                                Text("Format \(pdfFile.formatInfo ?? "")")
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(.gray)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
+
+                                            Label {
+                                                Text("File Size \(pdfFile.fileSize ?? "")")
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(.gray)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
+
+                                            Label {
+                                                Link("File URL", destination: URL(string: pdfFile.fileUrl)!)
+                                                    .font(.system(size: 11))
+                                                    .tint(.blue)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
+
+                                            Label {
+                                                Link("Web URL", destination: URL(string: pdfFile.webUrl)!)
+                                                    .font(.system(size: 11))
+                                                    .tint(.blue)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
+
+                                            Spacer()
+
+                                            Divider()
+
+                                            Spacer()
+
+                                            Button(action: {
+                                                if let url = URL(string: pdfFile.webViewUrl) {
+                                                    openURL(url)
+                                                }
+                                            }) {
+                                                Image(systemName: "globe")
+                                                    .font(.system(size: 11))
+
+                                                Text("Open in web view")
+                                                    .font(.system(size: 11))
+                                            }
+                                            .buttonStyle(.borderedProminent)
+                                            .tint(.blue)
+                                            .padding(5)
+                                        }
+                                        .frame(minWidth: 0, maxWidth: .infinity, alignment: .topLeading)
+                                        .padding(5)
+
+                                        Spacer()
+                                    }
+                                }
+                                .listRowSeparator(.hidden)
+                                .listRowBackground(Ellipse()
+                                    .background(Color.black)
+                                    .foregroundColor(Color.clear)
+                                    .opacity(0.25)
+                                )
+
+                                /*
+                                 TextFile
+                                 */
+                                ForEach(self.selectedTextFiles) { textFile in
+                                    Section {
+                                        VStack(alignment: .leading, spacing: 5) {
+                                            Label {
+                                                Link("\(textFile.folder.name)", destination: URL(string: textFile.folder.webUrl)!)
+                                                    .font(.system(size: 11))
+                                                    .truncationMode(.middle)
+                                                    .tint(.blue)
+
+                                                Text(" / ")
+                                                    .foregroundStyle(.gray)
+
+                                                Link("\(textFile.fileName)", destination: URL(string: textFile.webUrl)!)
+                                                    .font(.system(size: 11))
+                                                    .truncationMode(.middle)
+                                                    .tint(.blue)
+                                            } icon: {
+                                                Image(systemName: "doc.circle.fill")
+                                                    .font(.system(size: 11))
+                                            }
+
+                                            Label {
+                                                Link("\(textFile.fileName)", destination: URL(string: textFile.webUrl)!)
+                                                    .font(.system(size: 11))
+                                                    .truncationMode(.middle)
+                                                    .tint(.blue)
+                                            } icon: {
+                                                Image(systemName: "doc.circle")
+                                                    .font(.system(size: 11))
+                                            }
+
+                                            Label {
+                                                Text("Mime/Type \(textFile.mimeType ?? "")")
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(.gray)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
+
+                                            Label {
+                                                Text("Format \(textFile.formatInfo ?? "")")
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(.gray)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
+
+                                            Label {
+                                                Text("File Size \(textFile.fileSize ?? "")")
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(.gray)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
+
+                                            Label {
+                                                Link("File URL", destination: URL(string: textFile.fileUrl)!)
+                                                    .font(.system(size: 11))
+                                                    .tint(.blue)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
+
+                                            Label {
+                                                Link("Web URL", destination: URL(string: textFile.webUrl)!)
+                                                    .font(.system(size: 11))
+                                                    .tint(.blue)
+                                            } icon: {
+                                                Rectangle()
+                                                    .fill(.gray)
+                                                    .frame(width: 8, height: 8)
+                                            }
+
+                                            Spacer()
+
+                                            Divider()
+
+                                            Spacer()
+
+                                            Button(action: {
+                                                if let url = URL(string: textFile.webViewUrl) {
+                                                    openURL(url)
+                                                }
+                                            }) {
+                                                Image(systemName: "globe")
+                                                    .font(.system(size: 11))
+
+                                                Text("Open in web view")
+                                                    .font(.system(size: 11))
+                                            }
+                                            .buttonStyle(.borderedProminent)
+                                            .tint(.blue)
+                                            .padding(5)
+                                        }
+                                        .frame(minWidth: 0, maxWidth: .infinity, alignment: .topLeading)
+                                        .padding(5)
+
+                                        Spacer()
+                                    }
+                                }
+                                .listRowSeparator(.hidden)
+                                .listRowBackground(Ellipse()
+                                    .background(Color.black)
+                                    .foregroundColor(Color.clear)
+                                    .opacity(0.25)
+                                )
                             }
-                            .listRowSeparator(.hidden)
-                            .listRowBackground(Ellipse()
-                                .background(Color.black)
-                                .foregroundColor(Color.clear)
-                                .opacity(0.25)
-                            )
 
                             /*
-                              TextFile
-                            */
-                            ForEach(self.selectedTextFiles) { textFile in
-                                Section {
-                                    VStack(alignment: .leading, spacing: 5) {
-                                        Label {
-                                            Link("\(textFile.folder.name)", destination: URL(string: textFile.folder.webUrl)!)
-                                                .font(.system(size: 11))
-                                                .truncationMode(.middle)
-                                                .tint(.blue)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(textFile.folder.state == "published" ? .yellow : .gray)
-                                                .frame(width: 8, height: 8)
-                                        }.padding(5)
-                                        
-                                        Label {
-                                            Link("\(textFile.fileName)", destination: URL(string: textFile.webUrl)!)
-                                                .font(.system(size: 11))
-                                                .truncationMode(.middle)
-                                                .tint(.blue)
-                                        } icon: {
-                                            Image(systemName: "doc.circle")
-                                                .font(.system(size: 11))
-                                        }
-                                        
-                                        Label {
-                                            Text("Mime/Type \(textFile.mimeType ?? "")")
-                                                .font(.system(size: 11))
-                                                .foregroundStyle(.gray)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-                                        
-                                        Label {
-                                            Text("Format \(textFile.formatInfo ?? "")")
-                                                .font(.system(size: 11))
-                                                .foregroundStyle(.gray)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-                                        
-                                        Label {
-                                            Text("File Size \(textFile.fileSize ?? "")")
-                                                .font(.system(size: 11))
-                                                .foregroundStyle(.gray)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-                                        
-                                        Label {
-                                            Link("File URL", destination: URL(string: textFile.fileUrl)!)
-                                                .font(.system(size: 11))
-                                                .tint(.blue)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-                                        
-                                        Label {
-                                            Link("Web URL", destination: URL(string: textFile.webUrl)!)
-                                                .font(.system(size: 11))
-                                                .tint(.blue)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(.gray)
-                                                .frame(width: 8, height: 8)
-                                        }
-                                        
-                                        Spacer()
-                                        
-                                        Divider()
-                                        
-                                        Spacer()
-                                        
-                                        Button(action: {
-                                            if let url = URL(string: textFile.webViewUrl) {
-                                                openURL(url)
-                                            }
-                                        }) {
-                                            Image(systemName: "globe")
-                                                .font(.system(size: 11))
-                                            
-                                            Text("Open in web view")
-                                                .font(.system(size: 11))
-                                        }
-                                        .buttonStyle(.borderedProminent)
-                                        .tint(.blue)
-                                        .padding(5)
+                             Folders, Attachments: Clear selection
+                             */
+                            if (self.selectedImageFiles.count > 0 ||
+                                self.selectedAudioFiles.count > 0 ||
+                                self.selectedPdfFiles.count > 0 ||
+                                self.selectedVideoFiles.count > 0 ||
+                                self.selectedTextFiles.count > 0 ||
+                                self.selectedFolders.count > 0) {
+                                HStack {
+                                    Button(action: clearSelection) {
+                                        Image(systemName: "xmark")
+                                            .font(.system(size: 9))
+                                            .foregroundStyle(Color.primary)
+                                        Text("Clear selection")
+                                            .font(.system(size: 9))
+                                            .foregroundStyle(Color.primary)
                                     }
-                                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .topLeading)
+                                    .font(.system(size: 11))
                                     .padding(5)
-
-                                    Spacer()
+                                    .opacity(0.9)
+                                    .glassEffect(.regular.tint(.clear).interactive(), in: .capsule)
+                                    .buttonStyle(.glassProminent)
                                 }
+                                .frame(minWidth: 0, maxWidth: .infinity, alignment: .center)
                             }
-                            .listRowSeparator(.hidden)
-                            .listRowBackground(Ellipse()
-                                .background(Color.black)
-                                .foregroundColor(Color.clear)
-                                .opacity(0.25)
-                            )
-                        }
-
-                        /*
-                          Folders, Attachments: Clear selection
-                        */
-                        if (self.selectedImageFiles.count > 0 ||
-                            self.selectedAudioFiles.count > 0 ||
-                            self.selectedPdfFiles.count > 0 ||
-                            self.selectedVideoFiles.count > 0 ||
-                            self.selectedTextFiles.count > 0 ||
-                            self.selectedFolders.count > 0) {
-
-                            HStack {
-                                Button(action: clearSelection) {
-                                    Image(systemName: "xmark")
-                                        .font(.system(size: 9))
-                                        .foregroundStyle(Color.primary)
-                                    Text("Clear selection")
-                                        .font(.system(size: 9))
-                                        .foregroundStyle(Color.primary)
-                                }.buttonStyle(.bordered)
-                            }
-                            .padding(5)
                         }
                     }
+                    .navigationSplitViewColumnWidth(
+                        min: 350,
+                        ideal: 350,
+                        max: .infinity
+                    )
+                } else {
+                    // default login panel
                 }
-
             } else {
-
-                // default login panel
-
+                // not identified
             }
         }
         .navigationSplitViewStyle(.prominentDetail)

@@ -921,6 +921,7 @@ struct ContentView: View {
                 firstName: firstNameAccountForm,
                 lastName: lastNameAccountForm,
                 emailAddress: emailAddressAccountForm,
+                emailAddressValidatedAt: "",
                 password: "",
                 deliverNotificationsSignIn: notifyOnSignInAccountForm,
                 deliverNotificationsAccountUpdate: notifyOnAccountUpdateAccountForm,
@@ -1047,6 +1048,7 @@ struct ContentView: View {
         let firstName: String?
         let lastName: String?
         let emailAddress: String?
+        let emailAddressValidatedAt: String?
         let password: String?
         let deliverNotificationsSignIn: Bool?
         let deliverNotificationsAccountUpdate: Bool?
@@ -1076,6 +1078,7 @@ struct ContentView: View {
                 firstName: firstNameRegistrationForm,
                 lastName: lastNameRegistrationForm,
                 emailAddress: emailAddressRegistrationForm,
+                emailAddressValidatedAt: "",
                 password: passwordRegistrationForm,
                 deliverNotificationsSignIn: false,
                 deliverNotificationsAccountUpdate: false,
@@ -1276,13 +1279,15 @@ struct ContentView: View {
 
                             // callback
                             self.signedInUser = userResponseWithMessage.user
-                            self.identified = (self.signedInUser?.createdAt != nil)
-                            resetValuesNewSession(keep_values: false)
-                            storeCredentials(
-                                username: user.emailAddress!,
-                                password: user.password!,
-                                server: "link12.ddns.net"
-                            )
+                            if (self.signedInUser?.emailAddressValidatedAt != nil) {
+                                self.identified = true
+                                resetValuesNewSession(keep_values: false)
+                                storeCredentials(
+                                    username: user.emailAddress!,
+                                    password: user.password!,
+                                    server: "link12.ddns.net"
+                                )
+                            }
                         } else if errorsData != nil {
                             let errorsDataUnwrapped = errorsData!
                             iterateOverErrorsNewSession(errors: errorsDataUnwrapped)

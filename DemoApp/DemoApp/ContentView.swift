@@ -31,9 +31,9 @@ import Zip
 /* Logger */
 import OSLog
 
-var logger = Logger()
+nonisolated(unsafe) var logger = Logger()
 
-var formatter = ISO8601DateFormatter()
+nonisolated(unsafe) var formatter = ISO8601DateFormatter()
 
 enum KeychainError: Error {
     case noPassword
@@ -41,7 +41,7 @@ enum KeychainError: Error {
     case unhandledError(status: OSStatus)
 }
 
-class NetworkDelegateClass: NSObject, URLSessionDelegate, URLSessionDataDelegate {
+final class NetworkDelegateClass: NSObject, URLSessionDelegate, URLSessionDataDelegate {
     // URLSessionDataDelegate method to handle response data
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
         // Process the received data

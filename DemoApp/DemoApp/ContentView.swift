@@ -2390,8 +2390,13 @@ struct ContentView: View {
                                 Button(action: submitEditPasswordForm) {
                                     Text("Submit")
                                 }
-                                .buttonStyle(PlainButtonStyle())
+//                                .buttonStyle(PlainButtonStyle())
                                 .disabled(self.editPasswordComplete)
+                                .font(.system(size: 11))
+                                .padding(5)
+                                .opacity(0.9)
+                                .glassEffect(.regular.tint(.clear).interactive(), in: .capsule)
+                                .buttonStyle(.glassProminent)
 
                                 Spacer()
 
@@ -2447,8 +2452,13 @@ struct ContentView: View {
                                 Button(action: submitEditEmailAddressForm) {
                                     Text("Submit")
                                 }
-                                .buttonStyle(PlainButtonStyle())
+//                                .buttonStyle(PlainButtonStyle())
                                 .disabled(self.editEmailAddressComplete)
+                                .font(.system(size: 11))
+                                .padding(5)
+                                .opacity(0.9)
+                                .glassEffect(.regular.tint(.clear).interactive(), in: .capsule)
+                                .buttonStyle(.glassProminent)
 
                                 Spacer()
 
@@ -2595,8 +2605,13 @@ struct ContentView: View {
                                 Button(action: submitAccountForm) {
                                     Text("Submit")
                                 }
-                                .buttonStyle(PlainButtonStyle())
+//                                .buttonStyle(PlainButtonStyle())
                                 .disabled(self.editAccountComplete)
+                                .font(.system(size: 11))
+                                .padding(5)
+                                .opacity(0.9)
+                                .glassEffect(.regular.tint(.clear).interactive(), in: .capsule)
+                                .buttonStyle(.glassProminent)
 
                                 Spacer()
 
@@ -2656,7 +2671,7 @@ struct ContentView: View {
                             Text("Change Email Address")
                                 .foregroundStyle(.blue.gradient)
                         }.buttonStyle(PlainButtonStyle())
-                    }
+                  }
 
                 } else if self.newPassword {
                     /*
@@ -2688,8 +2703,13 @@ struct ContentView: View {
                             Button(action: submitNewPasswordForm) {
                                 Text("Submit")
                             }
-                            .buttonStyle(PlainButtonStyle())
+//                            .buttonStyle(PlainButtonStyle())
                             .disabled(self.newPasswordComplete)
+                            .font(.system(size: 11))
+                            .padding(5)
+                            .opacity(0.9)
+                            .glassEffect(.regular.tint(.clear).interactive(), in: .capsule)
+                            .buttonStyle(.glassProminent)
 
                             Spacer()
 
@@ -2818,8 +2838,13 @@ struct ContentView: View {
                             Button(action: submitRegistrationForm) {
                                 Text("Submit")
                             }
-                            .buttonStyle(PlainButtonStyle())
+//                            .buttonStyle(PlainButtonStyle())
                             .disabled(self.newAccountComplete)
+                            .font(.system(size: 11))
+                            .padding(5)
+                            .opacity(0.9)
+                            .glassEffect(.regular.tint(.clear).interactive(), in: .capsule)
+                            .buttonStyle(.glassProminent)
 
                             Spacer()
 
@@ -2866,8 +2891,13 @@ struct ContentView: View {
                             Button(action: submitNewSessionForm) {
                                 Text("Submit")
                             }
-                            .buttonStyle(PlainButtonStyle())
+//                            .buttonStyle(PlainButtonStyle())
                             .disabled(self.newSessionComplete)
+                            .font(.system(size: 11))
+                            .padding(5)
+                            .opacity(0.9)
+                            .glassEffect(.regular.tint(.clear).interactive(), in: .capsule)
+                            .buttonStyle(.glassProminent)
                             .keyboardShortcut(KeyboardShortcut(.return, modifiers: []))
 
                             /* Register */

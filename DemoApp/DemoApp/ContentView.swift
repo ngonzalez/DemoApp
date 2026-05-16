@@ -2336,8 +2336,12 @@ struct ContentView: View {
     }
 
     func refreshUploads() {
-        clearSelectedFolders()
-        getAllUploads()
+        if (isImporting) {
+            logger.error("[refreshUploads] $isImporting is set to true, which means the refresh action will happen after that.")
+        } else {
+            clearSelectedFolders()
+            getAllUploads()
+        }
     }
 
     @Environment(\.openURL) var openURL
@@ -2995,6 +2999,11 @@ struct ContentView: View {
                                     }
                                 }
                             }
+                            .font(.system(size: 11))
+                            .padding(5)
+                            .opacity(0.9)
+                            .glassEffect(.regular.tint(.clear).interactive(), in: .capsule)
+                            .buttonStyle(.glassProminent)
                         }
                     }
                     .padding(5)

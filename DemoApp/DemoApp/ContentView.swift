@@ -606,6 +606,7 @@ struct ContentView: View {
     }
 
     func getAllUploads() {
+        logger.info("[getAllUploads] New Request")
         let delegateClass = NetworkDelegateClass()
         let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
         let request = newGetRequest(url: URL(string: "\(backendURL)")!)
@@ -2095,7 +2096,10 @@ struct ContentView: View {
     @State private var selectedFolderAction: FolderAction = .none
 
     func updateSelectedFolders() {
-        self.searchText = "";
+        // Reset search text
+        self.searchText = ""
+
+        logger.info("[updateSelectedFolders] Update Folders")
         if ($selectedFolderAction.wrappedValue == FolderAction.publish) {
             publishSelectedFolders()
         } else if ($selectedFolderAction.wrappedValue == FolderAction.unpublish) {
@@ -2249,7 +2253,8 @@ struct ContentView: View {
     func fetchSearchResults(for searchQuery: String) {
         logger.info("[fetchSearchResults] \(searchQuery)")
 
-        if (searchQuery == "" || searchQuery.count <= 3) {
+        if (searchQuery == "") {
+            // Reload Folders
             refreshUploads()
         } else {
             loadedFolders = searchableFolders.filter { folder in
@@ -2258,7 +2263,7 @@ struct ContentView: View {
                     .contains(searchQuery.lowercased())
             }
             uploadImageFiles = searchableImageFiles.filter { imageFile in
-                imageFile.fileName
+                imageFile.folder.name
                     .lowercased()
                     .contains(searchQuery.lowercased())
             }
@@ -2273,7 +2278,7 @@ struct ContentView: View {
                 self.loadedFolders.append(imageFile.folder)
             }
             uploadVideoFiles = searchableVideoFiles.filter { videoFile in
-                videoFile.fileName
+                videoFile.folder.name
                     .lowercased()
                     .contains(searchQuery.lowercased())
             }
@@ -2288,7 +2293,7 @@ struct ContentView: View {
                 self.loadedFolders.append(videoFile.folder)
             }
             uploadAudioFiles = searchableAudioFiles.filter { audioFile in
-                audioFile.fileName
+                audioFile.folder.name
                     .lowercased()
                     .contains(searchQuery.lowercased())
             }
@@ -2303,7 +2308,7 @@ struct ContentView: View {
                 self.loadedFolders.append(audioFile.folder)
             }
             uploadPdfFiles = searchablePdfFiles.filter { pdfFile in
-                pdfFile.fileName
+                pdfFile.folder.name
                     .lowercased()
                     .contains(searchQuery.lowercased())
             }
@@ -2318,7 +2323,7 @@ struct ContentView: View {
                 self.loadedFolders.append(pdfFile.folder)
             }
             uploadTextFiles = searchableTextFiles.filter { textFile in
-                textFile.fileName
+                textFile.folder.name
                     .lowercased()
                     .contains(searchQuery.lowercased())
             }
@@ -3007,7 +3012,7 @@ struct ContentView: View {
                         }
                     }
                     .padding(5)
-                    .navigationTitle("DemoApp (\(self.signedInUser?.emailAddress! ?? "")")
+                    .navigationTitle("DemoApp \(self.signedInUser?.emailAddress! ?? "")")
                     .toolbar {
                         Button(action: refreshUploads) {
                             Image(systemName: "arrow.clockwise")
@@ -3058,6 +3063,9 @@ struct ContentView: View {
                                             self.selectedFolders.insert(folder.id)
                                         }
                                     }
+                                }
+                                if (self.selectedFolders.count == 0) {
+                                    self.searchText = ""
                                 }
                                 getSelectedUploads()
                             }

@@ -439,7 +439,7 @@ struct ContentView: View {
         let state: String
         let dataUrl: String
         let folder: String?
-        let subfolder: String?
+        let parentFolder: String?
         let webUrl: String
     }
 
@@ -1989,8 +1989,8 @@ struct ContentView: View {
         if folder.folder != nil && (folder.folder != folder.name) {
             folderNames += [folder.folder!]
         }
-        if folder.subfolder != nil {
-            folderNames += [folder.subfolder!]
+        if folder.parentFolder != nil {
+            folderNames += [folder.parentFolder!]
         }
         return folderNames.joined(separator: ", ")
     }

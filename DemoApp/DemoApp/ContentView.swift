@@ -2574,7 +2574,7 @@ struct ContentView: View {
                                     .disableAutocorrection(true)
                                     .disabled(true)
                                 }
-//
+
                                 let updatedAt = self.signedInUser?.updatedAt
                                 if (updatedAt != nil) {
                                     let updatedAtUnwrapped = updatedAt!
@@ -2946,7 +2946,17 @@ struct ContentView: View {
 
             case .upload:
                 if !self.identified {
-                    Text("You need to be identified. Please sign-in.")
+                    List {
+                        Section {
+                            Spacer()
+
+                            Text("You need to be identified. Please sign-in.")
+                                .padding(10)
+
+                            Spacer()
+                        }
+                    }
+                    .navigationSplitViewColumnWidth(min: .infinity, ideal: .infinity, max: .infinity)
                 } else {
                     /*
                         Main Upload Panel
@@ -3504,9 +3514,12 @@ struct ContentView: View {
             if self.identified {
                 if (selectedSideBarItem == .upload) {
                     HStack {
-                        VStack(spacing: 0) {
+                        VStack(alignment: .leading, spacing: 0) {
                             if (self.selectedFolders.count > 0) {
                                 HStack {
+                                    /*
+                                     Folder Actions: Publish, Unpublish, Archive, Unarchive, Delete
+                                     */
                                     Picker("Folder actions", selection: $selectedFolderAction) {
                                         ForEach(FolderAction.allCases) { action in
                                             Text((action == FolderAction.none) ? "" : action.rawValue.capitalized)
@@ -3521,11 +3534,7 @@ struct ContentView: View {
 
                                     Button(action: updateSelectedFolders) {
                                         Image(systemName: "chevron.right")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.black.gradient)
                                         Text("Update \(self.selectedFolders.count > 1 ? "Folders" : "Folder")")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.black.gradient)
                                     }
                                     .font(.system(size: 11))
                                     .padding(5)
@@ -3533,37 +3542,39 @@ struct ContentView: View {
                                     .glassEffect(.regular.tint(.clear).interactive(), in: .capsule)
                                     .buttonStyle(.glassProminent)
                                 }
-                                .frame(height: 40)
+                                .frame(height: 55)
                                 .padding(5)
                             }
 
-                            HStack {
+                            List {
                                 /*
-                                 Folder
+                                 Selected Folders
                                  */
-                                Text("\(self.selectedFolders.count) \(self.selectedFolders.count > 1 ? "Folders" : "Folder") selected")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(.gray)
-                                    .truncationMode(.middle)
+                                Section {
+                                    VStack(alignment: .leading, spacing: 5){
+                                        Text("\(self.selectedFolders.count) \(self.selectedFolders.count > 1 ? "Folders" : "Folder") selected")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.gray)
+                                            .truncationMode(.middle)
+                                            .padding(5)
 
-                                ForEach(self.loadedFolders) { folder in
-                                    if (self.selectedFolders.map { $0 }.contains(folder.id)) {
-                                        Label {
-                                            Link("\(folder.name)", destination: URL(string: folder.webUrl)!)
-                                                .font(.system(size: 11))
-                                                .truncationMode(.middle)
-                                                .tint(.blue)
-                                        } icon: {
-                                            Rectangle()
-                                                .fill(folder.state == "published" ? .yellow : .gray)
-                                                .frame(width: 8, height: 8)
+                                        ForEach(self.loadedFolders) { folder in
+                                            if (self.selectedFolders.map { $0 }.contains(folder.id)) {
+                                                Label {
+                                                    Link("\(folder.name)", destination: URL(string: folder.webUrl)!)
+                                                        .font(.system(size: 11))
+                                                        .truncationMode(.middle)
+                                                        .tint(.blue)
+                                                } icon: {
+                                                    Rectangle()
+                                                        .fill(folder.state == "published" ? .yellow : .gray)
+                                                        .frame(width: 8, height: 8)
+                                                }
+                                            }
                                         }
                                     }
                                 }
-                            }
-                            .padding(5)
 
-                            List {
                                 /*
                                  ImageFile
                                  */
@@ -3575,10 +3586,17 @@ struct ContentView: View {
                                                     .font(.system(size: 11))
                                                     .truncationMode(.middle)
                                                     .tint(.blue)
+
+                                                Text(" / ")
+                                                    .foregroundStyle(.gray)
+
+                                                Link("\(imageFile.fileName)", destination: URL(string: imageFile.webUrl)!)
+                                                    .font(.system(size: 11))
+                                                    .truncationMode(.middle)
+                                                    .tint(.blue)
                                             } icon: {
-                                                Rectangle()
-                                                    .fill(imageFile.folder.state == "published" ? .yellow : .gray)
-                                                    .frame(width: 8, height: 8)
+                                                Image(systemName: "doc.circle.fill")
+                                                    .font(.system(size: 11))
                                             }
 
                                             AsyncImage(url: URL(string: imageFile.fileUrl)) { result in
@@ -3587,16 +3605,6 @@ struct ContentView: View {
                                                     .scaledToFill()
                                             }
                                             .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-                                            Label {
-                                                Link("\(imageFile.fileName)", destination: URL(string: imageFile.webUrl)!)
-                                                    .font(.system(size: 11))
-                                                    .truncationMode(.middle)
-                                                    .tint(.blue)
-                                            } icon: {
-                                                Image(systemName: "photo")
-                                                    .font(.system(size: 11))
-                                            }
 
                                             Label {
                                                 Text("Mime/Type \(imageFile.mimeType ?? "")")
@@ -3704,10 +3712,17 @@ struct ContentView: View {
                                                     .font(.system(size: 11))
                                                     .truncationMode(.middle)
                                                     .tint(.blue)
+
+                                                Text(" / ")
+                                                    .foregroundStyle(.gray)
+
+                                                Link("\(audioFile.fileName)", destination: URL(string: audioFile.webUrl)!)
+                                                    .font(.system(size: 11))
+                                                    .truncationMode(.middle)
+                                                    .tint(.blue)
                                             } icon: {
-                                                Rectangle()
-                                                    .fill(audioFile.folder.state == "published" ? .yellow : .gray)
-                                                    .frame(width: 8, height: 8)
+                                                Image(systemName: "doc.circle.fill")
+                                                    .font(.system(size: 11))
                                             }
 
                                             if (audioFile.aasmState == "created") {
@@ -3719,16 +3734,6 @@ struct ContentView: View {
                                                     .frame(minWidth: 400, maxWidth: .infinity,
                                                            minHeight: 150, maxHeight: .infinity)
                                                     .padding(10)
-                                            }
-
-                                            Label {
-                                                Link("\(audioFile.fileName)", destination: URL(string: audioFile.webUrl)!)
-                                                    .font(.system(size: 11))
-                                                    .truncationMode(.middle)
-                                                    .tint(.blue)
-                                            } icon: {
-                                                Image(systemName: "waveform.circle")
-                                                    .font(.system(size: 11))
                                             }
 
                                             Label {
@@ -3857,11 +3862,18 @@ struct ContentView: View {
                                                     .font(.system(size: 11))
                                                     .truncationMode(.middle)
                                                     .tint(.blue)
+
+                                                Text(" / ")
+                                                    .foregroundStyle(.gray)
+
+                                                Link("\(videoFile.fileName)", destination: URL(string: videoFile.webUrl)!)
+                                                    .font(.system(size: 11))
+                                                    .truncationMode(.middle)
+                                                    .tint(.blue)
                                             } icon: {
-                                                Rectangle()
-                                                    .fill(videoFile.folder.state == "published" ? .yellow : .gray)
-                                                    .frame(width: 8, height: 8)
-                                            }.padding(5)
+                                                Image(systemName: "doc.circle.fill")
+                                                    .font(.system(size: 11))
+                                            }
 
                                             if (videoFile.aasmState == "created") {
                                                 Text("Processing…")
@@ -3872,16 +3884,6 @@ struct ContentView: View {
                                                     .frame(minWidth: 400, maxWidth: .infinity,
                                                            minHeight: 300, maxHeight: .infinity)
                                                     .padding(10)
-                                            }
-
-                                            Label {
-                                                Link("\(videoFile.fileName)", destination: URL(string: videoFile.webUrl)!)
-                                                    .font(.system(size: 11))
-                                                    .truncationMode(.middle)
-                                                    .tint(.blue)
-                                            } icon: {
-                                                Image(systemName: "video.circle")
-                                                    .font(.system(size: 11))
                                             }
 
                                             Label {
@@ -4030,18 +4032,10 @@ struct ContentView: View {
                                                     .font(.system(size: 11))
                                                     .truncationMode(.middle)
                                                     .tint(.blue)
-                                            } icon: {
-                                                Rectangle()
-                                                    .fill(pdfFile.folder.state == "published" ? .yellow : .gray)
-                                                    .frame(width: 8, height: 8)
-                                            }.padding(5)
 
-                                            Image(systemName: "square.text.square")
-                                                .font(.system(size: 40))
-                                                .frame(maxWidth: .infinity, alignment: .leading)
-                                                .padding(10)
+                                                Text(" / ")
+                                                    .foregroundStyle(.gray)
 
-                                            Label {
                                                 Link("\(pdfFile.fileName)", destination: URL(string: pdfFile.webUrl)!)
                                                     .font(.system(size: 11))
                                                     .truncationMode(.middle)
@@ -4050,6 +4044,11 @@ struct ContentView: View {
                                                 Image(systemName: "doc.circle.fill")
                                                     .font(.system(size: 11))
                                             }
+
+                                            Image(systemName: "square.text.square")
+                                                .font(.system(size: 40))
+                                                .frame(maxWidth: .infinity, alignment: .leading)
+                                                .padding(10)
 
                                             Label {
                                                 Text("Mime/Type \(pdfFile.mimeType ?? "")")
@@ -4146,11 +4145,18 @@ struct ContentView: View {
                                                     .font(.system(size: 11))
                                                     .truncationMode(.middle)
                                                     .tint(.blue)
+
+                                                Text(" / ")
+                                                    .foregroundStyle(.gray)
+
+                                                Link("\(textFile.fileName)", destination: URL(string: textFile.webUrl)!)
+                                                    .font(.system(size: 11))
+                                                    .truncationMode(.middle)
+                                                    .tint(.blue)
                                             } icon: {
-                                                Rectangle()
-                                                    .fill(textFile.folder.state == "published" ? .yellow : .gray)
-                                                    .frame(width: 8, height: 8)
-                                            }.padding(5)
+                                                Image(systemName: "doc.circle.fill")
+                                                    .font(.system(size: 11))
+                                            }
 
                                             Label {
                                                 Link("\(textFile.fileName)", destination: URL(string: textFile.webUrl)!)
@@ -4246,6 +4252,7 @@ struct ContentView: View {
                                     .opacity(0.25)
                                 )
                             }
+
                             /*
                              Folders, Attachments: Clear selection
                              */
@@ -4269,7 +4276,11 @@ struct ContentView: View {
                             }
                         }
                     }
-                    .navigationSplitViewColumnWidth(min: 300, ideal: 350, max: .infinity)
+                    .navigationSplitViewColumnWidth(
+                        min: 350,
+                        ideal: 350,
+                        max: .infinity
+                    )
                 } else {
                     // default login panel
                 }

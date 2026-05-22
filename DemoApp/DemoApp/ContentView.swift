@@ -640,17 +640,17 @@ struct ContentView: View {
         if (uploadImageFiles.count > 0) {
             searchableImageFiles = uploadImageFiles.map { $0 }
         }
-        if (uploadVideoFiles.count > 0) {
-            searchableVideoFiles = uploadVideoFiles.map { $0 }
-        }
-        if (uploadAudioFiles.count > 0) {
-            searchableAudioFiles = uploadAudioFiles.map { $0 }
-        }
         if (uploadPdfFiles.count > 0) {
             searchablePdfFiles = uploadPdfFiles.map { $0 }
         }
         if (uploadTextFiles.count > 0) {
             searchableTextFiles = uploadTextFiles.map { $0 }
+        }
+        if (uploadAudioFiles.count > 0) {
+            searchableAudioFiles = uploadAudioFiles.map { $0 }
+        }
+        if (uploadVideoFiles.count > 0) {
+            searchableVideoFiles = uploadVideoFiles.map { $0 }
         }
     }
 

@@ -4319,9 +4319,14 @@ struct ContentView: View {
                                         Text("Clear selection")
                                             .font(.system(size: 9))
                                             .foregroundStyle(Color.primary)
-                                    }.buttonStyle(.bordered)
+                                    }
+                                    .font(.system(size: 11))
+                                    .padding(5)
+                                    .opacity(0.9)
+                                    .glassEffect(.regular.tint(.clear).interactive(), in: .capsule)
+                                    .buttonStyle(.glassProminent)
                                 }
-                                .padding(5)
+                                .frame(minWidth: 0, maxWidth: .infinity, alignment: .center)
                             }
                         }
                     }

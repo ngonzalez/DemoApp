@@ -664,6 +664,8 @@ struct ContentView: View {
                 let response = try JSONDecoder().decode([UploadWithFiles].self, from: data!)
 
                 DispatchQueue.main.async {
+                    self.loadedFolders = Array<Folder>()
+                    self.selectedFolders = Set()
                     setUploads(results: response)
                 }
             } catch let error {

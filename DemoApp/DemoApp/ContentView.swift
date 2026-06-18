@@ -1066,12 +1066,17 @@ struct ContentView: View {
         let CFBundlePackageType: String
         let DTXcode: String
         let CFBundleExecutable: String
+        let OpenAt: String
     }
 
     func createEvent(url: String, eventType: String) {
         do {
             let infoDictionary:[String:Any]? = Bundle.main.infoDictionary ?? [:]
             let infoDictionaryUnwrapped = infoDictionary!
+
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZZZZZ"
+            let openAtFormatted = dateFormatter.string(from: Date())
 
             let parameters = EventParameters(
                 id: nil,
@@ -1091,7 +1096,8 @@ struct ContentView: View {
                 CFBundleShortVersionString: infoDictionaryUnwrapped["CFBundleShortVersionString"] as! String,
                 CFBundlePackageType: infoDictionaryUnwrapped["CFBundlePackageType"] as! String,
                 DTXcode: infoDictionaryUnwrapped["DTXcode"] as! String,
-                CFBundleExecutable: infoDictionaryUnwrapped["CFBundleExecutable"] as! String
+                CFBundleExecutable: infoDictionaryUnwrapped["CFBundleExecutable"] as! String,
+                OpenAt: openAtFormatted
             )
 
             let parametersData = try JSONEncoder().encode(parameters)

@@ -294,11 +294,14 @@ struct ContentView: View {
                         updatedAt: updatedAt
                     )
 
+                   createEvent(url: "\(backendURL)/\(uuid)", eventType: "upload")
+
                } else {
                     let fileData = try Data(contentsOf: URL(fileURLWithPath: itemPath))
+                    let uuid = UUID()
 
                     newUploadRequest(
-                        uuid: UUID(),
+                        uuid: uuid,
                         source: source,
                         path: itemPath,
                         mimeType: mimeType,
@@ -307,6 +310,8 @@ struct ContentView: View {
                         createdAt: createdAt,
                         updatedAt: updatedAt
                     )
+
+                   createEvent(url: "\(backendURL)/\(uuid)", eventType: "upload")
                 }
             }
 
@@ -893,6 +898,10 @@ struct ContentView: View {
     @State private var playlistsServiceURL:String = "https://link12.ddns.net:5050/playlists"
 //    @State private var playlistsServiceURL:String = "http://192.168.1.11:3001/playlists"
 
+//    @State private var eventURL:String = "https://appshare.site:4040/event"
+//    @State private var eventURL:String = "https://link12.ddns.net:4040/event"
+    @State private var eventURL:String = "http://192.168.1.11:3000/event"
+
     /*
         Backend Requests
      */
@@ -1027,6 +1036,91 @@ struct ContentView: View {
 
         } catch let error {
             logger.error("[submitAccountForm] Error: \(error)")
+        }
+    }
+
+    struct Event: Codable, Identifiable {
+        let id: Int?
+        let accountUuid: String
+        let url: String
+        let eventType: String
+        let parameters: Data
+    }
+
+    struct EventParameters: Codable {
+        let id: Int?
+        let CFBundleDevelopmentRegion: String
+        let DTSDKName: String
+        let DTXcodeBuild: String
+        let CFBundleIdentifier: String
+        let DTCompiler: String
+        let BuildMachineOSBuild: String
+        let LSMinimumSystemVersion: String
+        let DTSDKBuild: String
+        let CFBundleInfoDictionaryVersion: String
+        let DTPlatformName: String
+        let DTPlatformBuild: String
+        let DTPlatformVersion: String
+        let CFBundleName: String
+        let CFBundleShortVersionString: String
+        let CFBundlePackageType: String
+        let DTXcode: String
+        let CFBundleExecutable: String
+    }
+
+    func createEvent(url: String, eventType: String) {
+        do {
+            let infoDictionary:[String:Any]? = Bundle.main.infoDictionary ?? [:]
+            let infoDictionaryUnwrapped = infoDictionary!
+
+            let parameters = EventParameters(
+                id: nil,
+                CFBundleDevelopmentRegion: infoDictionaryUnwrapped["CFBundleDevelopmentRegion"] as! String,
+                DTSDKName: infoDictionaryUnwrapped["DTSDKName"] as! String,
+                DTXcodeBuild: infoDictionaryUnwrapped["DTXcodeBuild"] as! String,
+                CFBundleIdentifier: infoDictionaryUnwrapped["CFBundleIdentifier"] as! String,
+                DTCompiler: infoDictionaryUnwrapped["DTCompiler"] as! String,
+                BuildMachineOSBuild: infoDictionaryUnwrapped["BuildMachineOSBuild"] as! String,
+                LSMinimumSystemVersion: infoDictionaryUnwrapped["LSMinimumSystemVersion"] as! String,
+                DTSDKBuild: infoDictionaryUnwrapped["DTSDKBuild"] as! String,
+                CFBundleInfoDictionaryVersion: infoDictionaryUnwrapped["CFBundleInfoDictionaryVersion"] as! String,
+                DTPlatformName: infoDictionaryUnwrapped["DTPlatformName"] as! String,
+                DTPlatformBuild: infoDictionaryUnwrapped["DTPlatformBuild"] as! String,
+                DTPlatformVersion: infoDictionaryUnwrapped["DTPlatformVersion"] as! String,
+                CFBundleName: infoDictionaryUnwrapped["CFBundleName"] as! String,
+                CFBundleShortVersionString: infoDictionaryUnwrapped["CFBundleShortVersionString"] as! String,
+                CFBundlePackageType: infoDictionaryUnwrapped["CFBundlePackageType"] as! String,
+                DTXcode: infoDictionaryUnwrapped["DTXcode"] as! String,
+                CFBundleExecutable: infoDictionaryUnwrapped["CFBundleExecutable"] as! String
+            )
+
+            let parametersData = try JSONEncoder().encode(parameters)
+            let accountUuid = self.signedInUser?.accountUuid!.uuidString
+            let accountUuidUnwrapped = accountUuid!
+
+            let event = Event(
+                id: nil,
+                accountUuid: accountUuidUnwrapped,
+                url: url,
+                eventType: eventType,
+                parameters: parametersData
+            )
+            let data = try JSONEncoder().encode(event)
+
+            let url = URL(string: "\(eventURL)")!
+            let delegateClass = NetworkDelegateClass()
+            let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
+            let optimizedData: Data = try! data.gzipped(level: .bestCompression)
+            let postLength = String(format: "%lu", UInt(optimizedData.count))
+            let request = newPostRequestWithContent(url: url, data: optimizedData, postLength: postLength)
+            let task = delegateSession.dataTask(with: request) { data, response, error in
+                //
+            }
+
+            task.resume()
+
+        } catch let error {
+            logger.error("[createEvent] Error: \(error)")
         }
     }
 

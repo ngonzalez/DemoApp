@@ -443,8 +443,6 @@ struct ContentView: View {
         let name: String
         let state: String
         let dataUrl: String
-        let folder: String?
-        let parentFolder: String?
         let webUrl: String
     }
 
@@ -899,8 +897,8 @@ struct ContentView: View {
 //    @State private var playlistsServiceURL:String = "http://192.168.1.11:3001/playlists"
 
 //    @State private var eventURL:String = "https://appshare.site:4040/event"
-//    @State private var eventURL:String = "https://link12.ddns.net:4040/event"
-    @State private var eventURL:String = "http://192.168.1.11:3000/event"
+    @State private var eventURL:String = "https://link12.ddns.net:4040/event"
+//    @State private var eventURL:String = "http://192.168.1.11:3000/event"
 
     /*
         Backend Requests
@@ -2138,12 +2136,6 @@ struct ContentView: View {
     func getFolderName(folder: Folder) -> String {
         var folderNames:[String] = []
         folderNames += [folder.name]
-        if folder.folder != nil && (folder.folder != folder.name) {
-            folderNames += [folder.folder!]
-        }
-        if folder.parentFolder != nil {
-            folderNames += [folder.parentFolder!]
-        }
         return folderNames.joined(separator: ", ")
     }
 

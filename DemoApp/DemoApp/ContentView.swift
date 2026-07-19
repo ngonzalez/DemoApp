@@ -220,7 +220,7 @@ struct ContentView: View {
             let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
             let optimizedData: Data = try! data.gzipped(level: .bestCompression)
             let postLength = String(format: "%lu", UInt(optimizedData.count))
-            let request = newPostRequest(url: url, data: optimizedData, postLength: postLength)
+            let request = newPostRequestWithContent(url: url, data: optimizedData, postLength: postLength)
             let task = delegateSession.uploadTask(withStreamedRequest: request)
 
             task.resume()
@@ -3251,7 +3251,7 @@ struct ContentView: View {
                                       sortOrder: $imageFileSortOrder) {
 
                                     TableColumn("fileName") { imageFile in
-                                        Label((imageFile.fileName), systemImage: "doc")
+                                        Label(imageFile.fileName, systemImage: "doc")
                                             .labelStyle(.titleAndIcon)
                                             .font(.system(size: 11))
                                     }
@@ -3327,7 +3327,7 @@ struct ContentView: View {
                                       sortOrder: $audioFileSortOrder) {
 
                                     TableColumn("fileName") { audioFile in
-                                        Label((audioFile.fileName), systemImage: "doc")
+                                        Label(audioFile.fileName, systemImage: "doc")
                                             .labelStyle(.titleAndIcon)
                                             .font(.system(size: 11))
                                     }
@@ -3418,7 +3418,7 @@ struct ContentView: View {
                                       sortOrder: $videoFileSortOrder) {
 
                                     TableColumn("fileName") { videoFile in
-                                        Label((videoFile.fileName), systemImage: "doc")
+                                        Label(videoFile.fileName, systemImage: "doc")
                                             .labelStyle(.titleAndIcon)
                                             .font(.system(size: 11))
                                     }
@@ -3568,7 +3568,7 @@ struct ContentView: View {
                                       sortOrder: $textFileSortOrder) {
 
                                     TableColumn("fileName") { textFile in
-                                        Label((textFile.fileName), systemImage: "doc")
+                                        Label(textFile.fileName, systemImage: "doc")
                                             .labelStyle(.titleAndIcon)
                                             .font(.system(size: 11))
                                     }

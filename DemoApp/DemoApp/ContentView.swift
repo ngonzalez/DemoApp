@@ -1,5 +1,5 @@
 /*
-    Copyright 2024,2025,2026 Nicolas GONZALEZ
+    Copyright (c) 2026 Nicolas GONZALEZ
 
     MIT License
 
@@ -236,33 +236,33 @@ struct ContentView: View {
             let allowedMimeTypes = mimeTypes.map { (key, value) in return key }
 
             if allowedMimeTypes.contains(fileExt) {
-               let mimeType = String(mimeTypes[fileExt]!).lowercased()
-               let data = try Data(contentsOf: URL(fileURLWithPath: itemPath))
-               let chunkSize = 104857600 // 100MB
+                let mimeType = String(mimeTypes[fileExt]!).lowercased()
+                let data = try Data(contentsOf: URL(fileURLWithPath: itemPath))
+                let chunkSize = 104857600 // 100MB
 
-               if (data.count > chunkSize) {
-                   let zipFilePath = try Zip.quickZipFiles([URL(fileURLWithPath: itemPath)], fileName: "archive")
+                if (data.count > chunkSize) {
+                    let zipFilePath = try Zip.quickZipFiles([URL(fileURLWithPath: itemPath)], fileName: "archive")
 
-                   let tempDir = FileManager.default.temporaryDirectory
-                   let tempFileURL = tempDir.appendingPathComponent("sample")
+                    let tempDir = FileManager.default.temporaryDirectory
+                    let tempFileURL = tempDir.appendingPathComponent("sample")
 
-                   let chunker = FileChunker.init(input: zipFilePath, outputDirectory: tempFileURL, chunkSize: chunkSize)
-                   let _ = try chunker.chunk()
+                    let chunker = FileChunker.init(input: zipFilePath, outputDirectory: tempFileURL, chunkSize: chunkSize)
+                    let _ = try chunker.chunk()
 
-                   let directoryContents = try
-                      FileManager.default.contentsOfDirectory(at: tempFileURL,
-                             includingPropertiesForKeys:[.contentModificationDateKey],
-                             options: [.skipsHiddenFiles, .skipsSubdirectoryDescendants])
-                          .filter { $0.lastPathComponent.hasSuffix(".block") }
-                          .sorted(by: {
-                              let date0 = try $0.promisedItemResourceValues(forKeys:[.contentModificationDateKey]).contentModificationDate!
-                              let date1 = try $1.promisedItemResourceValues(forKeys:[.contentModificationDateKey]).contentModificationDate!
-                              return date0.compare(date1) == .orderedAscending
-                           })
+                    let directoryContents = try
+                        FileManager.default.contentsOfDirectory(at: tempFileURL,
+                                includingPropertiesForKeys:[.contentModificationDateKey],
+                                options: [.skipsHiddenFiles, .skipsSubdirectoryDescendants])
+                            .filter { $0.lastPathComponent.hasSuffix(".block") }
+                            .sorted(by: {
+                                let date0 = try $0.promisedItemResourceValues(forKeys:[.contentModificationDateKey]).contentModificationDate!
+                                let date1 = try $1.promisedItemResourceValues(forKeys:[.contentModificationDateKey]).contentModificationDate!
+                                return date0.compare(date1) == .orderedAscending
+                            })
 
-                   let FilePaths = directoryContents.map{ $0.path() }
-                   var i = 0
-                   let filesCount = FilePaths.count
+                    let FilePaths = directoryContents.map{ $0.path() }
+                    var i = 0
+                    let filesCount = FilePaths.count
 
                     for counter in 0..<filesCount {
                         let fileData = try Data(contentsOf: URL(fileURLWithPath: FilePaths[counter]))
@@ -283,6 +283,14 @@ struct ContentView: View {
                     try FileManager.default.removeItem(at: tempFileURL)
                     try FileManager.default.removeItem(at: zipFilePath)
 
+                    let uploadDetails = UploadDetails(
+                        fileSize: data.count,
+                        fileName: itemPath,
+                        mimeType: mimeType
+                    )
+
+                    createEvent(url: "\(backendURL)/\(uuid)", eventType: "upload", uploadDetails: uploadDetails)
+
                     newUploadRequest(
                         uuid: uuid,
                         source: source,
@@ -294,11 +302,17 @@ struct ContentView: View {
                         updatedAt: updatedAt
                     )
 
-                   createEvent(url: "\(backendURL)/\(uuid)", eventType: "upload")
-
                } else {
                     let fileData = try Data(contentsOf: URL(fileURLWithPath: itemPath))
                     let uuid = UUID()
+
+                    let uploadDetails = UploadDetails(
+                        fileSize: data.count,
+                        fileName: itemPath,
+                        mimeType: mimeType
+                    )
+
+                    createEvent(url: "\(backendURL)/\(uuid)", eventType: "upload", uploadDetails: uploadDetails)
 
                     newUploadRequest(
                         uuid: uuid,
@@ -310,8 +324,6 @@ struct ContentView: View {
                         createdAt: createdAt,
                         updatedAt: updatedAt
                     )
-
-                   createEvent(url: "\(backendURL)/\(uuid)", eventType: "upload")
                 }
             }
 
@@ -1045,8 +1057,7 @@ struct ContentView: View {
         let parameters: Data
     }
 
-    struct EventParameters: Codable {
-        let id: Int?
+    struct PlatformDetails: Codable {
         let CFBundleDevelopmentRegion: String
         let DTSDKName: String
         let DTXcodeBuild: String
@@ -1064,10 +1075,22 @@ struct ContentView: View {
         let CFBundlePackageType: String
         let DTXcode: String
         let CFBundleExecutable: String
-        let OpenAt: String
     }
 
-    func createEvent(url: String, eventType: String) {
+    struct UploadDetails: Codable {
+        let fileSize: Int
+        let fileName: String
+        let mimeType: String
+    }
+
+    struct EventParameters: Codable {
+        let id: Int?
+        let OpenAt: String
+        let platformDetails: PlatformDetails
+        let uploadDetails: UploadDetails
+    }
+
+    func createEvent(url: String, eventType: String, uploadDetails: UploadDetails) {
         do {
             let infoDictionary:[String:Any]? = Bundle.main.infoDictionary ?? [:]
             let infoDictionaryUnwrapped = infoDictionary!
@@ -1076,8 +1099,7 @@ struct ContentView: View {
             dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZZZZZ"
             let openAtFormatted = dateFormatter.string(from: Date())
 
-            let parameters = EventParameters(
-                id: nil,
+            let platformDetails = PlatformDetails(
                 CFBundleDevelopmentRegion: infoDictionaryUnwrapped["CFBundleDevelopmentRegion"] as! String,
                 DTSDKName: infoDictionaryUnwrapped["DTSDKName"] as! String,
                 DTXcodeBuild: infoDictionaryUnwrapped["DTXcodeBuild"] as! String,
@@ -1095,7 +1117,13 @@ struct ContentView: View {
                 CFBundlePackageType: infoDictionaryUnwrapped["CFBundlePackageType"] as! String,
                 DTXcode: infoDictionaryUnwrapped["DTXcode"] as! String,
                 CFBundleExecutable: infoDictionaryUnwrapped["CFBundleExecutable"] as! String,
-                OpenAt: openAtFormatted
+            )
+
+            let parameters = EventParameters(
+                id: nil,
+                OpenAt: openAtFormatted,
+                platformDetails: platformDetails,
+                uploadDetails: uploadDetails
             )
 
             let parametersData = try JSONEncoder().encode(parameters)

@@ -188,6 +188,7 @@ struct ContentView: View {
     struct UploadItem: Codable {
         var id: Int?
         var uuid: UUID
+        var userId: Int
         var filePath: String
         var mimeType: String
         var source: String
@@ -203,8 +204,11 @@ struct ContentView: View {
             dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZZZZZ"
             let createdAtFormatted = dateFormatter.string(from: createdAt)
             let updatedAtFormatted = dateFormatter.string(from: updatedAt)
+            let userId = self.signedInUser?.id
+            let userIdUnwrapped = userId!
             let uploadItem = UploadItem(
                 uuid: uuid,
+                userId: userIdUnwrapped,
                 filePath: path,
                 mimeType: mimeType,
                 source: source,
@@ -673,7 +677,9 @@ struct ContentView: View {
         logger.info("[getAllUploads] New Request")
         let delegateClass = NetworkDelegateClass()
         let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
-        let request = newGetRequest(url: URL(string: "\(backendURL)")!)
+        let accountUuid = self.signedInUser?.accountUuid!.uuidString
+        let accountUuidUnwrapped = (accountUuid ?? "")!
+        let request = newGetRequest(url: URL(string: "\(backendURL)/\(accountUuidUnwrapped)")!)
         let task = delegateSession.dataTask(with: request) { data, response, error in
             do {
                 let response = try JSONDecoder().decode([UploadWithFiles].self, from: data!)
@@ -692,6 +698,10 @@ struct ContentView: View {
     }
 
     func getSelectedUploadsRequest() -> URL {
+        let accountUuid = self.signedInUser?.accountUuid!.uuidString
+        let accountUuidUnwrapped = (accountUuid ?? "")!
+        let url = URL(string: "\(backendURL)/\(accountUuidUnwrapped)")!
+
         if (selectedFolders.count > 0) {
             var str:String = ""
             for folderId in selectedFolders {
@@ -699,9 +709,11 @@ struct ContentView: View {
             }
             let strData:Data = str.data(using: .utf8)!
             let base64str:String = strData.base64EncodedString()
-            return URL(string: "\(backendURL)" + "?folderIds=\(base64str)")!
+
+            return URL(string: "\(url)" + "?folderIds=\(base64str)")!
         } else {
-            return URL(string: "\(backendURL)")!
+
+            return URL(string: "\(url)")!
         }
     }
 

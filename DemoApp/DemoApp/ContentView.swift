@@ -2074,6 +2074,13 @@ struct ContentView: View {
 
         case account
         case upload
+
+        var title: LocalizedStringKey {
+            switch self {
+            case .account: "Account"
+            case .upload: "Upload"
+            }
+        }
     }
 
     @State var selectedSideBarItem: SideBarItem = .upload
@@ -2274,6 +2281,17 @@ struct ContentView: View {
     enum FolderAction: String, CaseIterable, Identifiable {
         case none, publish, unpublish, archive, unarchive, delete
         var id: Self { self }
+
+        var title: LocalizedStringKey {
+            switch self {
+            case .none: ""
+            case .publish: "Publish"
+            case .unpublish: "Unpublish"
+            case .archive: "Archive"
+            case .unarchive: "Unarchive"
+            case .delete: "Delete"
+            }
+        }
     }
 
     @State private var selectedFolderAction: FolderAction = .none
@@ -2538,7 +2556,7 @@ struct ContentView: View {
         NavigationSplitView(columnVisibility: $visibility) {
             List(SideBarItem.allCases, selection: $selectedSideBarItem) { item in
                 NavigationLink(
-                    item.rawValue.localizedCapitalized,
+                    item.title,
                     value: item
                 )
             }
@@ -3317,7 +3335,7 @@ struct ContentView: View {
                                             Button(action: deleteSelectedImages) {
                                                 Image(systemName: "minus.circle")
                                                     .font(.system(size: 11))
-                                                Text("Delete selected \(self.selectedImageFiles.count > 1 ? "Image Files" : "Image File")")
+                                                (self.selectedImageFiles.count > 1 ? Text("Delete selected Image Files") : Text("Delete selected Image File"))
                                                     .font(.system(size: 11))
                                             }
                                             .buttonStyle(.borderedProminent)
@@ -3393,7 +3411,7 @@ struct ContentView: View {
                                             Button(action: deleteSelectedAudioFiles) {
                                                 Image(systemName: "minus.circle")
                                                     .font(.system(size: 11))
-                                                Text("Delete selected \(self.selectedAudioFiles.count > 1 ? "Audio Files" : "Audio File")")
+                                                (self.selectedAudioFiles.count > 1 ? Text("Delete selected Audio Files") : Text("Delete selected Audio File"))
                                                     .font(.system(size: 11))
                                             }
                                             .buttonStyle(.borderedProminent)
@@ -3484,7 +3502,7 @@ struct ContentView: View {
                                             Button(action: deleteSelectedVideoFiles) {
                                                 Image(systemName: "minus.circle")
                                                     .font(.system(size: 11))
-                                                Text("Delete selected \(self.selectedVideoFiles.count > 1 ? "Video Files" : "Video File")")
+                                                (self.selectedVideoFiles.count > 1 ? Text("Delete selected Video Files") : Text("Delete selected Video File"))
                                                     .font(.system(size: 11))
                                             }
                                             .buttonStyle(.borderedProminent)
@@ -3560,7 +3578,7 @@ struct ContentView: View {
                                             Button(action: deleteSelectedPdfs) {
                                                 Image(systemName: "minus.circle")
                                                     .font(.system(size: 11))
-                                                Text("Delete selected \(self.selectedPdfFiles.count > 1 ? "Pdf Files" : "Pdf File")")
+                                                (self.selectedPdfFiles.count > 1 ? Text("Delete selected Pdf Files") : Text("Delete selected Pdf File"))
                                                     .font(.system(size: 11))
                                             }
                                             .buttonStyle(.borderedProminent)
@@ -3634,7 +3652,7 @@ struct ContentView: View {
                                             Button(action: deleteSelectedTextFiles) {
                                                 Image(systemName: "minus.circle")
                                                     .font(.system(size: 11))
-                                                Text("Delete selected \(self.selectedTextFiles.count > 1 ? "Text Files" : "Text File")")
+                                                (self.selectedTextFiles.count > 1 ? Text("Delete selected Text Files") : Text("Delete selected Text File"))
                                                     .font(.system(size: 11))
                                             }
                                             .buttonStyle(.borderedProminent)
@@ -3705,7 +3723,7 @@ struct ContentView: View {
                                      */
                                     Picker("Folder actions", selection: $selectedFolderAction) {
                                         ForEach(FolderAction.allCases) { action in
-                                            Text((action == FolderAction.none) ? "" : action.rawValue.capitalized)
+                                            Text(action.title)
                                                 .font(.system(size: 11))
                                         }
                                     }
@@ -3717,7 +3735,7 @@ struct ContentView: View {
 
                                     Button(action: updateSelectedFolders) {
                                         Image(systemName: "chevron.right")
-                                        Text("Update \(self.selectedFolders.count > 1 ? "Folders" : "Folder")")
+                                        (self.selectedFolders.count > 1 ? Text("Update Folders") : Text("Update Folder"))
                                     }
                                     .font(.system(size: 11))
                                     .padding(5)
@@ -3735,7 +3753,7 @@ struct ContentView: View {
                                  */
                                 Section {
                                     VStack(alignment: .leading, spacing: 5){
-                                        Text("\(self.selectedFolders.count) \(self.selectedFolders.count > 1 ? "Folders" : "Folder") selected")
+                                        Text("\(self.selectedFolders.count) Folders selected")
                                             .font(.system(size: 11))
                                             .foregroundStyle(.gray)
                                             .truncationMode(.middle)

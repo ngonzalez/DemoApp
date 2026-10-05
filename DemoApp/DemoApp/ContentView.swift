@@ -856,72 +856,55 @@ struct ContentView: View {
         Backend URLs
      */
 
-//    @State private var accountsURL:String = "https://appshare.site:4040/accounts"
-    @State private var accountsURL:String = "https://link12.ddns.net:4040/accounts"
+    @State private var accountsURL:String = "https://api.appshare.site/accounts"
 //    @State private var accountsURL:String = "http://192.168.1.11:3000/accounts"
 
-//    @State private var accountURL:String = "https://appshare.site:4040/account"
-    @State private var accountURL:String = "https://link12.ddns.net:4040/account"
+    @State private var accountURL:String = "https://api.appshare.site/account"
 //    @State private var accountURL:String = "http://192.168.1.11:3000/account"
 
-//    @State private var registrationURL:String = "https://appshare.site:4040/registration"
-    @State private var registrationURL:String = "https://link12.ddns.net:4040/registration"
+    @State private var registrationURL:String = "https://api.appshare.site/registration"
 //    @State private var registrationURL:String = "http://192.168.1.11:3000/registration"
 
-//    @State private var sessionURL:String = "https://appshare.site:4040/session"
-    @State private var sessionURL:String = "https://link12.ddns.net:4040/session"
+    @State private var sessionURL:String = "https://api.appshare.site/session"
 //    @State private var sessionURL:String = "http://192.168.1.11:3000/session"
 
-//    @State private var passwordURL:String = "https://appshare.site:4040/password"
-    @State private var passwordURL:String = "https://link12.ddns.net:4040/password"
+    @State private var passwordURL:String = "https://api.appshare.site/password"
 //    @State private var passwordURL:String = "http://192.168.1.11:3000/password"
 
-//    @State private var emailURL:String = "https://appshare.site:4040/email"
-    @State private var emailURL:String = "https://link12.ddns.net:4040/email"
+    @State private var emailURL:String = "https://api.appshare.site/email"
 //    @State private var emailURL:String = "http://192.168.1.11:3000/email"
 
-//    @State private var backendURL:String = "https://appshare.site:4040/upload"
-    @State private var backendURL:String = "https://link12.ddns.net:4040/upload"
+    @State private var backendURL:String = "https://api.appshare.site/upload"
 //    @State private var backendURL:String = "http://192.168.1.11:3000/upload"
 
-//    @State private var foldersPublishURL:String = "https://appshare.site:4040/folders/publish"
-    @State private var foldersPublishURL:String = "https://link12.ddns.net:4040/folders/publish"
+    @State private var foldersPublishURL:String = "https://api.appshare.site/folders/publish"
 //    @State private var foldersPublishURL:String = "http://192.168.1.11:3000/folders/publish"
 
-//    @State private var foldersUnpublishURL:String = "https://appshare.site:4040/folders/unpublish"
-    @State private var foldersUnpublishURL:String = "https://link12.ddns.net:4040/folders/unpublish"
+    @State private var foldersUnpublishURL:String = "https://api.appshare.site/folders/unpublish"
 //    @State private var foldersUnpublishURL:String = "http://192.168.1.11:3000/folders/unpublish"
 
-//    @State private var foldersArchiveURL:String = "https://appshare.site:4040/folders/archive"
-    @State private var foldersArchiveURL:String = "https://link12.ddns.net:4040/folders/archive"
+    @State private var foldersArchiveURL:String = "https://api.appshare.site/folders/archive"
 //    @State private var foldersArchiveURL:String = "http://192.168.1.11:3000/folders/archive"
 
-//    @State private var foldersUnarchiveURL:String = "https://appshare.site:4040/folders/unarchive"
-    @State private var foldersUnarchiveURL:String = "https://link12.ddns.net:4040/folders/unarchive"
+    @State private var foldersUnarchiveURL:String = "https://api.appshare.site/folders/unarchive"
 //    @State private var foldersUnarchiveURL:String = "http://192.168.1.11:3000/folders/unarchive"
 
-//    @State private var foldersDeleteURL:String = "https://appshare.site:4040/folders/delete"
-    @State private var foldersDeleteURL:String = "https://link12.ddns.net:4040/folders/delete"
+    @State private var foldersDeleteURL:String = "https://api.appshare.site/folders/delete"
 //    @State private var foldersDeleteURL:String = "http://192.168.1.11:3000/folders/delete"
 
-//    @State private var attachmentsDeleteURL:String = "https://appshare.site:4040/attachments/delete"
-    @State private var attachmentsDeleteURL:String = "https://link12.ddns.net:4040/attachments/delete"
+    @State private var attachmentsDeleteURL:String = "https://api.appshare.site/attachments/delete"
 //    @State private var attachmentsDeleteURL:String = "http://192.168.1.11:3000/attachments/delete"
 
-//    @State private var videoFilesServiceURL:String = "https://appshare.site:5050/video_files"
-    @State private var videoFilesServiceURL:String = "https://link12.ddns.net:5050/video_files"
+    @State private var videoFilesServiceURL:String = "https://stream.appshare.site/video_files"
 //    @State private var videoFilesServiceURL:String = "http://192.168.1.11:3001/video_files"
 
-//    @State private var audioFilesServiceURL:String = "https://appshare.site:5050/audio_files"
-    @State private var audioFilesServiceURL:String = "https://link12.ddns.net:5050/audio_files"
+    @State private var audioFilesServiceURL:String = "https://stream.appshare.site/audio_files"
 //    @State private var audioFilesServiceURL:String = "http://192.168.1.11:3001/audio_files"
 
-//    @State private var playlistsServiceURL:String = "https://appshare.site:5050/playlists"
-    @State private var playlistsServiceURL:String = "https://link12.ddns.net:5050/playlists"
+    @State private var playlistsServiceURL:String = "https://stream.appshare.site/playlists"
 //    @State private var playlistsServiceURL:String = "http://192.168.1.11:3001/playlists"
 
-//    @State private var eventURL:String = "https://appshare.site:4040/event"
-    @State private var eventURL:String = "https://link12.ddns.net:4040/event"
+    @State private var eventURL:String = "https://api.appshare.site/event"
 //    @State private var eventURL:String = "http://192.168.1.11:3000/event"
 
     /*
@@ -1475,7 +1458,7 @@ struct ContentView: View {
                                 storeCredentials(
                                     username: user.emailAddress!,
                                     password: user.password!,
-                                    server: "link12.ddns.net"
+                                    server: "appshare.site"
                                 )
                             }
                         } else if errorsData != nil {
@@ -1641,7 +1624,7 @@ struct ContentView: View {
                                 storeCredentials(
                                     username: self.userCredentials.account,
                                     password: user.password!,
-                                    server: "link12.ddns.net"
+                                    server: "appshare.site"
                                 )
                             } else {
                                 let errorsDataUnwrapped = errorsData!
@@ -1707,7 +1690,7 @@ struct ContentView: View {
                                 storeCredentials(
                                     username: user.emailAddress!,
                                     password: self.userCredentials.password,
-                                    server: "link12.ddns.net"
+                                    server: "appshare.site"
                                 )
                                 emailAddressSessionForm = user.emailAddress!
                                 passwordSessionForm = self.userCredentials.password
@@ -1869,7 +1852,7 @@ struct ContentView: View {
             storeCredentials(
                 username: user.emailAddress!,
                 password: self.userCredentials.password!,
-                server: "link12.ddns.net"
+                server: "appshare.site"
             )
             emailAddressSessionForm = user.emailAddress!
             passwordSessionForm = self.userCredentials.password!
@@ -4496,7 +4479,7 @@ struct ContentView: View {
         }
         .navigationSplitViewStyle(.prominentDetail)
         .onAppear {
-            self.userCredentials = readCredentials(server: "link12.ddns.net")
+            self.userCredentials = readCredentials(server: "appshare.site")
             emailAddressSessionForm = self.userCredentials.account
             passwordSessionForm = self.userCredentials.password
         }

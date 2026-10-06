@@ -242,7 +242,10 @@ struct ContentView: View {
             if allowedMimeTypes.contains(fileExt) {
                 let mimeType = String(mimeTypes[fileExt]!).lowercased()
                 let data = try Data(contentsOf: URL(fileURLWithPath: itemPath))
-                let chunkSize = 104857600 // 100MB
+                // 70MB: base64 in the JSON body, then gzip, make a chunk about
+                // 71MB on the wire, under nginx's 75MB request limit (and
+                // Cloudflare's 100MB)
+                let chunkSize = 73400320
 
                 if (data.count > chunkSize) {
                     let zipFilePath = try Zip.quickZipFiles([URL(fileURLWithPath: itemPath)], fileName: "archive")

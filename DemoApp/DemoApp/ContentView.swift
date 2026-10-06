@@ -3206,7 +3206,7 @@ struct ContentView: View {
                         }
                     }
                     .padding(5)
-                    .navigationTitle("DemoApp \(self.signedInUser?.emailAddress! ?? "")")
+                    .navigationTitle("Appshare \(self.signedInUser?.emailAddress! ?? "")")
                     .toolbar {
                         Button(action: refreshUploads) {
                             Image(systemName: "arrow.clockwise")

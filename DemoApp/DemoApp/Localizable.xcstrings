@@ -202,6 +202,9 @@
     "Appleseed" : {
       "shouldTranslate" : false
     },
+    "Appshare %@" : {
+      "shouldTranslate" : false
+    },
     "Archive" : {
       "localizations" : {
         "de" : {
@@ -773,9 +776,6 @@
           }
         }
       }
-    },
-    "DemoApp %@" : {
-      "shouldTranslate" : false
     },
     "Dimensions %@" : {
       "localizations" : {

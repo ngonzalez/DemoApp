@@ -813,6 +813,8 @@ struct ContentView: View {
     @State private var accountNameAccountForm: String = String()
 
     @State private var accountAddressAccountForm: String = String()
+    // the address of the account's site: <subdomain>.appshare.site
+    @State private var subdomainAccountForm: String = String()
 
     @State private var firstNameAccountForm: String = String()
 
@@ -996,7 +998,8 @@ struct ContentView: View {
                 deliverNotificationsAccountUpdate: notifyOnAccountUpdateAccountForm,
                 createdAt: self.signedInUser?.createdAt,
                 updatedAt: self.signedInUser?.updatedAt,
-                errors: nil
+                errors: nil,
+                subdomain: subdomainAccountForm.trimmingCharacters(in: .whitespaces).lowercased()
             )
 
             let data = try JSONEncoder().encode(user)
@@ -1231,6 +1234,10 @@ struct ContentView: View {
         let createdAt: String?
         let updatedAt: String?
         let errors: [String]?
+        // the account's subdomain, as the backend sends it
+        var accountSubdomain: String? = nil
+        // a new subdomain to save (PUT /account): the previous one keeps redirecting
+        var subdomain: String? = nil
     }
 
     struct Account: Codable, Identifiable {
@@ -1802,6 +1809,7 @@ struct ContentView: View {
             let accountAddressUnWrapped = accountAddress!
             self.accountAddressAccountForm = accountAddressUnWrapped
         }
+        self.subdomainAccountForm = self.signedInUser?.accountSubdomain ?? String()
         let firstName = self.signedInUser?.firstName
         if (firstName != nil) {
             let firstNameUnWrapped = firstName!
@@ -2014,6 +2022,7 @@ struct ContentView: View {
             // reset values
             self.accountNameAccountForm = String()
             self.accountAddressAccountForm = String()
+            self.subdomainAccountForm = String()
             self.firstNameAccountForm = String()
             self.lastNameAccountForm = String()
             self.emailAddressAccountForm = String()
@@ -2710,6 +2719,17 @@ struct ContentView: View {
                                     }
                                     .disableAutocorrection(true)
                                     .disabled(true)
+                                }
+
+                                // the address of the account's site
+                                HStack {
+                                    TextField(text: $subdomainAccountForm, prompt: Text("Address of your site")) {
+                                        Text("Address of your site")
+                                    }
+                                    .disableAutocorrection(true)
+                                    .textContentType(.none)
+                                    Text(".appshare.site")
+                                        .foregroundStyle(.secondary)
                                 }
 
                                 let accountAddress = self.signedInUser?.accountAddress

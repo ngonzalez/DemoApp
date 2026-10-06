@@ -89,6 +89,9 @@
         }
       }
     },
+    ".appshare.site" : {
+      "shouldTranslate" : false
+    },
     "Account" : {
       "localizations" : {
         "de" : {
@@ -195,6 +198,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "UUID du compte"
+          }
+        }
+      }
+    },
+    "Address of your site" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adresse de votre site"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dirección de su sitio"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adresse Ihrer Website"
           }
         }
       }

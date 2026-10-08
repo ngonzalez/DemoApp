@@ -3029,12 +3029,16 @@ struct ContentView: View {
                             TextField(text: $emailAddressRegistrationForm, prompt: Text("johnatan@apple.com")) {
                                 Text("Email")
                             }
+                            // AutoFill: the account of the password the Passwords app saves
+                            .textContentType(.username)
                             .disableAutocorrection(true)
                             .disabled(self.newAccountComplete)
 
                             SecureField(text: $passwordRegistrationForm, prompt: Text("Required")) {
                                 Text("Password")
                             }
+                            // AutoFill: suggests a strong password and saves it for appshare.site
+                            .textContentType(.newPassword)
                             .disableAutocorrection(true)
                             .disabled(self.newAccountComplete)
 
@@ -3088,12 +3092,17 @@ struct ContentView: View {
                             TextField(text: $emailAddressSessionForm, prompt: Text("johnatan@apple.com")) {
                                 Text("Email")
                             }
+                            // AutoFill: offers the passwords saved for appshare.site in the
+                            // Passwords app (webcredentials in DemoApp.entitlements and the
+                            // site's apple-app-site-association)
+                            .textContentType(.username)
                             .disableAutocorrection(true)
                             .disabled(self.newSessionComplete)
 
                             SecureField(text: $passwordSessionForm, prompt: Text("Required")) {
                                 Text("Password")
                             }
+                            .textContentType(.password)
                             .disableAutocorrection(true)
                             .disabled(self.newSessionComplete)
 

@@ -1384,29 +1384,22 @@ struct ContentView: View {
         let password: String!
     }
 
+    // Save the signed-in user's email address and password in the keychain
+    // for `server`, read again at launch (readCredentials): update the item
+    // when there is one, add it the first time
     func storeCredentials(username: String, password: String, server: String) {
         self.userCredentials = Credentials(account: username, password: password)
-        if (self.userCredentials.account != "" && self.userCredentials.password != "") {
-            let query: [String: Any] = [kSecClass as String: kSecClassInternetPassword,
-                                        kSecAttrServer as String: server]
+        guard !username.isEmpty, !password.isEmpty else { return }
 
-            let accountUnwrapped = userCredentials.account!
-            let passwordUnwrapped = userCredentials.password.data(using: String.Encoding.utf8)!
+        let query: [String: Any] = [kSecClass as String: kSecClassInternetPassword,
+                                    kSecAttrServer as String: server]
+        let attributes: [String: Any] = [kSecAttrAccount as String: username,
+                                         kSecValueData as String: Data(password.utf8)]
 
-            let attributes: [String: Any] = [kSecAttrAccount as String: accountUnwrapped,
-                                             kSecValueData as String: passwordUnwrapped]
-
-            SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
-        } else {
-            let accountUnwrapped = username
-            let passwordUnwrapped = password.data(using: String.Encoding.utf8)!
-
-            let query: [String: Any] = [kSecClass as String: kSecClassInternetPassword,
-                                        kSecAttrServer as String: server,
-                                        kSecAttrAccount as String: accountUnwrapped,
-                                        kSecValueData as String: passwordUnwrapped]
-
-            SecItemAdd(query as CFDictionary, nil)
+        let status = SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
+        if status == errSecItemNotFound {
+            let item = query.merging(attributes) { _, new in new }
+            SecItemAdd(item as CFDictionary, nil)
         }
     }
 
@@ -3036,12 +3029,16 @@ struct ContentView: View {
                             TextField(text: $emailAddressRegistrationForm, prompt: Text("johnatan@apple.com")) {
                                 Text("Email")
                             }
+                            // AutoFill: the account of the password the Passwords app saves
+                            .textContentType(.username)
                             .disableAutocorrection(true)
                             .disabled(self.newAccountComplete)
 
                             SecureField(text: $passwordRegistrationForm, prompt: Text("Required")) {
                                 Text("Password")
                             }
+                            // AutoFill: suggests a strong password and saves it for appshare.site
+                            .textContentType(.newPassword)
                             .disableAutocorrection(true)
                             .disabled(self.newAccountComplete)
 
@@ -3095,12 +3092,17 @@ struct ContentView: View {
                             TextField(text: $emailAddressSessionForm, prompt: Text("johnatan@apple.com")) {
                                 Text("Email")
                             }
+                            // AutoFill: offers the passwords saved for appshare.site in the
+                            // Passwords app (webcredentials in DemoApp.entitlements and the
+                            // site's apple-app-site-association)
+                            .textContentType(.username)
                             .disableAutocorrection(true)
                             .disabled(self.newSessionComplete)
 
                             SecureField(text: $passwordSessionForm, prompt: Text("Required")) {
                                 Text("Password")
                             }
+                            .textContentType(.password)
                             .disableAutocorrection(true)
                             .disabled(self.newSessionComplete)
 

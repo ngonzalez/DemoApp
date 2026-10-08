@@ -2731,7 +2731,7 @@ struct ContentView: View {
                                 if (accountAddress != nil) {
                                     let accountAddressUnWrapped:String = accountAddress!
                                     TextField(text: $accountAddressAccountForm, prompt: Text(accountAddressUnWrapped)) {
-                                        Text("Account Name")
+                                        Text("Address")
                                     }
                                     .disableAutocorrection(true)
                                     .disabled(true)

@@ -2619,7 +2619,7 @@ struct ContentView: View {
                             VStack {
                                 Spacer()
 
-                                Text("Change Email Address")
+                                Text("Change email address")
                                     .font(.system(size: 15))
 
                                 if let message = editEmailAddressSuccessMessage.message {
@@ -2714,13 +2714,15 @@ struct ContentView: View {
                                     .disabled(true)
                                 }
 
-                                // the address of the account's site
+                                // the address of the account's site, shown only: it can't be
+                                // changed from here
                                 HStack {
                                     TextField(text: $subdomainAccountForm, prompt: Text("Address of your site")) {
                                         Text("Address of your site")
                                     }
                                     .disableAutocorrection(true)
                                     .textContentType(.none)
+                                    .disabled(true)
                                     Text(".appshare.site")
                                         .foregroundStyle(.secondary)
                                 }
@@ -2729,7 +2731,7 @@ struct ContentView: View {
                                 if (accountAddress != nil) {
                                     let accountAddressUnWrapped:String = accountAddress!
                                     TextField(text: $accountAddressAccountForm, prompt: Text(accountAddressUnWrapped)) {
-                                        Text("Account Name")
+                                        Text("Address")
                                     }
                                     .disableAutocorrection(true)
                                     .disabled(true)
@@ -2877,7 +2879,7 @@ struct ContentView: View {
 
                         /* Edit Email Address */
                         Button(action: clickEditEmailAddress) {
-                            Text("Change Email Address")
+                            Text("Change email address")
                                 .foregroundStyle(.blue.gradient)
                         }.buttonStyle(PlainButtonStyle())
                   }

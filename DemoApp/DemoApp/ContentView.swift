@@ -26,7 +26,6 @@ import AVKit
 import Gzip
 
 /* Zip */
-import Zip
 
 /* Logger */
 import OSLog
@@ -186,157 +185,27 @@ struct ContentView: View {
 
     @State private var isImporting:Bool = false
 
-    struct UploadItem: Codable {
-        var id: Int?
-        var uuid: UUID
-        var userId: Int
-        var filePath: String
-        var mimeType: String
-        var source: String
-        var uploadFileUuid: UUID?
-        var itemData: Data
-        var createdAt: String
-        var updatedAt: String
-    }
+    /// Upload a file of an imported folder straight to the storage, in one
+    /// request (`DirectUpload`), then record the upload event. Unsupported
+    /// file types are skipped; a failed upload is logged.
+    func importItem(itemPath: String, createdAt: Date, updatedAt: Date, uuid: UUID, source: String) async {
+        let fileURL = URL(fileURLWithPath: itemPath)
+        guard let mimeType = mimeTypes[fileURL.pathExtension]?.lowercased() else { return }
 
-    func newUploadRequest(uuid: UUID, source: String, path: String, mimeType: String, uploadData: Data, uploadFileUuid: UUID?, createdAt: Date, updatedAt: Date) {
         do {
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZZZZZ"
-            let createdAtFormatted = dateFormatter.string(from: createdAt)
-            let updatedAtFormatted = dateFormatter.string(from: updatedAt)
-            let userId = self.signedInUser?.id
-            let userIdUnwrapped = userId!
-            let uploadItem = UploadItem(
-                uuid: uuid,
-                userId: userIdUnwrapped,
-                filePath: path,
-                mimeType: mimeType,
+            let uploadUuid = try await DirectUpload(uploadURL: URL(string: backendURL)!).upload(
+                fileURL: fileURL,
                 source: source,
-                uploadFileUuid: uploadFileUuid,
-                itemData: uploadData,
-                createdAt: createdAtFormatted,
-                updatedAt: updatedAtFormatted
+                mimeType: mimeType,
+                createdAt: createdAt,
+                updatedAt: updatedAt
             )
 
-            let data = try JSONEncoder().encode(uploadItem)
-            let url = URL(string: backendURL)!
-            let delegateClass = NetworkDelegateClass()
-            let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
-            let optimizedData: Data = try! data.gzipped(level: .bestCompression)
-            let postLength = String(format: "%lu", UInt(optimizedData.count))
-            let request = newPostRequestWithContent(url: url, data: optimizedData, postLength: postLength)
-            let task = delegateSession.uploadTask(withStreamedRequest: request)
-
-            task.resume()
-
+            let fileSize = try fileURL.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+            createEvent(url: "\(backendURL)/\(uploadUuid)", eventType: "upload",
+                        uploadDetails: UploadDetails(fileSize: fileSize, fileName: itemPath, mimeType: mimeType))
         } catch let error {
-            logger.error("[newUploadRequest] Error: \(error)")
-        }
-    }
-
-    func importItem(itemPath: String, createdAt: Date, updatedAt: Date, uuid: UUID, source: String) {
-        do {
-            let fileExt = URL(fileURLWithPath: itemPath).pathExtension
-            let allowedMimeTypes = mimeTypes.map { (key, value) in return key }
-
-            if allowedMimeTypes.contains(fileExt) {
-                let mimeType = String(mimeTypes[fileExt]!).lowercased()
-                let data = try Data(contentsOf: URL(fileURLWithPath: itemPath))
-                // 70MB: base64 in the JSON body, then gzip, make a chunk about
-                // 71MB on the wire, under nginx's 75MB request limit (and
-                // Cloudflare's 100MB)
-                let chunkSize = 73400320
-
-                if (data.count > chunkSize) {
-                    let zipFilePath = try Zip.quickZipFiles([URL(fileURLWithPath: itemPath)], fileName: "archive")
-
-                    let tempDir = FileManager.default.temporaryDirectory
-                    let tempFileURL = tempDir.appendingPathComponent("sample")
-
-                    let chunker = FileChunker.init(input: zipFilePath, outputDirectory: tempFileURL, chunkSize: chunkSize)
-                    let _ = try chunker.chunk()
-
-                    let directoryContents = try
-                        FileManager.default.contentsOfDirectory(at: tempFileURL,
-                                includingPropertiesForKeys:[.contentModificationDateKey],
-                                options: [.skipsHiddenFiles, .skipsSubdirectoryDescendants])
-                            .filter { $0.lastPathComponent.hasSuffix(".block") }
-                            .sorted(by: {
-                                let date0 = try $0.promisedItemResourceValues(forKeys:[.contentModificationDateKey]).contentModificationDate!
-                                let date1 = try $1.promisedItemResourceValues(forKeys:[.contentModificationDateKey]).contentModificationDate!
-                                return date0.compare(date1) == .orderedAscending
-                            })
-
-                    let FilePaths = directoryContents.map{ $0.path() }
-                    var i = 0
-                    let filesCount = FilePaths.count
-
-                    for counter in 0..<filesCount {
-                        let fileData = try Data(contentsOf: URL(fileURLWithPath: FilePaths[counter]))
-
-                        newUploadRequest(
-                            uuid: UUID(),
-                            source: source,
-                            path: "\(itemPath).\(i + 1)-\(filesCount).block",
-                            mimeType: "application/octet-stream",
-                            uploadData: fileData,
-                            uploadFileUuid: uuid,
-                            createdAt: createdAt,
-                            updatedAt: updatedAt
-                        )
-                        i += 1
-                    }
-
-                    try FileManager.default.removeItem(at: tempFileURL)
-                    try FileManager.default.removeItem(at: zipFilePath)
-
-                    let uploadDetails = UploadDetails(
-                        fileSize: data.count,
-                        fileName: itemPath,
-                        mimeType: mimeType
-                    )
-
-                    createEvent(url: "\(backendURL)/\(uuid)", eventType: "upload", uploadDetails: uploadDetails)
-
-                    newUploadRequest(
-                        uuid: uuid,
-                        source: source,
-                        path: itemPath,
-                        mimeType: mimeType,
-                        uploadData: Data(),
-                        uploadFileUuid: nil,
-                        createdAt: createdAt,
-                        updatedAt: updatedAt
-                    )
-
-               } else {
-                    let fileData = try Data(contentsOf: URL(fileURLWithPath: itemPath))
-                    let uuid = UUID()
-
-                    let uploadDetails = UploadDetails(
-                        fileSize: data.count,
-                        fileName: itemPath,
-                        mimeType: mimeType
-                    )
-
-                    createEvent(url: "\(backendURL)/\(uuid)", eventType: "upload", uploadDetails: uploadDetails)
-
-                    newUploadRequest(
-                        uuid: uuid,
-                        source: source,
-                        path: itemPath,
-                        mimeType: mimeType,
-                        uploadData: fileData,
-                        uploadFileUuid: nil,
-                        createdAt: createdAt,
-                        updatedAt: updatedAt
-                    )
-                }
-            }
-
-        } catch let error {
-            logger.error("[importItem] Error \(error)")
+            logger.error("[importItem] \(itemPath): \(error.localizedDescription)")
         }
     }
 
@@ -362,7 +231,7 @@ struct ContentView: View {
 
               if (fsFileType == "NSFileTypeRegular") {
 
-                  importItem(itemPath: itemPath, createdAt: itemCreatedAt, updatedAt: itemUpdatedAt, uuid: uuid, source: "root")
+                  await importItem(itemPath: itemPath, createdAt: itemCreatedAt, updatedAt: itemUpdatedAt, uuid: uuid, source: "root")
                   await Task.yield()
 
               } else if (fsFileType == "NSFileTypeDirectory") {
@@ -382,7 +251,7 @@ struct ContentView: View {
 
                       if (folderFsFileType == "NSFileTypeRegular") {
 
-                          importItem(itemPath: folderItemPath, createdAt: folderItemCreatedAt, updatedAt: folderItemUpdatedAt, uuid: uuid, source: "folder")
+                          await importItem(itemPath: folderItemPath, createdAt: folderItemCreatedAt, updatedAt: folderItemUpdatedAt, uuid: uuid, source: "folder")
                           await Task.yield()
 
                       }
@@ -404,7 +273,7 @@ struct ContentView: View {
 
                               if (subfolderFsFileType == "NSFileTypeRegular") {
 
-                                  importItem(itemPath: subfolderItemPath, createdAt: subfolderItemCreatedAt, updatedAt: subfolderItemUpdatedAt, uuid: uuid, source: "subfolder")
+                                  await importItem(itemPath: subfolderItemPath, createdAt: subfolderItemCreatedAt, updatedAt: subfolderItemUpdatedAt, uuid: uuid, source: "subfolder")
                                   await Task.yield()
 
                               }

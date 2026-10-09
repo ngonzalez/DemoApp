@@ -84,6 +84,12 @@ struct DirectUpload {
         }
     }
 
+    /// The MIME type of a file from its extension, whatever its case (a
+    /// camera's `IMG_0001.JPG`); nil for a type the app doesn't upload
+    static func mimeType(of fileURL: URL, in mimeTypes: [String: String]) -> String? {
+        mimeTypes[fileURL.pathExtension.lowercased()]?.lowercased()
+    }
+
     /// Base64 MD5, read in 4 MiB pieces: a large video never sits in memory
     static func md5(of url: URL) throws -> String {
         let handle = try FileHandle(forReadingFrom: url)

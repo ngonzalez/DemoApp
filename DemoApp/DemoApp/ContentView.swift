@@ -104,6 +104,7 @@ struct ContentView: View {
     @State private var folders: Array<URL> = Array<URL>()
 
     @State private var progress:Float = Float(0)
+    @State private var isSyncing:Bool = false
 
     /* Tables  */
     @State private var imageFileSortOrder = [KeyPathComparator(\ImageFile.fileName)]
@@ -339,7 +340,9 @@ struct ContentView: View {
         }
     }
 
-    func importFolder(folder: URL, item: String) {
+    // Pauses after each file (`await Task.yield()`) so that SwiftUI can redraw
+    // the progress bar and the window stays responsive during an import
+    func importFolder(folder: URL, item: String) async {
 
         do {
 
@@ -360,6 +363,7 @@ struct ContentView: View {
               if (fsFileType == "NSFileTypeRegular") {
 
                   importItem(itemPath: itemPath, createdAt: itemCreatedAt, updatedAt: itemUpdatedAt, uuid: uuid, source: "root")
+                  await Task.yield()
 
               } else if (fsFileType == "NSFileTypeDirectory") {
 
@@ -379,6 +383,7 @@ struct ContentView: View {
                       if (folderFsFileType == "NSFileTypeRegular") {
 
                           importItem(itemPath: folderItemPath, createdAt: folderItemCreatedAt, updatedAt: folderItemUpdatedAt, uuid: uuid, source: "folder")
+                          await Task.yield()
 
                       }
 
@@ -400,6 +405,7 @@ struct ContentView: View {
                               if (subfolderFsFileType == "NSFileTypeRegular") {
 
                                   importItem(itemPath: subfolderItemPath, createdAt: subfolderItemCreatedAt, updatedAt: subfolderItemUpdatedAt, uuid: uuid, source: "subfolder")
+                                  await Task.yield()
 
                               }
                           }
@@ -413,41 +419,52 @@ struct ContentView: View {
         }
     }
 
-    func browseFolder(folder: URL) {
+    func browseFolder(folder: URL) async {
         let fm = FileManager.default
 
         do {
             let items = try fm.contentsOfDirectory(atPath: folder.path).filter { $0 != ".DS_Store" }
 
             for item in items {
-                importFolder(folder: folder, item: item)
+                await importFolder(folder: folder, item: item)
             }
         } catch let error {
             logger.error("[browseFolder] Error: \(error)")
         }
     }
 
+    // Import the folders in a task on the main actor (the upload requests read
+    // the signed-in user's state): it pauses between files and folders, so the
+    // progress bar moves folder by folder. The button is disabled meanwhile
     func syncFolders() {
-        var index = 0
-        for folder in folders {
+        guard !isSyncing else { return }
+        isSyncing = true
+        progress = Float(0)
 
-            // Set progress
-            index += 1
-            progress = Float(index / folders.count * 100)
+        Task { @MainActor in
+            defer { isSyncing = false }
 
-            do {
-                let attributes = try FileManager.default.attributesOfItem(atPath: folder.path)
-                let fsItemType:String = attributes[FileAttributeKey.type] as! String
-                if (fsItemType == "NSFileTypeDirectory") {
+            var index = 0
+            for folder in folders {
+                do {
+                    let attributes = try FileManager.default.attributesOfItem(atPath: folder.path)
+                    let fsItemType:String = attributes[FileAttributeKey.type] as! String
+                    if (fsItemType == "NSFileTypeDirectory") {
 
-                    browseFolder(folder: folder)
+                        await browseFolder(folder: folder)
 
-                    do {
-                        folder.stopAccessingSecurityScopedResource()
+                        do {
+                            folder.stopAccessingSecurityScopedResource()
+                        }
                     }
+                } catch {
+                    logger.error("[syncFolders] Error: \(error)")
                 }
-            } catch {
-                logger.error("[syncFolders] Error: \(error)")
+
+                // Set progress
+                index += 1
+                progress = Float(index) / Float(folders.count)
+                await Task.yield()
             }
         }
     }
@@ -3181,6 +3198,7 @@ struct ContentView: View {
                                 Text("Import \(folderNames.joined(separator: ", "))")
                                 ProgressView(value: progress)
                             }
+                            .disabled(isSyncing)
                         }
 
                         /* Clear Button */

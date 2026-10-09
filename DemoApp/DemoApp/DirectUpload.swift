@@ -15,7 +15,8 @@ import Foundation
 struct DirectUpload {
     /// The uploads endpoint, e.g. https://api.appshare.site/upload
     let uploadURL: URL
-    let session: URLSession = .shared
+    /// `.shared` carries the session cookie; the tests pass a stubbed session
+    var session: URLSession = .shared
 
     struct Created: Decodable {
         struct Target: Decodable {

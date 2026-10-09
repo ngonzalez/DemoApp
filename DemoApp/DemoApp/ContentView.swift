@@ -190,7 +190,7 @@ struct ContentView: View {
     /// file types are skipped; a failed upload is logged.
     func importItem(itemPath: String, createdAt: Date, updatedAt: Date, uuid: UUID, source: String) async {
         let fileURL = URL(fileURLWithPath: itemPath)
-        guard let mimeType = mimeTypes[fileURL.pathExtension]?.lowercased() else { return }
+        guard let mimeType = DirectUpload.mimeType(of: fileURL, in: mimeTypes) else { return }
 
         do {
             let uploadUuid = try await DirectUpload(uploadURL: URL(string: backendURL)!).upload(
@@ -304,27 +304,25 @@ struct ContentView: View {
 
     // Import the folders in a task on the main actor (the upload requests read
     // the signed-in user's state): it pauses between files and folders, so the
-    // progress bar moves folder by folder. The button is disabled meanwhile
+    // progress bar moves folder by folder. The Import and Clear buttons are
+    // disabled meanwhile. The folders stay readable (security scoped access)
+    // until they are cleared, so they can be imported again
     func syncFolders() {
         guard !isSyncing else { return }
         isSyncing = true
         progress = Float(0)
+        let selectedFolders = folders
 
         Task { @MainActor in
             defer { isSyncing = false }
 
             var index = 0
-            for folder in folders {
+            for folder in selectedFolders {
                 do {
                     let attributes = try FileManager.default.attributesOfItem(atPath: folder.path)
                     let fsItemType:String = attributes[FileAttributeKey.type] as! String
                     if (fsItemType == "NSFileTypeDirectory") {
-
                         await browseFolder(folder: folder)
-
-                        do {
-                            folder.stopAccessingSecurityScopedResource()
-                        }
                     }
                 } catch {
                     logger.error("[syncFolders] Error: \(error)")
@@ -332,13 +330,15 @@ struct ContentView: View {
 
                 // Set progress
                 index += 1
-                progress = Float(index) / Float(folders.count)
+                progress = Float(index) / Float(selectedFolders.count)
                 await Task.yield()
             }
         }
     }
 
+    // Forget the selected folders, and give back their access
     func clearFolders() {
+        folders.forEach { $0.stopAccessingSecurityScopedResource() }
         self.folders = []
         progress = Float(0)
     }
@@ -3076,6 +3076,7 @@ struct ContentView: View {
                                 Text("Clear")
                                     .foregroundStyle(.gray.gradient)
                             }.buttonStyle(PlainButtonStyle())
+                            .disabled(isSyncing)
                         }
 
                         /* Import Button */

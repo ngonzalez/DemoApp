@@ -34,6 +34,16 @@ import Testing
                                 createdAt: Date(timeIntervalSince1970: 1_759_312_800), updatedAt: Date(timeIntervalSince1970: 1_759_399_200))
     }
 
+    @Test func mimeTypeWhateverTheCaseOfTheExtension() {
+        let mimeTypes = ["jpg": "image/jpeg", "png": "image/png", "pdf": "application/PDF"]
+
+        #expect(DirectUpload.mimeType(of: URL(fileURLWithPath: "/DCIM/IMG_0001.JPG"), in: mimeTypes) == "image/jpeg")
+        #expect(DirectUpload.mimeType(of: URL(fileURLWithPath: "/Scans/scan.Png"), in: mimeTypes) == "image/png")
+        #expect(DirectUpload.mimeType(of: URL(fileURLWithPath: "/a/invoice.pdf"), in: mimeTypes) == "application/pdf")
+        #expect(DirectUpload.mimeType(of: URL(fileURLWithPath: "/a/setup.EXE"), in: mimeTypes) == nil)
+        #expect(DirectUpload.mimeType(of: URL(fileURLWithPath: "/a/README"), in: mimeTypes) == nil)
+    }
+
     @Test func md5IsTheBase64DigestOfTheFile() throws {
         // printf hello | openssl dgst -md5 -binary | base64
         #expect(try DirectUpload.md5(of: file) == "XUFAKrxLKna5cZ2REBfFkg==")

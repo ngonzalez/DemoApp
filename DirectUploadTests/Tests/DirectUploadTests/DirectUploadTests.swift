@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 import Testing
 @testable import DirectUpload
@@ -79,6 +80,45 @@ import Testing
         #expect(complete.url == "https://api.example.test/upload/direct/\(Self.uuid)/complete")
         let completeBody = try #require(try JSONSerialization.jsonObject(with: complete.body) as? [String: Any])
         #expect(completeBody["signedBlobId"] as? String == "signed-blob")
+    }
+
+    @Test func sendsTheFileItselfAndBothDates() async throws {
+        StubProtocol.responses = [Self.created, (201, Data()), Self.json(202, ["uuid": Self.uuid, "status": "processing"])]
+
+        _ = try await send()
+
+        let requests = StubProtocol.requests
+        try #require(requests.count == 3)
+        #expect(requests[1].body == Data("hello".utf8))
+        let details = try #require(try JSONSerialization.jsonObject(with: requests[0].body) as? [String: Any])
+        #expect(details["updatedAt"] as? String == "2025-10-02T10:00:00Z")
+        #expect(requests[0].headers["Content-Type"] == "application/json")
+        #expect(requests[0].headers["Accept"] == "application/json")
+    }
+
+    @Test func md5OfAFileLargerThanOnePiece() throws {
+        let big = FileManager.default.temporaryDirectory.appending(path: "direct-upload-\(UUID().uuidString).bin")
+        defer { try? FileManager.default.removeItem(at: big) }
+        let data = Data((0..<(9 * 1024 * 1024)).map { UInt8($0 % 251) })
+        try data.write(to: big)
+
+        #expect(try DirectUpload.md5(of: big) == Data(Insecure.MD5.hash(data: data)).base64EncodedString())
+    }
+
+    @Test func aFailureWithoutAMessageIsNamedByItsStatus() async throws {
+        StubProtocol.responses = [(503, Data("<html>Service Unavailable</html>".utf8))]
+
+        let error = await #expect(throws: DirectUpload.Failure.self) { try await send() }
+        #expect(error?.status == 503)
+        #expect(error?.message == HTTPURLResponse.localizedString(forStatusCode: 503))
+        #expect(error?.errorDescription == "HTTP 503: \(HTTPURLResponse.localizedString(forStatusCode: 503))")
+    }
+
+    @Test func aMissingFileIsNotSent() async throws {
+        try FileManager.default.removeItem(at: file)
+
+        await #expect(throws: (any Error).self) { try await send() }
+        #expect(StubProtocol.requests.isEmpty)
     }
 
     @Test func aRefusedFileIsNotSent() async throws {

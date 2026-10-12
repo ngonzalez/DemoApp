@@ -1138,6 +1138,11 @@ struct ContentView: View {
     }
 
     func submitRegistrationForm() {
+        let passwordProblems = PasswordRules.problems(passwordRegistrationForm, emailAddress: emailAddressRegistrationForm)
+        guard passwordProblems.isEmpty else {
+            iterateOverErrorsNewAccount(errors: passwordProblems)
+            return
+        }
         do {
             let user = UserWithAccount(
                 id: nil,
@@ -1480,6 +1485,11 @@ struct ContentView: View {
     }
 
     func submitEditPasswordForm() {
+        let passwordProblems = PasswordRules.problems(newPasswordEditPasswordForm, emailAddress: self.signedInUser?.emailAddress ?? "")
+        guard passwordProblems.isEmpty else {
+            iterateOverErrorsEditPassword(errors: passwordProblems)
+            return
+        }
         do {
             let user = UserWithPasswordAndPasswordConfirmation(
                 id: self.signedInUser?.id,

@@ -750,8 +750,8 @@ struct ContentView: View {
     @State private var accountsURL:String = "https://api.appshare.site/accounts"
 //    @State private var accountsURL:String = "http://192.168.1.11:3000/accounts"
 
-    @State private var accountURL:String = "https://api.appshare.site/account"
-//    @State private var accountURL:String = "http://192.168.1.11:3000/account"
+    @State private var userURL:String = "https://api.appshare.site/user"
+//    @State private var userURL:String = "http://192.168.1.11:3000/user"
 
     @State private var registrationURL:String = "https://api.appshare.site/registration"
 //    @State private var registrationURL:String = "http://192.168.1.11:3000/registration"
@@ -889,7 +889,7 @@ struct ContentView: View {
             )
 
             let data = try JSONEncoder().encode(user)
-            let url = URL(string: "\(accountURL)")!
+            let url = URL(string: "\(userURL)")!
             let delegateClass = NetworkDelegateClass()
             let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
             let optimizedData: Data = try! data.gzipped(level: .bestCompression)
@@ -1122,7 +1122,7 @@ struct ContentView: View {
         let errors: [String]?
         // the account's subdomain, as the backend sends it
         var accountSubdomain: String? = nil
-        // a new subdomain to save (PUT /account): the previous one keeps redirecting
+        // a new subdomain to save (PUT /user): the previous one keeps redirecting
         var subdomain: String? = nil
     }
 
@@ -1207,60 +1207,47 @@ struct ContentView: View {
         }
     }
 
-    struct UserAccountCode: Codable {
-        let accountCode: String!
-    }
-
+    // GET /accounts?accountCode=: the account to register in
     func submitAccountCode(accountCode: String) {
-        do {
-            let user = UserAccountCode(
-                accountCode: accountCode
-            )
+        var components = URLComponents(string: accountsURL)!
+        components.queryItems = [URLQueryItem(name: "accountCode", value: accountCode)]
+        let url = components.url!
+        let delegateClass = NetworkDelegateClass()
+        let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
+        let request = newGetRequest(url: url)
+        let task = delegateSession.dataTask(with: request) { data, response, error in
+            do {
+                let accountResponseWithMessage = try JSONDecoder().decode(AccountResponseWithMessage.self, from: data!)
 
-            let data = try JSONEncoder().encode(user)
-            let url = URL(string: "\(accountsURL)")!
-            let delegateClass = NetworkDelegateClass()
-            let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
-            let optimizedData: Data = try! data.gzipped(level: .bestCompression)
-            let postLength = String(format: "%lu", UInt(optimizedData.count))
-            let request = newPostRequest(url: url, data: optimizedData, postLength: postLength)
-            let task = delegateSession.dataTask(with: request) { data, response, error in
-                do {
-                    let accountResponseWithMessage = try JSONDecoder().decode(AccountResponseWithMessage.self, from: data!)
+                DispatchQueue.main.async {
 
-                    DispatchQueue.main.async {
+                    // handle response
+                    let httpResponse = response as? HTTPURLResponse
+                    let httpResponseUnwrapped = httpResponse!
+                    let errorsData = accountResponseWithMessage.account?.errors!
+                    if (errorsData == [] && httpResponseUnwrapped.statusCode == 200) {
 
-                        // handle response
-                        let httpResponse = response as? HTTPURLResponse
-                        let httpResponseUnwrapped = httpResponse!
-                        let errorsData = accountResponseWithMessage.account?.errors!
-                        if (errorsData == [] && httpResponseUnwrapped.statusCode == 200) {
-
-                            // callback
-                            self.registrationAccount = accountResponseWithMessage.account
-                        } else if errorsData != nil {
-                            let errorsDataUnwrapped = errorsData!
-                            iterateOverErrorsAccountCode(errors: errorsDataUnwrapped)
-                        }
-
-                        // validation message
-                        if (accountResponseWithMessage.message != nil) {
-                            let message = Message(message: accountResponseWithMessage.message)
-                            logger.info("\(message.message!)")
-                            self.accountCodeSuccessMessage = message
-                        }
+                        // callback
+                        self.registrationAccount = accountResponseWithMessage.account
+                    } else if errorsData != nil {
+                        let errorsDataUnwrapped = errorsData!
+                        iterateOverErrorsAccountCode(errors: errorsDataUnwrapped)
                     }
 
-                } catch let error {
-                    logger.error("[submitAccountCode] Request: \(error)")
+                    // validation message
+                    if (accountResponseWithMessage.message != nil) {
+                        let message = Message(message: accountResponseWithMessage.message)
+                        logger.info("\(message.message!)")
+                        self.accountCodeSuccessMessage = message
+                    }
                 }
+
+            } catch let error {
+                logger.error("[submitAccountCode] Request: \(error)")
             }
-
-            task.resume()
-
-        } catch let error {
-            logger.error("[submitAccountCode] Error: \(error)")
         }
+
+        task.resume()
     }
 
     struct UserWithEmailAddressAndPassword: Codable, Identifiable {

@@ -2922,8 +2922,8 @@ struct ContentView: View {
                             SecureField(text: $passwordRegistrationForm, prompt: Text("Required")) {
                                 Text("Password")
                             }
-                            // AutoFill: suggests a strong password and saves it for appshare.site
-                            .textContentType(.newPassword)
+                            // No .newPassword AutoFill hint: its strong password panel swallowed
+                            // the first click on Submit
                             .disableAutocorrection(true)
                             .disabled(self.newAccountComplete)
 

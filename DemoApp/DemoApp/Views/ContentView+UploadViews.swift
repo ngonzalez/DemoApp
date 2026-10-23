@@ -184,399 +184,419 @@ extension ContentView {
     @ViewBuilder
     var uploadFilesPanel: some View {
         if self.identified {
-            TabView {
-                VStack {
-                    Section {
-                        /* ImageFiles */
-                        Table(of: ImageFile.self,
-                              selection: $imageFileSelection,
-                              sortOrder: $imageFileSortOrder) {
+            if uploadImageFiles.isEmpty && uploadAudioFiles.isEmpty && uploadVideoFiles.isEmpty && uploadPdfFiles.isEmpty && uploadTextFiles.isEmpty {
+                // nothing to list: no tab
+                Text(self.selectedFolders.isEmpty ? "No folder selected" : "No files")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .padding(10)
+            } else {
+                // only the tabs with files
+                TabView {
+                    if !uploadImageFiles.isEmpty {
+                        VStack {
+                            Section {
+                                /* ImageFiles */
+                                Table(of: ImageFile.self,
+                                      selection: $imageFileSelection,
+                                      sortOrder: $imageFileSortOrder) {
 
-                            TableColumn("fileName") { imageFile in
-                                Label(imageFile.fileName, systemImage: "doc")
-                                    .labelStyle(.titleAndIcon)
-                                    .font(.system(size: 11))
-                            }
-                            TableColumn("mimeType") { imageFile in
-                                let mimeType = imageFile.mimeType
-                                let mimeTypeUnwrapped = mimeType!
-                                Text(mimeTypeUnwrapped)
-                                    .labelStyle(.titleAndIcon)
-                                    .font(.system(size: 11))
-                            }
-                        } rows: {
-                            ForEach(uploadImageFiles) { imageFile in
-                                TableRow(imageFile)
-                            }
-                        }
-                    } header: {
-                        HStack {
-                            VStack {
-                                Text("Image Files")
-                            }
-                            VStack {
-                                if (selectedImageFiles.count > 0) {
-                                    Button(action: deleteSelectedImages) {
-                                        Image(systemName: "minus.circle")
-                                            .font(.system(size: 11))
-                                        (self.selectedImageFiles.count > 1 ? Text("Delete selected Image Files") : Text("Delete selected Image File"))
+                                    TableColumn("fileName") { imageFile in
+                                        Label(imageFile.fileName, systemImage: "doc")
+                                            .labelStyle(.titleAndIcon)
                                             .font(.system(size: 11))
                                     }
-                                    .buttonStyle(.borderedProminent)
-                                    .tint(.black)
-                                }
-                            }
-                        }
-                    }
-                }
-                .tableStyle(.inset(alternatesRowBackgrounds: false))
-                .onChange(of: imageFileSelection) {
-                    self.selectedImageFiles = []
-                    self.selectedFolders = Set()
-                    for selectedId in imageFileSelection {
-                        uploadImageFiles.forEach { imageFile in
-                            if imageFile.id == selectedId {
-                                self.selectedImageFiles.append(imageFile)
-                                if (!self.selectedFolders.contains(imageFile.folder.id)) {
-                                    self.selectedFolders.insert(imageFile.folder.id)
-                                }
-                                var i = 0
-                                self.loadedFolders.forEach { folder in
-                                    if (folder.id == imageFile.folder.id) {
-                                        self.loadedFolders.remove(at: i)
-                                    }
-                                    i += 1
-                                }
-                                self.loadedFolders.append(imageFile.folder)
-                            }
-                        }
-                    }
-                }
-                .onChange(of: imageFileSortOrder) { _, imageFileSortOrder in
-                    withAnimation {
-                        uploadImageFiles.sort(using: imageFileSortOrder)
-                    }
-                }
-                .tabItem {
-                    Text("Image Files (\(uploadImageFiles.count))")
-                }
-
-                VStack {
-                    Section {
-                        /* AudioFiles */
-                        Table(of: AudioFile.self,
-                              selection: $audioFileSelection,
-                              sortOrder: $audioFileSortOrder) {
-
-                            TableColumn("fileName") { audioFile in
-                                Label(audioFile.fileName, systemImage: "doc")
-                                    .labelStyle(.titleAndIcon)
-                                    .font(.system(size: 11))
-                            }
-                            TableColumn("mimeType") { audioFile in
-                                let mimeType = audioFile.mimeType
-                                let mimeTypeUnwrapped = mimeType!
-                                Text(mimeTypeUnwrapped)
-                                    .labelStyle(.titleAndIcon)
-                                    .font(.system(size: 11))
-                            }
-                        } rows: {
-                            ForEach(uploadAudioFiles) { audioFile in
-                                TableRow(audioFile)
-                            }
-                        }
-                    } header: {
-                        HStack {
-                            VStack {
-                                Text("Audio Files")
-                            }
-                            VStack {
-                                if (selectedAudioFiles.count > 0) {
-                                    Button(action: deleteSelectedAudioFiles) {
-                                        Image(systemName: "minus.circle")
-                                            .font(.system(size: 11))
-                                        (self.selectedAudioFiles.count > 1 ? Text("Delete selected Audio Files") : Text("Delete selected Audio File"))
+                                    TableColumn("mimeType") { imageFile in
+                                        let mimeType = imageFile.mimeType
+                                        let mimeTypeUnwrapped = mimeType!
+                                        Text(mimeTypeUnwrapped)
+                                            .labelStyle(.titleAndIcon)
                                             .font(.system(size: 11))
                                     }
-                                    .buttonStyle(.borderedProminent)
-                                    .tint(.black)
-                                }
-                            }
-                        }
-                    }
-                }
-                .tableStyle(.inset(alternatesRowBackgrounds: false))
-                .onChange(of: audioFileSelection) { _, audioFileSelection in
-                    self.selectedAudioFiles = []
-                    self.selectedFolders = Set()
-                    for selectedId in audioFileSelection {
-                        uploadAudioFiles.forEach { audioFile in
-                            if audioFile.id == selectedId {
-                                self.selectedAudioFiles.append(audioFile)
-                                self.player = AVPlayer()
-                                displayAudio(audioFile: audioFile)
-                                DispatchQueue.main.async {
-                                    getAudioStream(audioFile: audioFile)
-                                }
-                            }
-                        }
-                    }
-                }
-                .onChange(of: audioFileSelection) {
-                    self.selectedAudioFiles = []
-                    for selectedId in audioFileSelection {
-                        uploadAudioFiles.forEach { audioFile in
-                            if audioFile.id == selectedId {
-                                self.selectedAudioFiles.append(audioFile)
-                                if (!self.selectedFolders.contains(audioFile.folder.id)) {
-                                    self.selectedFolders.insert(audioFile.folder.id)
-                                }
-                                var i = 0
-                                self.loadedFolders.forEach { folder in
-                                    if (folder.id == audioFile.folder.id) {
-                                        self.loadedFolders.remove(at: i)
+                                } rows: {
+                                    ForEach(uploadImageFiles) { imageFile in
+                                        TableRow(imageFile)
                                     }
-                                    i += 1
                                 }
-                                self.loadedFolders.append(audioFile.folder)
-
-                                displayAudio(audioFile: audioFile)
+                            } header: {
+                                HStack {
+                                    VStack {
+                                        Text("Image Files")
+                                    }
+                                    VStack {
+                                        if (selectedImageFiles.count > 0) {
+                                            Button(action: deleteSelectedImages) {
+                                                Image(systemName: "minus.circle")
+                                                    .font(.system(size: 11))
+                                                (self.selectedImageFiles.count > 1 ? Text("Delete selected Image Files") : Text("Delete selected Image File"))
+                                                    .font(.system(size: 11))
+                                            }
+                                            .buttonStyle(.borderedProminent)
+                                            .tint(.black)
+                                        }
+                                    }
+                                }
                             }
+                        }
+                        .tableStyle(.inset(alternatesRowBackgrounds: false))
+                        .onChange(of: imageFileSelection) {
+                            self.selectedImageFiles = []
+                            self.selectedFolders = Set()
+                            for selectedId in imageFileSelection {
+                                uploadImageFiles.forEach { imageFile in
+                                    if imageFile.id == selectedId {
+                                        self.selectedImageFiles.append(imageFile)
+                                        if (!self.selectedFolders.contains(imageFile.folder.id)) {
+                                            self.selectedFolders.insert(imageFile.folder.id)
+                                        }
+                                        var i = 0
+                                        self.loadedFolders.forEach { folder in
+                                            if (folder.id == imageFile.folder.id) {
+                                                self.loadedFolders.remove(at: i)
+                                            }
+                                            i += 1
+                                        }
+                                        self.loadedFolders.append(imageFile.folder)
+                                    }
+                                }
+                            }
+                        }
+                        .onChange(of: imageFileSortOrder) { _, imageFileSortOrder in
+                            withAnimation {
+                                uploadImageFiles.sort(using: imageFileSortOrder)
+                            }
+                        }
+                        .tabItem {
+                            Text("Image Files (\(uploadImageFiles.count))")
                         }
                     }
-                }
-                .onChange(of: audioFileSortOrder) { _, audioFileSortOrder in
-                    uploadAudioFiles.sort(using: audioFileSortOrder)
-                }
-                .tabItem {
-                    Text("Audio Files (\(uploadAudioFiles.count))")
-                }
 
-                VStack {
-                    Section {
-                        /* VideoFiles */
-                        Table(of: VideoFile.self,
-                              selection: $videoFileSelection,
-                              sortOrder: $videoFileSortOrder) {
+                    if !uploadAudioFiles.isEmpty {
+                        VStack {
+                            Section {
+                                /* AudioFiles */
+                                Table(of: AudioFile.self,
+                                      selection: $audioFileSelection,
+                                      sortOrder: $audioFileSortOrder) {
 
-                            TableColumn("fileName") { videoFile in
-                                Label(videoFile.fileName, systemImage: "doc")
-                                    .labelStyle(.titleAndIcon)
-                                    .font(.system(size: 11))
-                            }
-                            TableColumn("mimeType") { videoFile in
-                                let mimeType = videoFile.mimeType
-                                let mimeTypeUnwrapped = mimeType!
-                                Text(mimeTypeUnwrapped)
-                                    .labelStyle(.titleAndIcon)
-                                    .font(.system(size: 11))
-                            }
-                        } rows: {
-                            ForEach(uploadVideoFiles) { videoFile in
-                                TableRow(videoFile)
-                            }
-                        }
-                    } header: {
-                        HStack {
-                            VStack {
-                                Text("Video Files")
-                            }
-                            VStack {
-                                if (selectedVideoFiles.count > 0) {
-                                    Button(action: deleteSelectedVideoFiles) {
-                                        Image(systemName: "minus.circle")
-                                            .font(.system(size: 11))
-                                        (self.selectedVideoFiles.count > 1 ? Text("Delete selected Video Files") : Text("Delete selected Video File"))
+                                    TableColumn("fileName") { audioFile in
+                                        Label(audioFile.fileName, systemImage: "doc")
+                                            .labelStyle(.titleAndIcon)
                                             .font(.system(size: 11))
                                     }
-                                    .buttonStyle(.borderedProminent)
-                                    .tint(.black)
-                                }
-                            }
-                        }
-                    }
-                }
-                .tableStyle(.inset(alternatesRowBackgrounds: false))
-                .onChange(of: videoFileSelection) {
-                    self.selectedVideoFiles = []
-                    self.selectedFolders = Set()
-                    for selectedId in videoFileSelection {
-                        uploadVideoFiles.forEach { videoFile in
-                            if videoFile.id == selectedId {
-                                self.selectedVideoFiles.append(videoFile)
-                                if (!self.selectedFolders.contains(videoFile.folder.id)) {
-                                    self.selectedFolders.insert(videoFile.folder.id)
-                                }
-                                var i = 0
-                                self.loadedFolders.forEach { folder in
-                                    if (folder.id == videoFile.folder.id) {
-                                        self.loadedFolders.remove(at: i)
-                                    }
-                                    i += 1
-                                }
-                                self.loadedFolders.append(videoFile.folder)
-
-                                displayVideo(videoFile: videoFile)
-                            }
-                        }
-                    }
-                }
-                .onChange(of: videoFileSortOrder) { _, videoFileSortOrder in
-                    uploadVideoFiles.sort(using: videoFileSortOrder)
-                }
-                .tabItem {
-                    Text("Video Files (\(uploadVideoFiles.count))").colorMultiply(.cyan)
-                }
-
-                VStack {
-                    Section {
-                        /* PdfFiles */
-                        Table(of: PdfFile.self,
-                              selection: $pdfFileSelection,
-                              sortOrder: $pdfFileSortOrder) {
-
-                            TableColumn("fileName") { pdfFile in
-                                Label(pdfFile.fileName, systemImage: "doc")
-                                    .labelStyle(.titleAndIcon)
-                                    .font(.system(size: 11))
-                            }
-                            TableColumn("mimeType") { pdfFile in
-                                let mimeType = pdfFile.mimeType
-                                let mimeTypeUnwrapped = mimeType!
-                                Text(mimeTypeUnwrapped)
-                                    .labelStyle(.titleAndIcon)
-                                    .font(.system(size: 11))
-                            }
-                        } rows: {
-                            ForEach(uploadPdfFiles) { pdfFile in
-                                TableRow(pdfFile)
-                            }
-                        }
-                    } header: {
-                        HStack {
-                            VStack {
-                                Text("Pdf Files")
-                            }
-                            VStack {
-                                if (selectedPdfFiles.count > 0) {
-                                    Button(action: deleteSelectedPdfs) {
-                                        Image(systemName: "minus.circle")
-                                            .font(.system(size: 11))
-                                        (self.selectedPdfFiles.count > 1 ? Text("Delete selected Pdf Files") : Text("Delete selected Pdf File"))
+                                    TableColumn("mimeType") { audioFile in
+                                        let mimeType = audioFile.mimeType
+                                        let mimeTypeUnwrapped = mimeType!
+                                        Text(mimeTypeUnwrapped)
+                                            .labelStyle(.titleAndIcon)
                                             .font(.system(size: 11))
                                     }
-                                    .buttonStyle(.borderedProminent)
-                                    .tint(.black)
-                                }
-                            }
-                        }
-                    }
-                }
-                .tableStyle(.inset(alternatesRowBackgrounds: false))
-                .onChange(of: pdfFileSelection) {
-                    self.selectedPdfFiles = []
-                    self.selectedFolders = Set()
-                    for selectedId in pdfFileSelection {
-                        uploadPdfFiles.forEach { pdfFile in
-                            if pdfFile.id == selectedId {
-                                self.selectedPdfFiles.append(pdfFile)
-                                if (!self.selectedFolders.contains(pdfFile.folder.id)) {
-                                    self.selectedFolders.insert(pdfFile.folder.id)
-                                }
-                                var i = 0
-                                self.loadedFolders.forEach { folder in
-                                    if (folder.id == pdfFile.folder.id) {
-                                        self.loadedFolders.remove(at: i)
+                                } rows: {
+                                    ForEach(uploadAudioFiles) { audioFile in
+                                        TableRow(audioFile)
                                     }
-                                    i += 1
                                 }
-                                self.loadedFolders.append(pdfFile.folder)
+                            } header: {
+                                HStack {
+                                    VStack {
+                                        Text("Audio Files")
+                                    }
+                                    VStack {
+                                        if (selectedAudioFiles.count > 0) {
+                                            Button(action: deleteSelectedAudioFiles) {
+                                                Image(systemName: "minus.circle")
+                                                    .font(.system(size: 11))
+                                                (self.selectedAudioFiles.count > 1 ? Text("Delete selected Audio Files") : Text("Delete selected Audio File"))
+                                                    .font(.system(size: 11))
+                                            }
+                                            .buttonStyle(.borderedProminent)
+                                            .tint(.black)
+                                        }
+                                    }
+                                }
                             }
                         }
-                    }
-                }
-                .onChange(of: pdfFileSortOrder) { _, pdfFileSortOrder in
-                    uploadPdfFiles.sort(using: pdfFileSortOrder)
-                }
-                .tabItem {
-                    Text("Pdf Files (\(uploadPdfFiles.count))")
-                }
+                        .tableStyle(.inset(alternatesRowBackgrounds: false))
+                        .onChange(of: audioFileSelection) { _, audioFileSelection in
+                            self.selectedAudioFiles = []
+                            self.selectedFolders = Set()
+                            for selectedId in audioFileSelection {
+                                uploadAudioFiles.forEach { audioFile in
+                                    if audioFile.id == selectedId {
+                                        self.selectedAudioFiles.append(audioFile)
+                                        self.player = AVPlayer()
+                                        displayAudio(audioFile: audioFile)
+                                        DispatchQueue.main.async {
+                                            getAudioStream(audioFile: audioFile)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        .onChange(of: audioFileSelection) {
+                            self.selectedAudioFiles = []
+                            for selectedId in audioFileSelection {
+                                uploadAudioFiles.forEach { audioFile in
+                                    if audioFile.id == selectedId {
+                                        self.selectedAudioFiles.append(audioFile)
+                                        if (!self.selectedFolders.contains(audioFile.folder.id)) {
+                                            self.selectedFolders.insert(audioFile.folder.id)
+                                        }
+                                        var i = 0
+                                        self.loadedFolders.forEach { folder in
+                                            if (folder.id == audioFile.folder.id) {
+                                                self.loadedFolders.remove(at: i)
+                                            }
+                                            i += 1
+                                        }
+                                        self.loadedFolders.append(audioFile.folder)
 
-                VStack {
-                    Section {
-                        /* TextFiles */
-                        Table(of: TextFile.self,
-                              selection: $textFileSelection,
-                              sortOrder: $textFileSortOrder) {
+                                        displayAudio(audioFile: audioFile)
+                                    }
+                                }
+                            }
+                        }
+                        .onChange(of: audioFileSortOrder) { _, audioFileSortOrder in
+                            uploadAudioFiles.sort(using: audioFileSortOrder)
+                        }
+                        .tabItem {
+                            Text("Audio Files (\(uploadAudioFiles.count))")
+                        }
+                    }
 
-                            TableColumn("fileName") { textFile in
-                                Label(textFile.fileName, systemImage: "doc")
-                                    .labelStyle(.titleAndIcon)
-                                    .font(.system(size: 11))
-                            }
-                            TableColumn("mimeType") { textFile in
-                                let mimeType = textFile.mimeType
-                                let mimeTypeUnwrapped = mimeType!
-                                Text(mimeTypeUnwrapped)
-                                    .labelStyle(.titleAndIcon)
-                                    .font(.system(size: 11))
-                            }
-                        } rows: {
-                            ForEach(uploadTextFiles) { textFile in
-                                TableRow(textFile)
-                            }
-                        }
-                    } header: {
-                        HStack {
-                            VStack {
-                                Text("Text Files")
-                            }
-                            VStack {
-                                if (selectedTextFiles.count > 0) {
-                                    Button(action: deleteSelectedTextFiles) {
-                                        Image(systemName: "minus.circle")
-                                            .font(.system(size: 11))
-                                        (self.selectedTextFiles.count > 1 ? Text("Delete selected Text Files") : Text("Delete selected Text File"))
+                    if !uploadVideoFiles.isEmpty {
+                        VStack {
+                            Section {
+                                /* VideoFiles */
+                                Table(of: VideoFile.self,
+                                      selection: $videoFileSelection,
+                                      sortOrder: $videoFileSortOrder) {
+
+                                    TableColumn("fileName") { videoFile in
+                                        Label(videoFile.fileName, systemImage: "doc")
+                                            .labelStyle(.titleAndIcon)
                                             .font(.system(size: 11))
                                     }
-                                    .buttonStyle(.borderedProminent)
-                                    .tint(.black)
+                                    TableColumn("mimeType") { videoFile in
+                                        let mimeType = videoFile.mimeType
+                                        let mimeTypeUnwrapped = mimeType!
+                                        Text(mimeTypeUnwrapped)
+                                            .labelStyle(.titleAndIcon)
+                                            .font(.system(size: 11))
+                                    }
+                                } rows: {
+                                    ForEach(uploadVideoFiles) { videoFile in
+                                        TableRow(videoFile)
+                                    }
+                                }
+                            } header: {
+                                HStack {
+                                    VStack {
+                                        Text("Video Files")
+                                    }
+                                    VStack {
+                                        if (selectedVideoFiles.count > 0) {
+                                            Button(action: deleteSelectedVideoFiles) {
+                                                Image(systemName: "minus.circle")
+                                                    .font(.system(size: 11))
+                                                (self.selectedVideoFiles.count > 1 ? Text("Delete selected Video Files") : Text("Delete selected Video File"))
+                                                    .font(.system(size: 11))
+                                            }
+                                            .buttonStyle(.borderedProminent)
+                                            .tint(.black)
+                                        }
+                                    }
                                 }
                             }
+                        }
+                        .tableStyle(.inset(alternatesRowBackgrounds: false))
+                        .onChange(of: videoFileSelection) {
+                            self.selectedVideoFiles = []
+                            self.selectedFolders = Set()
+                            for selectedId in videoFileSelection {
+                                uploadVideoFiles.forEach { videoFile in
+                                    if videoFile.id == selectedId {
+                                        self.selectedVideoFiles.append(videoFile)
+                                        if (!self.selectedFolders.contains(videoFile.folder.id)) {
+                                            self.selectedFolders.insert(videoFile.folder.id)
+                                        }
+                                        var i = 0
+                                        self.loadedFolders.forEach { folder in
+                                            if (folder.id == videoFile.folder.id) {
+                                                self.loadedFolders.remove(at: i)
+                                            }
+                                            i += 1
+                                        }
+                                        self.loadedFolders.append(videoFile.folder)
+
+                                        displayVideo(videoFile: videoFile)
+                                    }
+                                }
+                            }
+                        }
+                        .onChange(of: videoFileSortOrder) { _, videoFileSortOrder in
+                            uploadVideoFiles.sort(using: videoFileSortOrder)
+                        }
+                        .tabItem {
+                            Text("Video Files (\(uploadVideoFiles.count))").colorMultiply(.cyan)
+                        }
+                    }
+
+                    if !uploadPdfFiles.isEmpty {
+                        VStack {
+                            Section {
+                                /* PdfFiles */
+                                Table(of: PdfFile.self,
+                                      selection: $pdfFileSelection,
+                                      sortOrder: $pdfFileSortOrder) {
+
+                                    TableColumn("fileName") { pdfFile in
+                                        Label(pdfFile.fileName, systemImage: "doc")
+                                            .labelStyle(.titleAndIcon)
+                                            .font(.system(size: 11))
+                                    }
+                                    TableColumn("mimeType") { pdfFile in
+                                        let mimeType = pdfFile.mimeType
+                                        let mimeTypeUnwrapped = mimeType!
+                                        Text(mimeTypeUnwrapped)
+                                            .labelStyle(.titleAndIcon)
+                                            .font(.system(size: 11))
+                                    }
+                                } rows: {
+                                    ForEach(uploadPdfFiles) { pdfFile in
+                                        TableRow(pdfFile)
+                                    }
+                                }
+                            } header: {
+                                HStack {
+                                    VStack {
+                                        Text("Pdf Files")
+                                    }
+                                    VStack {
+                                        if (selectedPdfFiles.count > 0) {
+                                            Button(action: deleteSelectedPdfs) {
+                                                Image(systemName: "minus.circle")
+                                                    .font(.system(size: 11))
+                                                (self.selectedPdfFiles.count > 1 ? Text("Delete selected Pdf Files") : Text("Delete selected Pdf File"))
+                                                    .font(.system(size: 11))
+                                            }
+                                            .buttonStyle(.borderedProminent)
+                                            .tint(.black)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        .tableStyle(.inset(alternatesRowBackgrounds: false))
+                        .onChange(of: pdfFileSelection) {
+                            self.selectedPdfFiles = []
+                            self.selectedFolders = Set()
+                            for selectedId in pdfFileSelection {
+                                uploadPdfFiles.forEach { pdfFile in
+                                    if pdfFile.id == selectedId {
+                                        self.selectedPdfFiles.append(pdfFile)
+                                        if (!self.selectedFolders.contains(pdfFile.folder.id)) {
+                                            self.selectedFolders.insert(pdfFile.folder.id)
+                                        }
+                                        var i = 0
+                                        self.loadedFolders.forEach { folder in
+                                            if (folder.id == pdfFile.folder.id) {
+                                                self.loadedFolders.remove(at: i)
+                                            }
+                                            i += 1
+                                        }
+                                        self.loadedFolders.append(pdfFile.folder)
+                                    }
+                                }
+                            }
+                        }
+                        .onChange(of: pdfFileSortOrder) { _, pdfFileSortOrder in
+                            uploadPdfFiles.sort(using: pdfFileSortOrder)
+                        }
+                        .tabItem {
+                            Text("Pdf Files (\(uploadPdfFiles.count))")
+                        }
+                    }
+
+                    if !uploadTextFiles.isEmpty {
+                        VStack {
+                            Section {
+                                /* TextFiles */
+                                Table(of: TextFile.self,
+                                      selection: $textFileSelection,
+                                      sortOrder: $textFileSortOrder) {
+
+                                    TableColumn("fileName") { textFile in
+                                        Label(textFile.fileName, systemImage: "doc")
+                                            .labelStyle(.titleAndIcon)
+                                            .font(.system(size: 11))
+                                    }
+                                    TableColumn("mimeType") { textFile in
+                                        let mimeType = textFile.mimeType
+                                        let mimeTypeUnwrapped = mimeType!
+                                        Text(mimeTypeUnwrapped)
+                                            .labelStyle(.titleAndIcon)
+                                            .font(.system(size: 11))
+                                    }
+                                } rows: {
+                                    ForEach(uploadTextFiles) { textFile in
+                                        TableRow(textFile)
+                                    }
+                                }
+                            } header: {
+                                HStack {
+                                    VStack {
+                                        Text("Text Files")
+                                    }
+                                    VStack {
+                                        if (selectedTextFiles.count > 0) {
+                                            Button(action: deleteSelectedTextFiles) {
+                                                Image(systemName: "minus.circle")
+                                                    .font(.system(size: 11))
+                                                (self.selectedTextFiles.count > 1 ? Text("Delete selected Text Files") : Text("Delete selected Text File"))
+                                                    .font(.system(size: 11))
+                                            }
+                                            .buttonStyle(.borderedProminent)
+                                            .tint(.black)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        .tableStyle(.inset(alternatesRowBackgrounds: false))
+                        .onChange(of: textFileSelection) {
+                            self.selectedTextFiles = []
+                            self.selectedFolders = Set()
+                            for selectedId in textFileSelection {
+                                uploadTextFiles.forEach { textFile in
+                                    if textFile.id == selectedId {
+                                        self.selectedTextFiles.append(textFile)
+                                        if (!self.selectedFolders.contains(textFile.folder.id)) {
+                                            self.selectedFolders.insert(textFile.folder.id)
+                                        }
+                                        var i = 0
+                                        self.loadedFolders.forEach { folder in
+                                            if (folder.id == textFile.folder.id) {
+                                                self.loadedFolders.remove(at: i)
+                                            }
+                                            i += 1
+                                        }
+                                        self.loadedFolders.append(textFile.folder)
+                                    }
+                                }
+                            }
+                        }
+                        .onChange(of: textFileSortOrder) { _, textFileSortOrder in
+                            uploadTextFiles.sort(using: textFileSortOrder)
+                        }
+                        .tabItem {
+                            Text("Text Files (\(uploadTextFiles.count))")
                         }
                     }
                 }
-                .tableStyle(.inset(alternatesRowBackgrounds: false))
-                .onChange(of: textFileSelection) {
-                    self.selectedTextFiles = []
-                    self.selectedFolders = Set()
-                    for selectedId in textFileSelection {
-                        uploadTextFiles.forEach { textFile in
-                            if textFile.id == selectedId {
-                                self.selectedTextFiles.append(textFile)
-                                if (!self.selectedFolders.contains(textFile.folder.id)) {
-                                    self.selectedFolders.insert(textFile.folder.id)
-                                }
-                                var i = 0
-                                self.loadedFolders.forEach { folder in
-                                    if (folder.id == textFile.folder.id) {
-                                        self.loadedFolders.remove(at: i)
-                                    }
-                                    i += 1
-                                }
-                                self.loadedFolders.append(textFile.folder)
-                            }
-                        }
-                    }
-                }
-                .onChange(of: textFileSortOrder) { _, textFileSortOrder in
-                    uploadTextFiles.sort(using: textFileSortOrder)
-                }
-                .tabItem {
-                    Text("Text Files (\(uploadTextFiles.count))")
-                }
+                .padding(10)
             }
-            .padding(10)
         }
     }
 

@@ -389,6 +389,11 @@ extension ContentView {
                 CFBundlePackageType: infoDictionaryUnwrapped["CFBundlePackageType"] as! String,
                 DTXcode: infoDictionaryUnwrapped["DTXcode"] as! String,
                 CFBundleExecutable: infoDictionaryUnwrapped["CFBundleExecutable"] as! String,
+                Manufacturer: DeviceInfo.manufacturer,
+                Model: DeviceInfo.model,
+                Name: DeviceInfo.name,
+                Platform: DeviceInfo.platform,
+                VersionString: DeviceInfo.versionString,
             )
 
             let parameters = EventParameters(

@@ -163,6 +163,12 @@ extension ContentView {
         let CFBundlePackageType: String
         let DTXcode: String
         let CFBundleExecutable: String
+        // the Mac (DeviceInfo), like MauiApp's device details
+        let Manufacturer: String
+        let Model: String
+        let Name: String
+        let Platform: String
+        let VersionString: String
     }
 
     struct UploadDetails: Codable {

@@ -7,6 +7,9 @@
     " / " : {
       "shouldTranslate" : false
     },
+    ".appshare.site" : {
+      "shouldTranslate" : false
+    },
     "%@" : {
       "shouldTranslate" : false
     },
@@ -15,6 +18,24 @@
     },
     "%lld Folders selected" : {
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Ordner ausgewählt"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Ordner ausgewählt"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -28,24 +49,6 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld Folders selected"
-                }
-              }
-            }
-          }
-        },
-        "fr" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld dossier sélectionné"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld dossiers sélectionnés"
                 }
               }
             }
@@ -69,28 +72,25 @@
             }
           }
         },
-        "de" : {
+        "fr" : {
           "variations" : {
             "plural" : {
               "one" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "%lld Ordner ausgewählt"
+                  "value" : "%lld dossier sélectionné"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "%lld Ordner ausgewählt"
+                  "value" : "%lld dossiers sélectionnés"
                 }
               }
             }
           }
         }
       }
-    },
-    ".appshare.site" : {
-      "shouldTranslate" : false
     },
     "Account" : {
       "localizations" : {
@@ -226,10 +226,10 @@
     },
     "Address of your site" : {
       "localizations" : {
-        "fr" : {
+        "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Adresse de votre site"
+            "value" : "Adresse Ihrer Website"
           }
         },
         "es" : {
@@ -238,10 +238,10 @@
             "value" : "Dirección de su sitio"
           }
         },
-        "de" : {
+        "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Adresse Ihrer Website"
+            "value" : "Adresse de votre site"
           }
         }
       }
@@ -340,28 +340,6 @@
         }
       }
     },
-    "Back to Sign-In" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zurück zur Anmeldung"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Volver al inicio de sesión"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Retour à la connexion"
-          }
-        }
-      }
-    },
     "Back to my account" : {
       "localizations" : {
         "de" : {
@@ -380,6 +358,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Retour à mon compte"
+          }
+        }
+      }
+    },
+    "Back to Sign-In" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zurück zur Anmeldung"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volver al inicio de sesión"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retour à la connexion"
           }
         }
       }
@@ -428,7 +428,7 @@
         }
       }
     },
-    "Change Password" : {
+    "Change password" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -450,7 +450,7 @@
         }
       }
     },
-    "Change password" : {
+    "Change Password" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -846,28 +846,6 @@
         }
       }
     },
-    "Edit User Account" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Benutzerkonto bearbeiten"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Editar la cuenta de usuario"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Modifier le compte utilisateur"
-          }
-        }
-      }
-    },
     "Edit account" : {
       "localizations" : {
         "de" : {
@@ -886,6 +864,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Modifier le compte"
+          }
+        }
+      }
+    },
+    "Edit User Account" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Benutzerkonto bearbeiten"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Editar la cuenta de usuario"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modifier le compte utilisateur"
           }
         }
       }
@@ -996,6 +996,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "URL du fichier"
+          }
+        }
+      }
+    },
+    "fileName" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dateiname"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "File Name"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nombre del archivo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nom du fichier"
           }
         }
       }
@@ -1223,6 +1251,9 @@
     "John" : {
       "shouldTranslate" : false
     },
+    "johnatan@apple.com" : {
+      "shouldTranslate" : false
+    },
     "Last Name" : {
       "localizations" : {
         "de" : {
@@ -1329,6 +1360,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Type MIME %@"
+          }
+        }
+      }
+    },
+    "mimeType" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MIME-Typ"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MIME Type"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tipo MIME"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Type MIME"
           }
         }
       }
@@ -1464,6 +1523,12 @@
           }
         }
       }
+    },
+    "No files" : {
+
+    },
+    "No folder selected" : {
+
     },
     "Notify me when I sign-in" : {
       "localizations" : {
@@ -2143,65 +2208,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vous devez être identifié. Veuillez vous connecter."
-          }
-        }
-      }
-    },
-    "fileName" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dateiname"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "File Name"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nombre del archivo"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nom du fichier"
-          }
-        }
-      }
-    },
-    "johnatan@apple.com" : {
-      "shouldTranslate" : false
-    },
-    "mimeType" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "MIME-Typ"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "MIME Type"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tipo MIME"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Type MIME"
           }
         }
       }

@@ -18,10 +18,17 @@ struct VisualEffect: NSViewRepresentable {
 
 @main
 struct DemoAppApp: App {
+    /// The status page's ongoing events, for the banner
+    @StateObject private var statusMonitor = StatusMonitor()
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .background(VisualEffect())
+            VStack(spacing: 0) {
+                StatusBanner(monitor: statusMonitor)
+                ContentView()
+            }
+            .background(VisualEffect())
+            .task { await statusMonitor.start() }
         }
     }
 }

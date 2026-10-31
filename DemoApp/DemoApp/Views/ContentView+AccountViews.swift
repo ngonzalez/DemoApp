@@ -340,6 +340,9 @@ extension ContentView {
                         .padding(10)
                 }
 
+                /* Account usage, below the email address */
+                accountUsage
+
                 /* Edit Account */
                 Button(action: clickEditAccount) {
                     Text("Edit account")
@@ -651,4 +654,34 @@ extension ContentView {
             .padding(10)
         }
     }
+
+    // My Account: the account's plan and what it uses of it (GET /account),
+    // read again each time the page opens
+    var accountUsage: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if let plan = planUsage {
+                Text("Account usage")
+                    .font(.system(size: 13, weight: .semibold))
+                Text("\(plan.name) plan")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Text("Storage: \(PlanUsage.size(plan.storage.used)) of \(PlanUsage.size(plan.storage.limit))")
+                    .font(.caption)
+                ProgressView(value: plan.storageFraction)
+                    .tint(plan.storage.used >= plan.storage.limit ? .red : .accentColor)
+
+                Text("Users: \(plan.users.count) of \(plan.users.limit)")
+                    .font(.caption)
+                ProgressView(value: Double(min(plan.users.count, plan.users.limit)), total: Double(max(plan.users.limit, 1)))
+                    .tint(plan.users.count >= plan.users.limit ? .red : .accentColor)
+            }
+        }
+        .frame(width: 260)
+        .padding(10)
+        .task {
+            planUsage = await PlanUsage.fetch()
+        }
+    }
 }
+

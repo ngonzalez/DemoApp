@@ -42,6 +42,7 @@ extension ContentView {
             /*
                 Main Upload Panel
             */
+            VStack(alignment: .leading, spacing: 4) {
             HStack {
                 /* Browse Button */
                 VStack {
@@ -105,6 +106,12 @@ extension ContentView {
                 }
             }
             .padding(5)
+
+            planSummary
+            }
+            .task(id: identified) {
+                planUsage = identified ? await PlanUsage.fetch() : nil
+            }
             .navigationTitle("Appshare \(self.signedInUser?.emailAddress! ?? "")")
             .toolbar {
                 Button(action: refreshUploads) {
@@ -1385,4 +1392,28 @@ extension ContentView {
             // not identified
         }
     }
+
+    // Under the Import button: the plan, what the files take of it, and why
+    // files were refused during the last import
+    @ViewBuilder
+    var planSummary: some View {
+        if let plan = planUsage {
+            HStack(spacing: 8) {
+                Text("\(plan.name) plan · \(PlanUsage.size(plan.storage.used)) of \(PlanUsage.size(plan.storage.limit)) · \(plan.users.count) of \(plan.users.limit) users")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                ProgressView(value: plan.storageFraction)
+                    .tint(plan.storage.used >= plan.storage.limit ? .red : .accentColor)
+                    .frame(maxWidth: 160)
+            }
+            .padding(.horizontal, 5)
+        }
+        ForEach(refusedUploads.keys.sorted(), id: \.self) { reason in
+            Text("\(reason) (files not uploaded: \(refusedUploads[reason] ?? 0))")
+                .font(.caption)
+                .foregroundStyle(.red)
+                .padding(.horizontal, 5)
+        }
+    }
 }
+

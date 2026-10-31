@@ -26,7 +26,8 @@ import OSLog
 extension ContentView {
     /// Upload a file of an imported folder straight to the storage, in one
     /// request (`DirectUpload`), then record the upload event. Unsupported
-    /// file types are skipped; a failed upload is logged.
+    /// file types are skipped; a failed upload is logged, and a refused one
+    /// (422: the plan's storage is full) shown after the import.
     func importItem(itemPath: String, createdAt: Date, updatedAt: Date, uuid: UUID, source: String) async {
         let fileURL = URL(fileURLWithPath: itemPath)
         guard let mimeType = DirectUpload.mimeType(of: fileURL, in: mimeTypes) else { return }
@@ -45,6 +46,9 @@ extension ContentView {
                         uploadDetails: UploadDetails(fileSize: fileSize, fileName: itemPath, mimeType: mimeType))
         } catch let error {
             logger.error("[importItem] \(itemPath): \(error.localizedDescription)")
+            if let failure = error as? DirectUpload.Failure, failure.status == 422 {
+                refusedUploads[failure.message, default: 0] += 1
+            }
         }
     }
 
@@ -150,6 +154,7 @@ extension ContentView {
         guard !isSyncing else { return }
         isSyncing = true
         progress = Float(0)
+        refusedUploads = [:]
         let selectedFolders = folders
 
         Task { @MainActor in
@@ -172,6 +177,9 @@ extension ContentView {
                 progress = Float(index) / Float(selectedFolders.count)
                 await Task.yield()
             }
+
+            // what the files take of the plan now
+            planUsage = await PlanUsage.fetch()
         }
     }
 

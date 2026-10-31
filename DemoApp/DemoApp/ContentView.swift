@@ -77,6 +77,14 @@ struct ContentView: View {
     @State var progress:Float = Float(0)
     @State var isSyncing:Bool = false
 
+    // The account's plan and what it uses of it (GET /account): read when the
+    // user signs in and after each import
+    @State var planUsage: PlanUsage?
+
+    // The reasons the server gave for refusing files during the last import
+    // (e.g. the plan's storage is full), with how many files each
+    @State var refusedUploads: [String: Int] = [:]
+
     /* Tables  */
     @State var imageFileSortOrder = [KeyPathComparator(\ImageFile.fileName)]
 

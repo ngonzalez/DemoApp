@@ -16,6 +16,50 @@
     "%@\n" : {
       "shouldTranslate" : false
     },
+    "%@ (files not uploaded: %lld)" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ (nicht hochgeladene Dateien: %2$lld)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ (archivos no subidos: %2$lld)"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ (fichiers non envoyés : %2$lld)"
+          }
+        }
+      }
+    },
+    "%@ plan · %@ of %@ · %lld of %lld users" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tarif %1$@ · %2$@ von %3$@ · %4$lld von %5$lld Benutzern"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plan %1$@ · %2$@ de %3$@ · %4$lld de %5$lld usuarios"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Formule %1$@ · %2$@ sur %3$@ · %4$lld utilisateurs sur %5$lld"
+          }
+        }
+      }
+    },
     "%lld Folders selected" : {
       "localizations" : {
         "de" : {

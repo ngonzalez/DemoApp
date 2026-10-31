@@ -343,23 +343,27 @@ extension ContentView {
                 /* Account usage, below the email address */
                 accountUsage
 
-                /* Edit Account */
-                Button(action: clickEditAccount) {
-                    Text("Edit account")
-                        .foregroundStyle(.blue.gradient)
-                }.buttonStyle(PlainButtonStyle())
+                /* Edit Account, Edit Password, Edit Email Address: buttons of the same width */
+                VStack(spacing: 8) {
+                    Button(action: clickEditAccount) {
+                        Label("Edit account", systemImage: "person.text.rectangle")
+                            .frame(maxWidth: .infinity)
+                    }
 
-                /* Edit Password */
-                Button(action: clickEditPassword) {
-                    Text("Change password")
-                        .foregroundStyle(.blue.gradient)
-                }.buttonStyle(PlainButtonStyle())
+                    Button(action: clickEditPassword) {
+                        Label("Change password", systemImage: "key")
+                            .frame(maxWidth: .infinity)
+                    }
 
-                /* Edit Email Address */
-                Button(action: clickEditEmailAddress) {
-                    Text("Change email address")
-                        .foregroundStyle(.blue.gradient)
-                }.buttonStyle(PlainButtonStyle())
+                    Button(action: clickEditEmailAddress) {
+                        Label("Change email address", systemImage: "envelope")
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+                .buttonStyle(.glass)
+                .controlSize(.large)
+                .frame(width: 260)
+                .padding(.top, 6)
           }
 
         } else if self.newPassword {

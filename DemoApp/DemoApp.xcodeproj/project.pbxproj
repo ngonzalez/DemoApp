@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		193744582CBB2FED00DB0346 /* Gzip in Frameworks */ = {isa = PBXBuildFile; productRef = 193744572CBB2FED00DB0346 /* Gzip */; };
 		19E023C92CE128A4006A6EF2 /* Gzip in Frameworks */ = {isa = PBXBuildFile; productRef = 19E023C82CE128A4006A6EF2 /* Gzip */; };
-		19E023CC2CE128B4006A6EF2 /* SQLite in Frameworks */ = {isa = PBXBuildFile; productRef = 19E023CB2CE128B4006A6EF2 /* SQLite */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -48,7 +47,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				19E023CC2CE128B4006A6EF2 /* SQLite in Frameworks */,
 				19E023C92CE128A4006A6EF2 /* Gzip in Frameworks */,
 				193744582CBB2FED00DB0346 /* Gzip in Frameworks */,
 			);
@@ -106,7 +104,6 @@
 			packageProductDependencies = (
 				193744572CBB2FED00DB0346 /* Gzip */,
 				19E023C82CE128A4006A6EF2 /* Gzip */,
-				19E023CB2CE128B4006A6EF2 /* SQLite */,
 			);
 			productName = DemoApp;
 			productReference = 19BF45132CB15B8600D0C9DD /* DemoApp.app */;
@@ -141,7 +138,6 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				19E023C72CE128A4006A6EF2 /* XCLocalSwiftPackageReference "../../GzipSwift" */,
-				19E023CA2CE128B4006A6EF2 /* XCLocalSwiftPackageReference "../../SQLite.swift" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 19BF45142CB15B8600D0C9DD /* Products */;
@@ -388,10 +384,6 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../../GzipSwift;
 		};
-		19E023CA2CE128B4006A6EF2 /* XCLocalSwiftPackageReference "../../SQLite.swift" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = ../../SQLite.swift;
-		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -402,10 +394,6 @@
 		19E023C82CE128A4006A6EF2 /* Gzip */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Gzip;
-		};
-		19E023CB2CE128B4006A6EF2 /* SQLite */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = SQLite;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

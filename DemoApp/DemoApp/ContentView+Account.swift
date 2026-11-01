@@ -141,6 +141,13 @@ extension ContentView {
         }
     }
 
+    func iterateOverErrorsInviteUsers(errors: [String?]) {
+        self.inviteUsersValidationErrors = String()
+        errors.forEach { error in
+            inviteUsersValidationErrors += "\n▫️\(error!)"
+        }
+    }
+
     func submitRegistrationForm() {
         let passwordProblems = PasswordRules.problems(passwordRegistrationForm, emailAddress: emailAddressRegistrationForm)
         guard passwordProblems.isEmpty else {
@@ -578,6 +585,93 @@ extension ContentView {
         }
     }
 
+    // An email address the backend can deliver to: name@domain.tld
+    func isValidEmailAddress(_ emailAddress: String) -> Bool {
+        let pattern = "^[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
+        return emailAddress.range(of: pattern, options: .regularExpression) != nil
+    }
+
+    // POST /invitations: invite an email address into the signed-in user's
+    // account, with the session cookie like the other account requests
+    func submitInviteUsersForm() {
+        let emailAddress = emailAddressInviteUsersForm.trimmingCharacters(in: .whitespacesAndNewlines)
+        resetFieldsInviteUsers(keep_values: true)
+        guard !emailAddress.isEmpty else {
+            iterateOverErrorsInviteUsers(errors: [String(localized: "Enter an email address")])
+            return
+        }
+        guard isValidEmailAddress(emailAddress) else {
+            iterateOverErrorsInviteUsers(errors: [String(localized: "Enter a valid email address")])
+            return
+        }
+        do {
+            let invitation = Invitation(emailAddress: emailAddress)
+
+            let data = try JSONEncoder().encode(invitation)
+            let url = URL(string: "\(invitationsURL)")!
+            let delegateClass = NetworkDelegateClass()
+            let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
+            let optimizedData: Data = try! data.gzipped(level: .bestCompression)
+            let postLength = String(format: "%lu", UInt(optimizedData.count))
+            let request = newPostRequest(url: url, data: optimizedData, postLength: postLength)
+            self.inviteUsersSending = true
+            let task = delegateSession.dataTask(with: request) { data, response, error in
+                let invitationResponse = data.flatMap { try? JSONDecoder().decode(InvitationResponse.self, from: $0) }
+                let statusCode = (response as? HTTPURLResponse)?.statusCode
+
+                DispatchQueue.main.async {
+                    self.inviteUsersSending = false
+
+                    // handle response
+                    if let error = error {
+                        logger.error("[submitInviteUsersForm] Request: \(error)")
+                        iterateOverErrorsInviteUsers(errors: [error.localizedDescription])
+                        return
+                    }
+                    switch statusCode {
+                    case 200:
+                        // callback
+                        self.emailAddressInviteUsersForm = String()
+                        self.inviteUsersSuccessMessage = Message(message: invitationResponse?.message)
+                    case 401:
+                        handleNotSignedIn()
+                    case 429:
+                        iterateOverErrorsInviteUsers(errors: [String(localized: "Too many invitations: try again later.")])
+                    default:
+                        if let errors = invitationResponse?.errors, !errors.isEmpty {
+                            iterateOverErrorsInviteUsers(errors: errors)
+                        } else if let message = invitationResponse?.message {
+                            iterateOverErrorsInviteUsers(errors: [message])
+                        } else {
+                            iterateOverErrorsInviteUsers(errors: [HTTPURLResponse.localizedString(forStatusCode: statusCode ?? 0)])
+                        }
+                    }
+                }
+            }
+
+            task.resume()
+
+        } catch let error {
+            logger.error("[submitInviteUsersForm] Error: \(error)")
+        }
+    }
+
+    // The backend refused the session (401): back to the sign-in form, signed
+    // out like after Sign-out, with the message the upload panel shows
+    func handleNotSignedIn() {
+        self.signedInUser = nil
+        self.identified = false
+        self.myAccount = false
+        self.inviteUsers = false
+        resetFieldsInviteUsers(keep_values: false)
+        self.newSession = true
+        self.newSessionComplete = false
+        clearSelectedFolders()
+        self.loadedFolders = Array<Folder>()
+        self.selectedFolders = Set()
+        iterateOverErrorsNewSession(errors: [String(localized: "You need to be identified. Please sign-in.")])
+    }
+
     func clickRegisterLink() {
         self.newAccount = true
     }
@@ -601,11 +695,13 @@ extension ContentView {
         self.editEmailAddress = false
         self.editPassword = false
         self.newPassword = false
+        self.inviteUsers = false
 
         // reset forms
         resetFieldsNewAccount(keep_values: false)
         resetFieldsNewPassword(keep_values: false)
         resetFieldsNewSession(keep_values: false)
+        resetFieldsInviteUsers(keep_values: false)
 
         // enable buttons again
         self.newAccountComplete = false
@@ -627,6 +723,7 @@ extension ContentView {
         self.editPassword = false
         self.newPassword = false
         self.newSession = false
+        self.inviteUsers = false
 
         // reset forms
         resetValuesNewAccount(keep_values: false)
@@ -635,6 +732,7 @@ extension ContentView {
         resetValuesEditPassword(keep_values: false)
         resetValuesNewPassword(keep_values: false)
         resetValuesNewSession(keep_values: false)
+        resetFieldsInviteUsers(keep_values: false)
 
         // enable buttons again
         self.newAccountComplete = false
@@ -697,6 +795,10 @@ extension ContentView {
         }
     }
 
+    func clickInviteUsers() {
+        self.inviteUsers = true
+    }
+
     func clickEditEmailAddress() {
         self.editEmailAddress = true
 
@@ -729,6 +831,7 @@ extension ContentView {
         self.editPassword = false
         self.editAccount = false
         self.editEmailAddress = false
+        self.inviteUsers = false
 
         resetFieldsNewSession(keep_values: keep_values!)
     }
@@ -894,6 +997,21 @@ extension ContentView {
             // reset values
             self.newPasswordEditPasswordForm = String()
             self.newPasswordConfirmationEditPasswordForm = String()
+        }
+    }
+
+    func resetFieldsInviteUsers(keep_values: Bool) {
+        // reset errors
+        self.inviteUsersValidationErrors = String()
+
+        // reset message
+        self.inviteUsersSuccessMessage = Message(message: String())
+
+        if (keep_values) {
+            return
+        } else {
+            // reset values
+            self.emailAddressInviteUsersForm = String()
         }
     }
 

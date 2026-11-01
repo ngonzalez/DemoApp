@@ -189,6 +189,9 @@ struct ContentView: View {
     @State var editPassword:Bool = Bool(false)              // Edit Password
     @State var editPasswordComplete:Bool = Bool(false)
 
+    @State var inviteUsers:Bool = Bool(false)               // Invite Users
+    @State var inviteUsersSending:Bool = Bool(false)
+
     @State var editEmailAddress:Bool = Bool(false)          // Edit Email
     @State var editEmailAddressComplete:Bool = Bool(false)
 
@@ -276,6 +279,13 @@ struct ContentView: View {
 
     @State var newPasswordConfirmationEditPasswordForm: String = String()
 
+    /* Invite Users */
+    @State var inviteUsersSuccessMessage:Message = Message(message: String())
+
+    @State var inviteUsersValidationErrors:String = String()
+
+    @State var emailAddressInviteUsersForm: String = String()
+
     /* Edit Email */
     @State var editEmailAddressSuccessMessage:Message = Message(message: String())
 
@@ -306,6 +316,9 @@ struct ContentView: View {
 
     @State var emailURL:String = "https://api.appshare.site/email"
 //    @State private var emailURL:String = "http://192.168.1.11:3000/email"
+
+    @State var invitationsURL:String = "https://api.appshare.site/invitations"
+//    @State private var invitationsURL:String = "http://192.168.1.11:3000/invitations"
 
     @State var backendURL:String = "https://api.appshare.site/upload"
 //    @State private var backendURL:String = "http://192.168.1.11:3000/upload"

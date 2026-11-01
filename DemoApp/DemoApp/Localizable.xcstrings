@@ -1066,6 +1066,50 @@
         }
       }
     },
+    "Enter a valid email address" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geben Sie eine gültige E-Mail-Adresse ein"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Introduzca un correo electrónico válido"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saisissez une adresse email valide"
+          }
+        }
+      }
+    },
+    "Enter an email address" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geben Sie eine E-Mail-Adresse ein"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Introduzca un correo electrónico"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saisissez une adresse email"
+          }
+        }
+      }
+    },
     "File Size %@" : {
       "localizations" : {
         "de" : {
@@ -1376,6 +1420,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Importer %@"
+          }
+        }
+      }
+    },
+    "Invite users" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Benutzer einladen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invitar usuarios"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inviter des utilisateurs"
           }
         }
       }
@@ -1992,6 +2058,50 @@
         }
       }
     },
+    "Send an invitation to join this account by email." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Senden Sie eine Einladung per E-Mail, um diesem Konto beizutreten."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Envíe una invitación por correo electrónico para unirse a esta cuenta."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Envoyez une invitation par email pour rejoindre ce compte."
+          }
+        }
+      }
+    },
+    "Send invitation" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einladung senden"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enviar invitación"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Envoyer l'invitation"
+          }
+        }
+      }
+    },
     "Sign-out" : {
       "localizations" : {
         "de" : {
@@ -2120,6 +2230,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Titre %@"
+          }
+        }
+      }
+    },
+    "Too many invitations: try again later." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zu viele Einladungen: Versuchen Sie es später erneut."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Demasiadas invitaciones: inténtelo de nuevo más tarde."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trop d'invitations : réessayez plus tard."
           }
         }
       }

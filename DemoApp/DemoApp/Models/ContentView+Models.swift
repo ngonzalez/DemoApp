@@ -260,6 +260,17 @@ extension ContentView {
         let errors: [String]?
     }
 
+    // POST /invitations: the address to invite into the signed-in user's account
+    struct Invitation: Codable {
+        let emailAddress: String
+    }
+
+    // POST /invitations: the message, and the errors when it's refused (422)
+    struct InvitationResponse: Codable {
+        let message: String?
+        let errors: [String]?
+    }
+
     struct AttachmentIds: Codable {
         var id: Array<Int>
         var type: String

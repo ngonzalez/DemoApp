@@ -86,6 +86,63 @@ extension ContentView {
                     .textFieldStyle(.roundedBorder)
                 }.padding(20)
 
+            } else if self.inviteUsers {
+                /*
+                    Account: Invite Users
+                */
+                Form {
+                    VStack {
+                        Spacer()
+
+                        Text("Invite users")
+                            .font(.system(size: 15))
+
+                        Text("Send an invitation to join this account by email.")
+                            .font(.system(size: 11))
+                            .foregroundStyle(Color.secondary)
+
+                        if let message = inviteUsersSuccessMessage.message {
+                            Text("\(message)")
+                                .font(.system(size: 11))
+                                .foregroundStyle(Color.secondary)
+                        }
+
+                        Text("\(inviteUsersValidationErrors)\n")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.gray)
+
+                        TextField(text: $emailAddressInviteUsersForm, prompt: Text("Email Address")) {
+                            Text("Email Address")
+                        }
+                        .textContentType(.emailAddress)
+                        .disableAutocorrection(true)
+                        .disabled(self.inviteUsersSending)
+
+                        Button(action: submitInviteUsersForm) {
+                            Text("Send invitation")
+                        }
+                        .disabled(self.inviteUsersSending)
+                        .font(.system(size: 11))
+                        .padding(5)
+                        .opacity(0.9)
+                        .glassEffect(.regular.tint(.clear).interactive(), in: .capsule)
+                        .buttonStyle(.glassProminent)
+
+                        Spacer()
+
+                        Divider()
+
+                        /* Account */
+                        Button(action: clickBackToAccountLink) {
+                            Image(systemName: "person.text.rectangle")
+                                .font(.system(size: 20))
+                            Text("Back to my account")
+                                .foregroundStyle(.blue.gradient)
+                        }.buttonStyle(PlainButtonStyle())
+                    }
+                    .textFieldStyle(.roundedBorder)
+                }.padding(20)
+
             } else if self.editEmailAddress {
                 /*
                     Account: Edit Email Address
@@ -352,6 +409,11 @@ extension ContentView {
 
                     Button(action: clickEditPassword) {
                         Label("Change password", systemImage: "key")
+                            .frame(maxWidth: .infinity)
+                    }
+
+                    Button(action: clickInviteUsers) {
+                        Label("Invite users", systemImage: "person.badge.plus")
                             .frame(maxWidth: .infinity)
                     }
 
@@ -645,7 +707,7 @@ extension ContentView {
         /*
           Account: Sign-Out
         */
-        if self.identified && self.myAccount && (!self.newPassword && !self.editPassword && !self.editEmailAddress && !self.newAccount && !self.editAccount) {
+        if self.identified && self.myAccount && (!self.newPassword && !self.editPassword && !self.inviteUsers && !self.editEmailAddress && !self.newAccount && !self.editAccount) {
             Button(action: submitDestroySessionForm) {
                 Image(systemName: "xmark")
                     .font(.system(size: 10))

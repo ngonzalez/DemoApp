@@ -19,8 +19,9 @@
 import Foundation
 
 /// The account's plan and what it uses of it: the `plan` of the backend's
-/// `GET /account`, signed in with the session cookie. 5GB: files up to
-/// 5 GiB and 3 users; 10GB: 10 GiB and 10 users.
+/// `GET /account`, signed in with the session cookie. Pro: files up to
+/// 5 GiB and 3 users; Business: 10 GiB and 10 users. Every plan is paid:
+/// without one (an empty name) the account's site is offline.
 struct PlanUsage: Decodable, Equatable {
     struct Storage: Decodable, Equatable {
         let used: Int
@@ -34,19 +35,25 @@ struct PlanUsage: Decodable, Equatable {
 
     static let accountURL = URL(string: "https://api.appshare.site/account")!
 
-    /// 5GB or 10GB
+    /// Pro or Business; empty without a plan
     let name: String
     let storage: Storage
     let users: Users
+
+    /// False without a plan: no subscription, or it ended
+    var hasPlan: Bool {
+        !name.isEmpty
+    }
 
     /// How much of the storage the files take, from 0 to 1
     var storageFraction: Double {
         storage.limit > 0 ? min(Double(storage.used) / Double(storage.limit), 1) : 0
     }
 
-    /// True when the account has no room left for files or users
+    /// True when the account's plan has no room left for files or users
+    /// (never without a plan: it has none to fill)
     var full: Bool {
-        storage.used >= storage.limit || users.count >= users.limit
+        hasPlan && (storage.used >= storage.limit || users.count >= users.limit)
     }
 
     /// A size in binary units: 5 GB for 5 GiB, like the plans' names and the backend

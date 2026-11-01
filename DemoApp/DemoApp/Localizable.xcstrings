@@ -1662,6 +1662,28 @@
     "No folder selected" : {
 
     },
+    "No plan: your site is offline and takes no new files." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kein Tarif: Ihre Website ist offline und nimmt keine neuen Dateien an."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin plan: tu sitio está fuera de línea y no acepta archivos nuevos."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucune formule : votre site est hors ligne et n'accepte plus de fichiers."
+          }
+        }
+      }
+    },
     "Notify me when I sign-in" : {
       "localizations" : {
         "de" : {

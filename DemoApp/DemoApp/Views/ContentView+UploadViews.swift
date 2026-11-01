@@ -1397,7 +1397,12 @@ extension ContentView {
     // files were refused during the last import
     @ViewBuilder
     var planSummary: some View {
-        if let plan = planUsage {
+        if let plan = planUsage, !plan.hasPlan {
+            Text("No plan: your site is offline and takes no new files.")
+                .font(.caption)
+                .foregroundStyle(.red)
+                .padding(.horizontal, 5)
+        } else if let plan = planUsage {
             HStack(spacing: 8) {
                 Text("\(plan.name) plan · \(PlanUsage.size(plan.storage.used)) of \(PlanUsage.size(plan.storage.limit)) · \(plan.users.count) of \(plan.users.limit) users")
                     .font(.caption)

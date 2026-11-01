@@ -666,19 +666,25 @@ extension ContentView {
             if let plan = planUsage {
                 Text("Account usage")
                     .font(.system(size: 13, weight: .semibold))
-                Text("\(plan.name) plan")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                if !plan.hasPlan {
+                    Text("No plan: your site is offline and takes no new files.")
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                } else {
+                    Text("\(plan.name) plan")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
 
-                Text("Storage: \(PlanUsage.size(plan.storage.used)) of \(PlanUsage.size(plan.storage.limit))")
-                    .font(.caption)
-                ProgressView(value: plan.storageFraction)
-                    .tint(plan.storage.used >= plan.storage.limit ? .red : .accentColor)
+                    Text("Storage: \(PlanUsage.size(plan.storage.used)) of \(PlanUsage.size(plan.storage.limit))")
+                        .font(.caption)
+                    ProgressView(value: plan.storageFraction)
+                        .tint(plan.storage.used >= plan.storage.limit ? .red : .accentColor)
 
-                Text("Users: \(plan.users.count) of \(plan.users.limit)")
-                    .font(.caption)
-                ProgressView(value: Double(min(plan.users.count, plan.users.limit)), total: Double(max(plan.users.limit, 1)))
-                    .tint(plan.users.count >= plan.users.limit ? .red : .accentColor)
+                    Text("Users: \(plan.users.count) of \(plan.users.limit)")
+                        .font(.caption)
+                    ProgressView(value: Double(min(plan.users.count, plan.users.limit)), total: Double(max(plan.users.limit, 1)))
+                        .tint(plan.users.count >= plan.users.limit ? .red : .accentColor)
+                }
             }
         }
         .frame(width: 260)

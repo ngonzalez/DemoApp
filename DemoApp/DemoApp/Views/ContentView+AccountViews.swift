@@ -23,7 +23,7 @@ import OSLog
 
 // Account's part of the window
 extension ContentView {
-    // Account, middle column: sign-in, registration, password, My Account and its forms
+    // Account, middle column: sign-in, password, My Account and its forms
     @ViewBuilder
     var accountPanel: some View {
         if self.identified {
@@ -481,145 +481,6 @@ extension ContentView {
                 .textFieldStyle(.roundedBorder)
             }.padding(20)
 
-        } else if self.newAccount {
-            /*
-                Account: Registration
-            */
-            Form {
-                VStack {
-                    Spacer()
-
-                    Text("Register Account")
-                        .font(.system(size: 15))
-
-                    if let message = newAccountSuccessMessage.message {
-                        Text("\(message)")
-                            .font(.system(size: 11))
-                            .foregroundStyle(Color.secondary)
-                    }
-
-                    Text("\(newAccountValidationErrors)\n")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.gray)
-
-//                            if let message = accountCodeSuccessMessage.message {
-//                                Text("\(message)")
-//                                    .font(.system(size: 11))
-//                                    .foregroundStyle(Color.secondary)
-//                            }
-
-                    Text("\(accountCodeValidationErrors)\n")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.gray)
-
-                    TextField(text: $accountCodeRegistrationForm, prompt: Text("Account Code")) {
-                        Text("Account Code")
-                    }
-                    .disableAutocorrection(true)
-                    .disabled(self.newAccountComplete)
-                    .onChange(of: accountCodeRegistrationForm) { _, value in
-                        if (value == "") {
-                            resetAccountCode()
-                        } else {
-                            submitAccountCode(accountCode: value)
-                        }
-                    }
-
-                    let accountUuid = self.registrationAccount?.uuid!.uuidString
-                    if (accountUuid != nil) {
-                        let accountUuidUnwrapped:String = accountUuid!
-                        TextField(text: $accountUuidRegistrationForm, prompt: Text(accountUuidUnwrapped)) {
-                            Text("Account UUID")
-                        }
-                        .disableAutocorrection(true)
-                        .disabled(self.newAccountComplete)
-                        .disabled(true)
-                    }
-
-                    let accountName = self.registrationAccount?.name
-                    if (accountName != nil) {
-                        let accountNameUnwrapped:String = accountName!
-                        TextField(text: $accountNameRegistrationForm, prompt: Text(accountNameUnwrapped)) {
-                            Text("Account Name")
-                        }
-                        .disableAutocorrection(true)
-                        .disabled(self.newAccountComplete)
-                        .disabled(true)
-                    }
-
-                    let accountAddress = self.registrationAccount?.address
-                    if (accountAddress != nil) {
-                        let accountAddressUnwrapped:String = accountAddress!
-                        TextField(text: $accountAddressRegistrationForm, prompt: Text(accountAddressUnwrapped)) {
-                            Text("Account Address")
-                        }
-                        .disableAutocorrection(true)
-                        .disabled(self.newAccountComplete)
-                        .disabled(true)
-                    }
-
-                    Divider()
-
-                    TextField(text: $firstNameRegistrationForm, prompt: Text("John")) {
-                        Text("First Name")
-                    }
-                    .disableAutocorrection(true)
-                    .disabled(self.newAccountComplete)
-
-                    TextField(text: $lastNameRegistrationForm, prompt: Text("Appleseed")) {
-                        Text("Last Name")
-                    }
-                    .disableAutocorrection(true)
-                    .disabled(self.newAccountComplete)
-
-                    TextField(text: $emailAddressRegistrationForm, prompt: Text("johnatan@apple.com")) {
-                        Text("Email")
-                    }
-                    // AutoFill: the account of the password the Passwords app saves
-                    .textContentType(.username)
-                    .disableAutocorrection(true)
-                    .disabled(self.newAccountComplete)
-
-                    SecureField(text: $passwordRegistrationForm, prompt: Text("Required")) {
-                        Text("Password")
-                    }
-                    // No .newPassword AutoFill hint: its strong password panel swallowed
-                    // the first click on Submit
-                    .disableAutocorrection(true)
-                    .disabled(self.newAccountComplete)
-
-//                            SecureField(text: $passwordConfirmationRegistrationForm, prompt: Text("Required")) {
-//                                Text("Password Confirmation")
-//                            }
-//                            .disableAutocorrection(true)
-//                            .disabled(self.newAccountComplete)
-
-                    Button(action: submitRegistrationForm) {
-                        Text("Submit")
-                    }
-//                            .buttonStyle(PlainButtonStyle())
-                    .disabled(self.newAccountComplete)
-                    .font(.system(size: 11))
-                    .padding(5)
-                    .opacity(0.9)
-                    .glassEffect(.regular.tint(.clear).interactive(), in: .capsule)
-                    .buttonStyle(.glassProminent)
-
-                    Spacer()
-
-                    Divider()
-
-                    /* Signin */
-                    Button(action: clickSigninLink) {
-                        Image(systemName: "person.text.rectangle")
-                            .font(.system(size: 20))
-                        Text("Back to Sign-In")
-                            .foregroundStyle(.blue.gradient)
-                    }.buttonStyle(PlainButtonStyle())
-                }
-                .textFieldStyle(.roundedBorder)
-            }.padding(20)
-
         } else if self.newSession {
             /*
                 Account: Sign-In
@@ -680,7 +541,12 @@ extension ContentView {
                             .foregroundStyle(.blue.gradient)
                     }
                     .buttonStyle(PlainButtonStyle())
-                    .padding(30)
+                    .padding(.top, 30)
+
+                    Text("Invited to an account? Use the link in your invitation email.")
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color.secondary)
+                        .padding(.bottom, 30)
 
                     Spacer()
 
@@ -707,7 +573,7 @@ extension ContentView {
         /*
           Account: Sign-Out
         */
-        if self.identified && self.myAccount && (!self.newPassword && !self.editPassword && !self.inviteUsers && !self.editEmailAddress && !self.newAccount && !self.editAccount) {
+        if self.identified && self.myAccount && (!self.newPassword && !self.editPassword && !self.inviteUsers && !self.editEmailAddress && !self.editAccount) {
             Button(action: submitDestroySessionForm) {
                 Image(systemName: "xmark")
                     .font(.system(size: 10))

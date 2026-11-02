@@ -21,7 +21,7 @@ import AVKit
 import Gzip
 import OSLog
 
-// Account: sign-in and sign-out, registration, passwords, account and email
+// Account: sign-in and sign-out, passwords, account and email
 // changes, the forms' errors and resets, the Keychain credentials
 extension ContentView {
     func submitAccountForm() {
@@ -92,13 +92,6 @@ extension ContentView {
         }
     }
 
-    func iterateOverErrorsAccountCode(errors: [String?]) {
-        self.accountCodeValidationErrors = String()
-        errors.forEach { error in
-            accountCodeValidationErrors += "\n▫️\(error!)"
-        }
-    }
-
     func iterateOverErrorsNewSession(errors: [String?]) {
         self.newSessionValidationErrors = String()
         errors.forEach { error in
@@ -110,13 +103,6 @@ extension ContentView {
         self.editAccountValidationErrors = String()
         errors.forEach { error in
             editAccountValidationErrors += "\n▫️\(error!)"
-        }
-    }
-
-    func iterateOverErrorsNewAccount(errors: [String?]) {
-        self.newAccountValidationErrors = String()
-        errors.forEach { error in
-            newAccountValidationErrors += "\n▫️\(error!)"
         }
     }
 
@@ -146,119 +132,6 @@ extension ContentView {
         errors.forEach { error in
             inviteUsersValidationErrors += "\n▫️\(error!)"
         }
-    }
-
-    func submitRegistrationForm() {
-        let passwordProblems = PasswordRules.problems(passwordRegistrationForm, emailAddress: emailAddressRegistrationForm)
-        guard passwordProblems.isEmpty else {
-            iterateOverErrorsNewAccount(errors: passwordProblems)
-            return
-        }
-        do {
-            let user = UserWithAccount(
-                id: nil,
-                accountUuid: self.registrationAccount?.uuid,
-                accountName: "",
-                accountAddress: "",
-                firstName: firstNameRegistrationForm,
-                lastName: lastNameRegistrationForm,
-                emailAddress: emailAddressRegistrationForm,
-                emailAddressValidatedAt: "",
-                password: passwordRegistrationForm,
-                deliverNotificationsSignIn: false,
-                deliverNotificationsAccountUpdate: false,
-                createdAt: nil,
-                updatedAt: nil,
-                errors: nil
-            )
-
-            let data = try JSONEncoder().encode(user)
-            let url = URL(string: "\(registrationURL)")!
-            let delegateClass = NetworkDelegateClass()
-            let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
-            let optimizedData: Data = try! data.gzipped(level: .bestCompression)
-            let postLength = String(format: "%lu", UInt(optimizedData.count))
-            let request = newPostRequest(url: url, data: optimizedData, postLength: postLength)
-            let task = delegateSession.dataTask(with: request) { data, response, error in
-                do {
-                    let userResponseWithMessage = try JSONDecoder().decode(UserResponseWithMessage.self, from: data!)
-                    DispatchQueue.main.async {
-
-                        // handle response
-                        let httpResponse = response as? HTTPURLResponse
-                        let httpResponseUnwrapped = httpResponse!
-                        if (userResponseWithMessage.user != nil) {
-                            let errorsData = userResponseWithMessage.user?.errors!
-                            if (errorsData == [] && httpResponseUnwrapped.statusCode == 200) {
-
-                                // callback
-                                resetValuesNewAccount(keep_values: true)
-                            } else {
-                                let errorsDataUnwrapped = errorsData!
-                                iterateOverErrorsNewAccount(errors: errorsDataUnwrapped)
-                            }
-                        }
-
-                        // validation message
-                        if (userResponseWithMessage.message != nil) {
-                            let message = Message(message: userResponseWithMessage.message)
-                            self.newAccountSuccessMessage = message
-                        }
-                    }
-
-                } catch let error {
-                    logger.error("[submitRegistrationForm] Request: \(error)")
-                }
-            }
-
-            task.resume()
-
-        } catch let error {
-            logger.error("[submitRegistrationForm] Error: \(error)")
-        }
-    }
-
-    // GET /accounts?accountCode=: the account to register in
-    func submitAccountCode(accountCode: String) {
-        var components = URLComponents(string: accountsURL)!
-        components.queryItems = [URLQueryItem(name: "accountCode", value: accountCode)]
-        let url = components.url!
-        let delegateClass = NetworkDelegateClass()
-        let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
-        let request = newGetRequest(url: url)
-        let task = delegateSession.dataTask(with: request) { data, response, error in
-            do {
-                let accountResponseWithMessage = try JSONDecoder().decode(AccountResponseWithMessage.self, from: data!)
-
-                DispatchQueue.main.async {
-
-                    // handle response
-                    let httpResponse = response as? HTTPURLResponse
-                    let httpResponseUnwrapped = httpResponse!
-                    let errorsData = accountResponseWithMessage.account?.errors!
-                    if (errorsData == [] && httpResponseUnwrapped.statusCode == 200) {
-
-                        // callback
-                        self.registrationAccount = accountResponseWithMessage.account
-                    } else if errorsData != nil {
-                        let errorsDataUnwrapped = errorsData!
-                        iterateOverErrorsAccountCode(errors: errorsDataUnwrapped)
-                    }
-
-                    // validation message
-                    if (accountResponseWithMessage.message != nil) {
-                        let message = Message(message: accountResponseWithMessage.message)
-                        logger.info("\(message.message!)")
-                        self.accountCodeSuccessMessage = message
-                    }
-                }
-
-            } catch let error {
-                logger.error("[submitAccountCode] Request: \(error)")
-            }
-        }
-
-        task.resume()
     }
 
     // Save the signed-in user's email address and password in the keychain
@@ -672,8 +545,10 @@ extension ContentView {
         iterateOverErrorsNewSession(errors: [String(localized: "You need to be identified. Please sign-in.")])
     }
 
+    // New accounts are created (and paid) on the website; people join an
+    // existing account through the link of their invitation email
     func clickRegisterLink() {
-        self.newAccount = true
+        openURL(ContentView.registerWebsiteURL)
     }
 
     func clickPasswordLink() {
@@ -690,7 +565,6 @@ extension ContentView {
 
         // disable other sections
         self.myAccount = false
-        self.newAccount = false
         self.editAccount = false
         self.editEmailAddress = false
         self.editPassword = false
@@ -698,13 +572,11 @@ extension ContentView {
         self.inviteUsers = false
 
         // reset forms
-        resetFieldsNewAccount(keep_values: false)
         resetFieldsNewPassword(keep_values: false)
         resetFieldsNewSession(keep_values: false)
         resetFieldsInviteUsers(keep_values: false)
 
         // enable buttons again
-        self.newAccountComplete = false
         self.editAccountComplete = false
         self.editEmailAddressComplete = false
         self.editPasswordComplete = false
@@ -717,7 +589,6 @@ extension ContentView {
         self.myAccount = true
 
         // disable other sections
-        self.newAccount = false
         self.editAccount = false
         self.editEmailAddress = false
         self.editPassword = false
@@ -726,7 +597,6 @@ extension ContentView {
         self.inviteUsers = false
 
         // reset forms
-        resetValuesNewAccount(keep_values: false)
         resetValuesEditAccount(keep_values: false)
         resetValuesEditEmailAddress(keep_values: false)
         resetValuesEditPassword(keep_values: false)
@@ -735,7 +605,6 @@ extension ContentView {
         resetFieldsInviteUsers(keep_values: false)
 
         // enable buttons again
-        self.newAccountComplete = false
         self.editAccountComplete = false
         self.editEmailAddressComplete = false
         self.editPasswordComplete = false
@@ -826,7 +695,6 @@ extension ContentView {
         self.newSessionComplete = true
 
         self.myAccount = true
-        self.newAccount = false
         self.newPassword = false
         self.editPassword = false
         self.editAccount = false
@@ -840,7 +708,6 @@ extension ContentView {
 //        self.newPassword = false
         self.newPasswordComplete = true
 
-        self.newAccount = false
         self.editPassword = false
         self.editAccount = false
         self.editEmailAddress = false
@@ -852,7 +719,6 @@ extension ContentView {
 //        self.editPassword = false
         self.editPasswordComplete = true
 
-        self.newAccount = false
         self.newPassword = false
         self.editAccount = false
         self.editEmailAddress = false
@@ -860,23 +726,10 @@ extension ContentView {
         resetFieldsEditPassword(keep_values: keep_values!)
     }
 
-    func resetValuesNewAccount(keep_values: Bool?) {
-//        self.newAccount = false
-        self.newAccountComplete = true
-
-        self.newPassword = false
-        self.editPassword = false
-        self.editAccount = false
-        self.editEmailAddress = false
-
-        resetFieldsNewAccount(keep_values: keep_values!)
-    }
-
     func resetValuesEditAccount(keep_values: Bool?) {
 //        self.editAccount = false
         self.editAccountComplete = true
 
-        self.newAccount = false
         self.newPassword = false
         self.editPassword = false
         self.editEmailAddress = false
@@ -889,7 +742,6 @@ extension ContentView {
         self.editEmailAddressComplete = true
 
         self.editAccount = false
-        self.newAccount = false
         self.newPassword = false
         self.editPassword = false
 
@@ -926,39 +778,6 @@ extension ContentView {
             // reset values
             self.emailAddressPasswordForm = String()
         }
-    }
-
-    func resetFieldsNewAccount(keep_values: Bool) {
-        // reset errors
-        self.newAccountValidationErrors = String()
-        self.accountCodeValidationErrors = String()
-
-        // reset message
-        self.newAccountSuccessMessage = Message(message: String())
-        self.accountCodeSuccessMessage = Message(message: String())
-
-        if (keep_values) {
-            return
-        } else {
-            resetAccountCode()
-
-            self.firstNameRegistrationForm = String()
-            self.lastNameRegistrationForm = String()
-            self.emailAddressRegistrationForm = String()
-            self.passwordRegistrationForm = String()
-            self.passwordConfirmationRegistrationForm = String()
-        }
-    }
-
-    func resetAccountCode() {
-        // registration account
-        self.registrationAccount = nil
-
-        // reset values
-        self.accountCodeRegistrationForm = String()
-        self.accountUuidRegistrationForm = String()
-        self.accountNameRegistrationForm = String()
-        self.accountAddressRegistrationForm = String()
     }
 
     func resetFieldsEditAccount(keep_values: Bool) {

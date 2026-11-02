@@ -168,7 +168,6 @@ struct ContentView: View {
     @State var loadedFolders: Array<Folder> = Array<Folder>()
 
     /* Account */
-    @State var registrationAccount:Account?
     @State var signedInUser:UserWithAccount?
     @State var identified:Bool = Bool(false)
 
@@ -179,9 +178,6 @@ struct ContentView: View {
 
     @State var newPassword:Bool = Bool(false)               // New Password
     @State var newPasswordComplete:Bool = Bool(false)
-
-    @State var newAccount:Bool = Bool(false)                // New Account
-    @State var newAccountComplete:Bool = Bool(false)
 
     @State var editAccount:Bool = Bool(false)               // Edit Account
     @State var editAccountComplete:Bool = Bool(false)
@@ -206,33 +202,6 @@ struct ContentView: View {
 
     /* Destroy Session */
     @State var destroySessionFormResponse:Message = Message(message: String())
-
-    /* New Account */
-    @State var newAccountSuccessMessage:Message = Message(message: String())
-
-    @State var newAccountValidationErrors:String = String()
-
-    @State var accountCodeSuccessMessage:Message = Message(message: String())
-
-    @State var accountCodeValidationErrors:String = String()
-
-    @State var accountCodeRegistrationForm: String = String()
-
-    @State var accountUuidRegistrationForm: String = String()
-
-    @State var accountNameRegistrationForm: String = String()
-
-    @State var accountAddressRegistrationForm: String = String()
-
-    @State var firstNameRegistrationForm: String = String()
-
-    @State var lastNameRegistrationForm: String = String()
-
-    @State var emailAddressRegistrationForm: String = String()
-
-    @State var passwordRegistrationForm: String = String()
-
-    @State var passwordConfirmationRegistrationForm: String = String()
 
     /* Edit Account */
     @State var editAccountSuccessMessage:Message = Message(message: String())
@@ -299,14 +268,11 @@ struct ContentView: View {
         Backend URLs
      */
 
-    @State var accountsURL:String = "https://api.appshare.site/accounts"
-//    @State private var accountsURL:String = "http://192.168.1.11:3000/accounts"
+    // Website where new accounts are created (and paid): "Register for a new account"
+    static let registerWebsiteURL = URL(string: "https://register.appshare.site")!
 
     @State var userURL:String = "https://api.appshare.site/user"
 //    @State private var userURL:String = "http://192.168.1.11:3000/user"
-
-    @State var registrationURL:String = "https://api.appshare.site/registration"
-//    @State private var registrationURL:String = "http://192.168.1.11:3000/registration"
 
     @State var sessionURL:String = "https://api.appshare.site/session"
 //    @State private var sessionURL:String = "http://192.168.1.11:3000/session"

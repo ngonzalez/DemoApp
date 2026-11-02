@@ -246,50 +246,6 @@
         }
       }
     },
-    "Account Address" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kontoadresse"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dirección de la cuenta"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Adresse du compte"
-          }
-        }
-      }
-    },
-    "Account Code" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kontocode"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Código de la cuenta"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Code du compte"
-          }
-        }
-      }
-    },
     "Account Name" : {
       "localizations" : {
         "de" : {
@@ -377,9 +333,6 @@
           }
         }
       }
-    },
-    "Appleseed" : {
-      "shouldTranslate" : false
     },
     "Appshare %@" : {
       "shouldTranslate" : false
@@ -1446,8 +1399,27 @@
         }
       }
     },
-    "John" : {
-      "shouldTranslate" : false
+    "Invited to an account? Use the link in your invitation email." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zu einem Konto eingeladen? Verwenden Sie den Link in Ihrer Einladungs-E-Mail."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Te han invitado a una cuenta? Usa el enlace de tu correo de invitación."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invité sur un compte ? Utilisez le lien de votre e-mail d'invitation."
+          }
+        }
+      }
     },
     "johnatan@apple.com" : {
       "shouldTranslate" : false
@@ -1922,28 +1894,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Publier"
-          }
-        }
-      }
-    },
-    "Register Account" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Konto registrieren"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Registrar la cuenta"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Créer le compte"
           }
         }
       }

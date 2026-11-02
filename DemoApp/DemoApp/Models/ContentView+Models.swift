@@ -123,11 +123,6 @@ extension ContentView {
         let videoFiles: Array<VideoFile>
     }
 
-    struct AccountResponseWithMessage: Codable {
-        let account: Account?
-        let message: String?
-    }
-
     struct UserResponseWithMessage: Codable {
         let user: UserWithAccount?
         let message: String?
@@ -216,17 +211,6 @@ extension ContentView {
         var accountSubdomain: String? = nil
         // a new subdomain to save (PUT /user): the previous one keeps redirecting
         var subdomain: String? = nil
-    }
-
-    struct Account: Codable, Identifiable {
-        let id: Int?
-        let uuid: UUID?
-        let name: String?
-        let address: String?
-        let dataUrl: String?
-        let createdAt: String?
-        let updatedAt: String?
-        let errors: [String]?
     }
 
     struct UserWithEmailAddressAndPassword: Codable, Identifiable {

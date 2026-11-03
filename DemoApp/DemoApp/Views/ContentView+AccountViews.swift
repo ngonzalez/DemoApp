@@ -226,16 +226,6 @@ extension ContentView {
                             .font(.system(size: 11))
                             .foregroundStyle(.gray)
 
-                        let accountUuid = self.signedInUser?.accountUuid!.uuidString
-                        if (accountUuid != nil) {
-                            let accountUuidUnWrapped:String = accountUuid!
-                            TextField(text: $accountUuidAccountForm, prompt: Text(accountUuidUnWrapped)) {
-                                Text("Account UUID")
-                            }
-                            .disableAutocorrection(true)
-                            .disabled(true)
-                        }
-
                         let accountName = self.signedInUser?.accountName
                         if (accountName != nil) {
                             let accountNameUnWrapped:String = accountName!

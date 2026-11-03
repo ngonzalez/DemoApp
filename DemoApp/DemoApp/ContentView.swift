@@ -208,7 +208,6 @@ struct ContentView: View {
 
     @State var editAccountValidationErrors:String = String()
 
-    @State var accountUuidAccountForm: String = String()
 
     @State var accountNameAccountForm: String = String()
 

@@ -216,6 +216,9 @@ extension ContentView {
                         Text("Edit User Account")
                             .font(.system(size: 15))
 
+                        /* Picture: sent as soon as it's chosen */
+                        avatarAccountForm
+
                         if let message = editAccountSuccessMessage.message {
                             Text("\(message)")
                                 .font(.system(size: 11))
@@ -369,16 +372,9 @@ extension ContentView {
                 Text("My Account")
                     .font(.system(size: 15))
 
-                if #available(macOS 15.0, *) {
-                    Image(systemName: "person.circle")
-                        .font(.system(size: 20))
-                        .symbolEffect(.bounce, options: .repeat(1))
-                        .padding(10)
-                } else {
-                    Image(systemName: "person.circle")
-                        .font(.system(size: 20))
-                        .padding(10)
-                }
+                /* User Picture */
+                signedInUserAvatar(size: 48)
+                    .padding(10)
 
                 /* User Email */
                 let emailAddress = self.signedInUser?.emailAddress
@@ -576,6 +572,95 @@ extension ContentView {
             .buttonStyle(.plain)
             .padding(10)
         }
+    }
+
+    // The signed-in user's picture, or their initials
+    func signedInUserAvatar(size: CGFloat) -> some View {
+        UserAvatar(
+            avatarUrl: self.signedInUser?.avatarUrl,
+            firstName: self.signedInUser?.firstName,
+            lastName: self.signedInUser?.lastName,
+            size: size
+        )
+    }
+
+    // Edit Account, top of the form: the picture, Choose Picture… (a file,
+    // uploaded at once), Remove Picture (when there is one) and the presets
+    // (hidden when GET /avatars/presets fails)
+    var avatarAccountForm: some View {
+        VStack(spacing: 8) {
+            signedInUserAvatar(size: 80)
+                .opacity(self.avatarSendingAccountForm ? 0.5 : 1)
+                .overlay {
+                    if self.avatarSendingAccountForm {
+                        ProgressView()
+                            .controlSize(.small)
+                    }
+                }
+
+            HStack {
+                Button(action: {
+                    isImportingAvatarAccountForm = true
+                }) {
+                    Text("Choose Picture…")
+                }
+                .fileImporter(
+                    isPresented: $isImportingAvatarAccountForm,
+                    allowedContentTypes: [.png, .jpeg, .webP, .gif],
+                    allowsMultipleSelection: false
+                ) { result in
+                    switch result {
+                    case .success(let urls):
+                        if let url = urls.first {
+                            submitAvatarAccountForm(fileURL: url)
+                        }
+                    case .failure(let error):
+                        logger.error("[fileImporter] Error: \(error)")
+                    }
+                }
+
+                if (self.signedInUser?.avatarUrl != nil) {
+                    Button(action: removeAvatarAccountForm) {
+                        Text("Remove Picture")
+                    }
+                }
+            }
+            .font(.system(size: 11))
+            .disabled(self.avatarSendingAccountForm)
+
+            if !self.avatarPresetsAccountForm.isEmpty {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 44, maximum: 52), spacing: 8)], spacing: 8) {
+                    ForEach(self.avatarPresetsAccountForm) { preset in
+                        Button(action: { submitAvatarPresetAccountForm(preset: preset) }) {
+                            AsyncImage(url: URL(string: preset.url)) { image in
+                                image
+                                    .resizable()
+                                    .scaledToFit()
+                            } placeholder: {
+                                Circle()
+                                    .fill(.secondary.opacity(0.2))
+                            }
+                            .frame(width: 44, height: 44)
+                            .clipShape(Circle())
+                            // the preset being set
+                            .overlay {
+                                if self.avatarPresetSendingAccountForm == preset.name {
+                                    Circle()
+                                        .stroke(Color.accentColor, lineWidth: 3)
+                                    ProgressView()
+                                        .controlSize(.small)
+                                }
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .help(preset.name)
+                    }
+                }
+                .frame(maxWidth: 340)
+                .disabled(self.avatarSendingAccountForm)
+            }
+        }
+        .padding(.vertical, 6)
     }
 
     // My Account: the account's plan and what it uses of it (GET /account),

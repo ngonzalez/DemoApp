@@ -70,6 +70,18 @@ extension ContentView {
         return request
     }
 
+    // multipart/form-data, not gzipped: the boundary goes in the Content-Type
+    func newMultipartPutRequest(url: URL, data: Data, boundary: String) -> URLRequest {
+        var request = URLRequest(url: url)
+        request.httpMethod = "PUT"
+        request.httpBody = data
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        request.setValue(String(data.count), forHTTPHeaderField: "Content-Length")
+
+        return request
+    }
+
     func newDeleteRequest(url: URL) -> URLRequest {
         var request = URLRequest(url: url)
         request.httpMethod = "DELETE"

@@ -211,6 +211,25 @@ extension ContentView {
         var accountSubdomain: String? = nil
         // a new subdomain to save (PUT /user): the previous one keeps redirecting
         var subdomain: String? = nil
+        // the user's picture (public, redirects to Azure; changes with the
+        // picture), nil when there is none or the backend doesn't send it
+        var avatarUrl: String? = nil
+    }
+
+    // GET /avatars/presets: the pictures to pick from, instead of a file
+    struct AvatarPreset: Decodable, Identifiable {
+        var id: String { name }
+        let name: String
+        let url: String
+    }
+
+    struct AvatarPresets: Decodable {
+        let presets: [AvatarPreset]
+    }
+
+    // PUT /user/avatar (JSON): one of the presets, by name
+    struct AvatarPresetChoice: Encodable {
+        let preset: String
     }
 
     struct UserWithEmailAddressAndPassword: Codable, Identifiable {

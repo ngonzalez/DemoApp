@@ -226,16 +226,6 @@ extension ContentView {
                             .font(.system(size: 11))
                             .foregroundStyle(.gray)
 
-                        let accountUuid = self.signedInUser?.accountUuid!.uuidString
-                        if (accountUuid != nil) {
-                            let accountUuidUnWrapped:String = accountUuid!
-                            TextField(text: $accountUuidAccountForm, prompt: Text(accountUuidUnWrapped)) {
-                                Text("Account UUID")
-                            }
-                            .disableAutocorrection(true)
-                            .disabled(true)
-                        }
-
                         let accountName = self.signedInUser?.accountName
                         if (accountName != nil) {
                             let accountNameUnWrapped:String = accountName!
@@ -243,13 +233,14 @@ extension ContentView {
                                 Text("Account Name")
                             }
                             .disableAutocorrection(true)
-                            .disabled(true)
+                            .disabled(self.editAccountComplete)
                         }
 
                         // the address of the account's site, shown only: it can't be
-                        // changed from here
+                        // changed from here (shown as the prompt, which stays as bright
+                        // as the editable fields; a disabled field's text is dimmed)
                         HStack {
-                            TextField(text: $subdomainAccountForm, prompt: Text("Address of your site")) {
+                            TextField(text: .constant(String()), prompt: Text(subdomainAccountForm).foregroundStyle(.primary.opacity(0.7))) {
                                 Text("Address of your site")
                             }
                             .disableAutocorrection(true)
@@ -266,7 +257,7 @@ extension ContentView {
                                 Text("Address")
                             }
                             .disableAutocorrection(true)
-                            .disabled(true)
+                            .disabled(self.editAccountComplete)
                         }
 
                         let firstName = self.signedInUser?.firstName
@@ -302,7 +293,7 @@ extension ContentView {
                         let createdAt = self.signedInUser?.createdAt
                         if (createdAt != nil) {
                             let createdAtUnwrapped = createdAt!
-                            TextField(text: $createdAtAccountForm, prompt: Text(createdAtUnwrapped)) {
+                            TextField(text: $createdAtAccountForm, prompt: Text(createdAtUnwrapped).foregroundStyle(.primary.opacity(0.7))) {
                                 Text("Created At")
                             }
                             .disableAutocorrection(true)
@@ -312,7 +303,7 @@ extension ContentView {
                         let updatedAt = self.signedInUser?.updatedAt
                         if (updatedAt != nil) {
                             let updatedAtUnwrapped = updatedAt!
-                            TextField(text: $updatedAtAccountForm, prompt: Text(updatedAtUnwrapped)) {
+                            TextField(text: $updatedAtAccountForm, prompt: Text(updatedAtUnwrapped).foregroundStyle(.primary.opacity(0.7))) {
                                 Text("Updated At")
                             }
                             .disableAutocorrection(true)

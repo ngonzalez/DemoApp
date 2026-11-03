@@ -268,28 +268,6 @@
         }
       }
     },
-    "Account UUID" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Konto-UUID"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "UUID de la cuenta"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "UUID du compte"
-          }
-        }
-      }
-    },
     "Address" : {
       "localizations" : {
         "de" : {

@@ -229,11 +229,11 @@ extension ContentView {
                         let accountName = self.signedInUser?.accountName
                         if (accountName != nil) {
                             let accountNameUnWrapped:String = accountName!
-                            TextField(text: .constant(String()), prompt: Text(accountNameUnWrapped).foregroundStyle(.primary.opacity(0.7))) {
+                            TextField(text: $accountNameAccountForm, prompt: Text(accountNameUnWrapped)) {
                                 Text("Account Name")
                             }
                             .disableAutocorrection(true)
-                            .disabled(true)
+                            .disabled(self.editAccountComplete)
                         }
 
                         // the address of the account's site, shown only: it can't be
@@ -253,11 +253,11 @@ extension ContentView {
                         let accountAddress = self.signedInUser?.accountAddress
                         if (accountAddress != nil) {
                             let accountAddressUnWrapped:String = accountAddress!
-                            TextField(text: .constant(String()), prompt: Text(accountAddressUnWrapped).foregroundStyle(.primary.opacity(0.7))) {
+                            TextField(text: $accountAddressAccountForm, prompt: Text(accountAddressUnWrapped)) {
                                 Text("Address")
                             }
                             .disableAutocorrection(true)
-                            .disabled(true)
+                            .disabled(self.editAccountComplete)
                         }
 
                         let firstName = self.signedInUser?.firstName

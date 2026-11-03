@@ -229,7 +229,7 @@ extension ContentView {
                         let accountName = self.signedInUser?.accountName
                         if (accountName != nil) {
                             let accountNameUnWrapped:String = accountName!
-                            TextField(text: $accountNameAccountForm, prompt: Text(accountNameUnWrapped).foregroundStyle(.primary)) {
+                            TextField(text: .constant(String()), prompt: Text(accountNameUnWrapped).foregroundStyle(.primary)) {
                                 Text("Account Name")
                             }
                             .disableAutocorrection(true)
@@ -253,7 +253,7 @@ extension ContentView {
                         let accountAddress = self.signedInUser?.accountAddress
                         if (accountAddress != nil) {
                             let accountAddressUnWrapped:String = accountAddress!
-                            TextField(text: $accountAddressAccountForm, prompt: Text(accountAddressUnWrapped).foregroundStyle(.primary)) {
+                            TextField(text: .constant(String()), prompt: Text(accountAddressUnWrapped).foregroundStyle(.primary)) {
                                 Text("Address")
                             }
                             .disableAutocorrection(true)

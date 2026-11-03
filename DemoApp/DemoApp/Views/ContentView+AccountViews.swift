@@ -229,7 +229,7 @@ extension ContentView {
                         let accountName = self.signedInUser?.accountName
                         if (accountName != nil) {
                             let accountNameUnWrapped:String = accountName!
-                            TextField(text: .constant(String()), prompt: Text(accountNameUnWrapped).foregroundStyle(.primary)) {
+                            TextField(text: .constant(String()), prompt: Text(accountNameUnWrapped).foregroundStyle(.primary.opacity(0.7))) {
                                 Text("Account Name")
                             }
                             .disableAutocorrection(true)
@@ -240,7 +240,7 @@ extension ContentView {
                         // changed from here (shown as the prompt, which stays as bright
                         // as the editable fields; a disabled field's text is dimmed)
                         HStack {
-                            TextField(text: .constant(String()), prompt: Text(subdomainAccountForm).foregroundStyle(.primary)) {
+                            TextField(text: .constant(String()), prompt: Text(subdomainAccountForm).foregroundStyle(.primary.opacity(0.7))) {
                                 Text("Address of your site")
                             }
                             .disableAutocorrection(true)
@@ -253,7 +253,7 @@ extension ContentView {
                         let accountAddress = self.signedInUser?.accountAddress
                         if (accountAddress != nil) {
                             let accountAddressUnWrapped:String = accountAddress!
-                            TextField(text: .constant(String()), prompt: Text(accountAddressUnWrapped).foregroundStyle(.primary)) {
+                            TextField(text: .constant(String()), prompt: Text(accountAddressUnWrapped).foregroundStyle(.primary.opacity(0.7))) {
                                 Text("Address")
                             }
                             .disableAutocorrection(true)
@@ -293,7 +293,7 @@ extension ContentView {
                         let createdAt = self.signedInUser?.createdAt
                         if (createdAt != nil) {
                             let createdAtUnwrapped = createdAt!
-                            TextField(text: $createdAtAccountForm, prompt: Text(createdAtUnwrapped).foregroundStyle(.primary)) {
+                            TextField(text: $createdAtAccountForm, prompt: Text(createdAtUnwrapped).foregroundStyle(.primary.opacity(0.7))) {
                                 Text("Created At")
                             }
                             .disableAutocorrection(true)
@@ -303,7 +303,7 @@ extension ContentView {
                         let updatedAt = self.signedInUser?.updatedAt
                         if (updatedAt != nil) {
                             let updatedAtUnwrapped = updatedAt!
-                            TextField(text: $updatedAtAccountForm, prompt: Text(updatedAtUnwrapped).foregroundStyle(.primary)) {
+                            TextField(text: $updatedAtAccountForm, prompt: Text(updatedAtUnwrapped).foregroundStyle(.primary.opacity(0.7))) {
                                 Text("Updated At")
                             }
                             .disableAutocorrection(true)

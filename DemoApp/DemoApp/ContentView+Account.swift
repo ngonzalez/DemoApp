@@ -20,6 +20,7 @@ import SwiftUI
 import AVKit
 import Gzip
 import OSLog
+import UniformTypeIdentifiers
 
 // Account: sign-in and sign-out, passwords, account and email
 // changes, the forms' errors and resets, the Keychain credentials
@@ -90,6 +91,138 @@ extension ContentView {
         } catch let error {
             logger.error("[submitAccountForm] Error: \(error)")
         }
+    }
+
+    /*
+        Account: the picture (PUT and DELETE /user/avatar, GET /avatars/presets)
+     */
+
+    // the backend refuses pictures over 5 MB: say so before sending one
+    static let avatarMaximumSize = 5 * 1024 * 1024
+
+    // Choose Picture…: checks the file's size, then sends it at once
+    // (multipart, field `avatar`); the file comes from the file importer
+    func submitAvatarAccountForm(fileURL: URL) {
+        let accessing = fileURL.startAccessingSecurityScopedResource()
+        defer {
+            if accessing { fileURL.stopAccessingSecurityScopedResource() }
+        }
+
+        resetFieldsEditAccount(keep_values: true)
+
+        let fileSize = (try? fileURL.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0
+        if (fileSize > ContentView.avatarMaximumSize) {
+            iterateOverErrorsEditAccount(errors: [String(localized: "The picture must be 5 MB or less.")])
+            return
+        }
+
+        do {
+            let fileData = try Data(contentsOf: fileURL)
+            let mimeType = UTType(filenameExtension: fileURL.pathExtension)?.preferredMIMEType ?? "application/octet-stream"
+            let fileName = fileURL.lastPathComponent.replacingOccurrences(of: "\"", with: "")
+
+            // the multipart body: one part, the file
+            let boundary = "Boundary-\(UUID().uuidString)"
+            var body = Data()
+            body.append(Data("--\(boundary)\r\n".utf8))
+            body.append(Data("Content-Disposition: form-data; name=\"avatar\"; filename=\"\(fileName)\"\r\n".utf8))
+            body.append(Data("Content-Type: \(mimeType)\r\n\r\n".utf8))
+            body.append(fileData)
+            body.append(Data("\r\n--\(boundary)--\r\n".utf8))
+
+            let url = URL(string: "\(userURL)/avatar")!
+            let request = newMultipartPutRequest(url: url, data: body, boundary: boundary)
+            sendAvatarRequest(request: request, caller: "submitAvatarAccountForm")
+        } catch let error {
+            logger.error("[submitAvatarAccountForm] Error: \(error)")
+        }
+    }
+
+    // a preset: sent at once, JSON like the other requests (gzipped)
+    func submitAvatarPresetAccountForm(preset: AvatarPreset) {
+        resetFieldsEditAccount(keep_values: true)
+
+        do {
+            let data = try JSONEncoder().encode(AvatarPresetChoice(preset: preset.name))
+            let url = URL(string: "\(userURL)/avatar")!
+            let optimizedData: Data = try! data.gzipped(level: .bestCompression)
+            let postLength = String(format: "%lu", UInt(optimizedData.count))
+            let request = newPutRequest(url: url, data: optimizedData, postLength: postLength)
+            self.avatarPresetSendingAccountForm = preset.name
+            sendAvatarRequest(request: request, caller: "submitAvatarPresetAccountForm")
+        } catch let error {
+            logger.error("[submitAvatarPresetAccountForm] Error: \(error)")
+        }
+    }
+
+    // Remove Picture
+    func removeAvatarAccountForm() {
+        resetFieldsEditAccount(keep_values: true)
+
+        let url = URL(string: "\(userURL)/avatar")!
+        let request = newDeleteRequest(url: url)
+        sendAvatarRequest(request: request, caller: "removeAvatarAccountForm")
+    }
+
+    // The picture's requests answer like PUT /user: the user (with its new
+    // avatarUrl) and a message, or 422 with the user's errors; the rest of the
+    // form keeps what is being typed
+    func sendAvatarRequest(request: URLRequest, caller: String) {
+        self.avatarSendingAccountForm = true
+
+        let delegateClass = NetworkDelegateClass()
+        let delegateSession = URLSession(configuration: .default, delegate: delegateClass, delegateQueue: nil)
+        let task = delegateSession.dataTask(with: request) { data, response, error in
+            let userResponseWithMessage = data.flatMap { try? JSONDecoder().decode(UserResponseWithMessage.self, from: $0) }
+            let statusCode = (response as? HTTPURLResponse)?.statusCode
+
+            DispatchQueue.main.async {
+                self.avatarSendingAccountForm = false
+                self.avatarPresetSendingAccountForm = nil
+
+                guard let userResponseWithMessage else {
+                    logger.error("[\(caller)] Request: \(String(describing: error)) (\(String(describing: statusCode)))")
+                    iterateOverErrorsEditAccount(errors: [String(localized: "The picture could not be sent. Please try again.")])
+                    return
+                }
+
+                // handle response
+                let errorsData = userResponseWithMessage.user?.errors ?? []
+                if (statusCode == 200 && errorsData.isEmpty) {
+                    if let user = userResponseWithMessage.user {
+                        self.signedInUser = user
+                    }
+                } else {
+                    iterateOverErrorsEditAccount(errors: errorsData)
+                }
+
+                // validation message
+                if (userResponseWithMessage.message != nil) {
+                    self.editAccountSuccessMessage = Message(message: userResponseWithMessage.message)
+                }
+            }
+        }
+
+        task.resume()
+    }
+
+    // the presets, read when the Edit Account page opens: none (the grid is
+    // hidden) when the request fails
+    func getAvatarPresets() {
+        let url = URL(string: "\(avatarPresetsURL)")!
+        let request = newGetRequest(url: url)
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+            let avatarPresets = data.flatMap { try? JSONDecoder().decode(AvatarPresets.self, from: $0) }
+            if (avatarPresets == nil) {
+                logger.error("[getAvatarPresets] Request: \(String(describing: error))")
+            }
+
+            DispatchQueue.main.async {
+                self.avatarPresetsAccountForm = avatarPresets?.presets ?? []
+            }
+        }
+
+        task.resume()
     }
 
     func iterateOverErrorsNewSession(errors: [String?]) {
@@ -614,6 +747,7 @@ extension ContentView {
 
     func clickEditAccount() {
         self.editAccount = true
+        getAvatarPresets()
 
         let accountName = self.signedInUser?.accountName
         if (accountName != nil) {

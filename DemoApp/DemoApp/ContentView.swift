@@ -208,6 +208,16 @@ struct ContentView: View {
 
     @State var editAccountValidationErrors:String = String()
 
+    // the picture: the file importer, a request in progress (upload or removal),
+    // the preset being set and the presets to pick from (GET /avatars/presets)
+    @State var isImportingAvatarAccountForm: Bool = false
+
+    @State var avatarSendingAccountForm: Bool = false
+
+    @State var avatarPresetSendingAccountForm: String? = nil
+
+    @State var avatarPresetsAccountForm: Array<AvatarPreset> = Array<AvatarPreset>()
+
 
     @State var accountNameAccountForm: String = String()
 
@@ -272,6 +282,9 @@ struct ContentView: View {
 
     @State var userURL:String = "https://api.appshare.site/user"
 //    @State private var userURL:String = "http://192.168.1.11:3000/user"
+
+    @State var avatarPresetsURL:String = "https://api.appshare.site/avatars/presets"
+//    @State private var avatarPresetsURL:String = "http://192.168.1.11:3000/avatars/presets"
 
     @State var sessionURL:String = "https://api.appshare.site/session"
 //    @State private var sessionURL:String = "http://192.168.1.11:3000/session"
@@ -366,10 +379,32 @@ struct ContentView: View {
             detailColumn
         }
         .navigationSplitViewStyle(.prominentDetail)
+        .toolbar {
+            // the signed-in user's picture, at the end of the window's toolbar:
+            // opens the Account page
+            if self.identified {
+                ToolbarItem(placement: .primaryAction) {
+                    Button(action: clickSignedInUserAvatar) {
+                        signedInUserAvatar(size: 26)
+                    }
+                    .buttonStyle(.plain)
+                    .help(self.signedInUser?.emailAddress ?? String())
+                }
+            }
+        }
         .onAppear {
             self.userCredentials = readCredentials(server: "appshare.site")
             emailAddressSessionForm = self.userCredentials.account
             passwordSessionForm = self.userCredentials.password
+        }
+    }
+
+    // The toolbar's picture: the Account page, in the middle column (shown
+    // when only the detail column is)
+    func clickSignedInUserAvatar() {
+        self.selectedSideBarItem = .account
+        if (self.visibility == .detailOnly) {
+            self.visibility = .doubleColumn
         }
     }
 

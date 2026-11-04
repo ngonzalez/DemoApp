@@ -270,11 +270,11 @@ extension ContentView {
 
                         Divider()
 
-                        /* Account */
-                        Button(action: clickBackToAccountLink) {
-                            Image(systemName: "person.text.rectangle")
+                        /* Close the form */
+                        Button(action: clickCloseAccountForm) {
+                            Image(systemName: "xmark.circle")
                                 .font(.system(size: 20))
-                            Text("Back to my account")
+                            Text("Close")
                                 .foregroundStyle(.blue.gradient)
                         }.buttonStyle(PlainButtonStyle())
                     }
@@ -327,11 +327,11 @@ extension ContentView {
 
                         Divider()
 
-                        /* Account */
-                        Button(action: clickBackToAccountLink) {
-                            Image(systemName: "person.text.rectangle")
+                        /* Close the form */
+                        Button(action: clickCloseAccountForm) {
+                            Image(systemName: "xmark.circle")
                                 .font(.system(size: 20))
-                            Text("Back to my account")
+                            Text("Close")
                                 .foregroundStyle(.blue.gradient)
                         }.buttonStyle(PlainButtonStyle())
                     }
@@ -389,11 +389,11 @@ extension ContentView {
 
                         Divider()
 
-                        /* Account */
-                        Button(action: clickBackToAccountLink) {
-                            Image(systemName: "person.text.rectangle")
+                        /* Close the form */
+                        Button(action: clickCloseAccountForm) {
+                            Image(systemName: "xmark.circle")
                                 .font(.system(size: 20))
-                            Text("Back to my account")
+                            Text("Close")
                                 .foregroundStyle(.blue.gradient)
                         }.buttonStyle(PlainButtonStyle())
                     }
@@ -549,11 +549,11 @@ extension ContentView {
 
                         Divider()
 
-                        /* Account */
-                        Button(action: clickBackToAccountLink) {
-                            Image(systemName: "person.text.rectangle")
+                        /* Close the form */
+                        Button(action: clickCloseAccountForm) {
+                            Image(systemName: "xmark.circle")
                                 .font(.system(size: 20))
-                            Text("Back to my account")
+                            Text("Close")
                                 .foregroundStyle(.blue.gradient)
                         }.buttonStyle(PlainButtonStyle())
                     }

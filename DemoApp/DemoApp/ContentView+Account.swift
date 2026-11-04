@@ -688,7 +688,7 @@ extension ContentView {
         self.newPassword = true
     }
 
-    func clickBackToAccountLink() {
+    func clickCloseAccountForm() {
         backToMyAccount()
     }
 

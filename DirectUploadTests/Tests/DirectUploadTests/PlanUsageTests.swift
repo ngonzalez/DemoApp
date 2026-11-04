@@ -33,6 +33,24 @@ extension DirectUploadTests {
         #expect(StubProtocol.requests.first?.headers["Accept"] == "application/json")
     }
 
+    @Test func readsHowThePlanIsBilled() async throws {
+        var yearly = Self.fiveGB
+        yearly["interval"] = "yearly"
+        StubProtocol.responses = [Self.summary(plan: yearly), Self.summary(plan: Self.fiveGB)]
+
+        let plan = try #require(await PlanUsage.fetch(url: Self.accountURL, session: session))
+        #expect(plan.interval == "yearly")
+        #expect(plan.title == "5GB plan, yearly")
+
+        let older = try #require(await PlanUsage.fetch(url: Self.accountURL, session: session))
+        #expect(older.interval == nil)
+        #expect(older.title == "5GB plan")
+    }
+
+    @Test func titlesTheMonthlyPlan() {
+        #expect(PlanUsage(name: "Pro", interval: "monthly", storage: .init(used: 0, limit: 1), users: .init(count: 1, limit: 3)).title == "Pro plan, monthly")
+    }
+
     @Test func noPlanFromABackendBeforePlansOrWithoutASession() async {
         StubProtocol.responses = [Self.summary(plan: NSNull()), (401, Data()), (200, Data("<html>".utf8))]
 

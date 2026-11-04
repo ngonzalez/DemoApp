@@ -684,7 +684,7 @@ extension ContentView {
                         .font(.caption)
                         .foregroundStyle(.red)
                 } else {
-                    Text("\(plan.name) plan")
+                    Text(plan.title)
                         .font(.caption)
                         .foregroundStyle(.secondary)
 

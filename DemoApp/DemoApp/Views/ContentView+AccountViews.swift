@@ -23,10 +23,205 @@ import OSLog
 
 // Account's part of the window
 extension ContentView {
-    // Account, middle column: sign-in, password, My Account and its forms
+    // Account, middle column: sign-in, password, and My Account with the
+    // buttons opening its forms (in the detail column, accountFormPanel)
     @ViewBuilder
     var accountPanel: some View {
         if self.identified {
+            if self.myAccount {
+                /*
+                    Account Panel
+                */
+                Text("My Account")
+                    .font(.system(size: 15))
+
+                /* User Picture */
+                signedInUserAvatar(size: 48)
+                    .padding(10)
+
+                /* User Email */
+                let emailAddress = self.signedInUser?.emailAddress
+                if (emailAddress != nil) {
+                    let emailAddressUnWrapped:String = emailAddress!
+                    Text(emailAddressUnWrapped)
+                        .padding(10)
+                }
+
+                /* Account usage, below the email address */
+                accountUsage
+
+                /* Edit Account, Edit Password, Edit Email Address: buttons of the same width */
+                VStack(spacing: 8) {
+                    Button(action: clickEditAccount) {
+                        Label("Edit account", systemImage: "person.text.rectangle")
+                            .frame(maxWidth: .infinity)
+                    }
+
+                    Button(action: clickEditPassword) {
+                        Label("Change password", systemImage: "key")
+                            .frame(maxWidth: .infinity)
+                    }
+
+                    Button(action: clickInviteUsers) {
+                        Label("Invite users", systemImage: "person.badge.plus")
+                            .frame(maxWidth: .infinity)
+                    }
+
+                    Button(action: clickEditEmailAddress) {
+                        Label("Change email address", systemImage: "envelope")
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+                .buttonStyle(.glass)
+                .controlSize(.large)
+                .frame(width: 260)
+                .padding(.top, 6)
+            }
+
+        } else if self.newPassword {
+            /*
+                Account: Reset Password
+            */
+            Form {
+                VStack {
+                    Spacer()
+
+                    Text("Reset Password")
+                        .font(.system(size: 15))
+
+                    if let message = newPasswordSuccessMessage.message {
+                        Text("\(message)")
+                            .font(.system(size: 11))
+                            .foregroundStyle(Color.secondary)
+                    }
+
+                    Text("\(newPasswordValidationErrors)\n")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.gray)
+
+                    TextField(text: $emailAddressPasswordForm, prompt: Text("johnatan@apple.com")) {
+                        Text("Email")
+                    }
+                    .disableAutocorrection(true)
+                    .disabled(self.newPasswordComplete)
+
+                    Button(action: submitNewPasswordForm) {
+                        Text("Submit")
+                    }
+//                            .buttonStyle(PlainButtonStyle())
+                    .disabled(self.newPasswordComplete)
+                    .font(.system(size: 11))
+                    .padding(5)
+                    .opacity(0.9)
+                    .glassEffect(.regular.tint(.clear).interactive(), in: .capsule)
+                    .buttonStyle(.glassProminent)
+
+                    Spacer()
+
+                    Divider()
+
+                    /* Signin */
+                    Button(action: clickSigninLink) {
+                        Image(systemName: "person.text.rectangle")
+                            .font(.system(size: 20))
+                        Text("Back to Sign-In")
+                            .foregroundStyle(.blue.gradient)
+                    }.buttonStyle(PlainButtonStyle())
+                }
+                .textFieldStyle(.roundedBorder)
+            }.padding(20)
+
+        } else if self.newSession {
+            /*
+                Account: Sign-In
+            */
+            Form {
+                VStack {
+                    Spacer()
+
+                    Text("New Session")
+                        .font(.system(size: 15))
+
+                    Text("\(newSessionValidationErrors)\n")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.gray)
+
+                    TextField(text: $emailAddressSessionForm, prompt: Text("johnatan@apple.com")) {
+                        Text("Email")
+                    }
+                    // AutoFill: offers the passwords saved for appshare.site in the
+                    // Passwords app (webcredentials in DemoApp.entitlements and the
+                    // site's apple-app-site-association)
+                    .textContentType(.username)
+                    .disableAutocorrection(true)
+                    .disabled(self.newSessionComplete)
+
+                    SecureField(text: $passwordSessionForm, prompt: Text("Required")) {
+                        Text("Password")
+                    }
+                    .textContentType(.password)
+                    .disableAutocorrection(true)
+                    .disabled(self.newSessionComplete)
+
+                    Button(action: submitNewSessionForm) {
+                        Text("Submit")
+                    }
+//                            .buttonStyle(PlainButtonStyle())
+                    .disabled(self.newSessionComplete)
+                    .font(.system(size: 11))
+                    .padding(5)
+                    .opacity(0.9)
+                    .glassEffect(.regular.tint(.clear).interactive(), in: .capsule)
+                    .buttonStyle(.glassProminent)
+                    .keyboardShortcut(KeyboardShortcut(.return, modifiers: []))
+
+                    /* Register */
+                    Button(action: clickRegisterLink) {
+                        if #available(macOS 15.0, *) {
+                            Image(systemName: "person.crop.circle.badge.plus")
+                                .font(.system(size: 20))
+                                .symbolEffect(.bounce, options: .repeat(1))
+                                .padding(10)
+                        } else {
+                            Image(systemName: "person.crop.circle.badge.plus")
+                                .font(.system(size: 20))
+                                .padding(10)
+                        }
+                        Text("Register for a new account")
+                            .foregroundStyle(.blue.gradient)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .padding(.top, 30)
+
+                    Text("Invited to an account? Use the link in your invitation email.")
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color.secondary)
+                        .padding(.bottom, 30)
+
+                    Spacer()
+
+                    Divider()
+
+                    /* Forgot Password */
+                    Button(action: clickPasswordLink) {
+                        Image(systemName: "mail")
+                            .font(.system(size: 20))
+                        Text("Forgot my password")
+                            .foregroundStyle(.blue.gradient)
+                    }.buttonStyle(PlainButtonStyle())
+                }
+                .textFieldStyle(.roundedBorder)
+
+            }.padding(20)
+        }
+
+    }
+
+    // Account, detail column: the form a My Account button opened (one at a
+    // time, see openAccountForm)
+    @ViewBuilder
+    var accountFormPanel: some View {
+        if self.identified && self.myAccount {
             if self.editPassword {
                 /*
                     Account: Edit Password
@@ -364,194 +559,8 @@ extension ContentView {
                     }
                     .textFieldStyle(.roundedBorder)
                 }.padding(20)
-
-            } else if self.myAccount {
-                /*
-                    Account Panel
-                */
-                Text("My Account")
-                    .font(.system(size: 15))
-
-                /* User Picture */
-                signedInUserAvatar(size: 48)
-                    .padding(10)
-
-                /* User Email */
-                let emailAddress = self.signedInUser?.emailAddress
-                if (emailAddress != nil) {
-                    let emailAddressUnWrapped:String = emailAddress!
-                    Text(emailAddressUnWrapped)
-                        .padding(10)
-                }
-
-                /* Account usage, below the email address */
-                accountUsage
-
-                /* Edit Account, Edit Password, Edit Email Address: buttons of the same width */
-                VStack(spacing: 8) {
-                    Button(action: clickEditAccount) {
-                        Label("Edit account", systemImage: "person.text.rectangle")
-                            .frame(maxWidth: .infinity)
-                    }
-
-                    Button(action: clickEditPassword) {
-                        Label("Change password", systemImage: "key")
-                            .frame(maxWidth: .infinity)
-                    }
-
-                    Button(action: clickInviteUsers) {
-                        Label("Invite users", systemImage: "person.badge.plus")
-                            .frame(maxWidth: .infinity)
-                    }
-
-                    Button(action: clickEditEmailAddress) {
-                        Label("Change email address", systemImage: "envelope")
-                            .frame(maxWidth: .infinity)
-                    }
-                }
-                .buttonStyle(.glass)
-                .controlSize(.large)
-                .frame(width: 260)
-                .padding(.top, 6)
-          }
-
-        } else if self.newPassword {
-            /*
-                Account: Reset Password
-            */
-            Form {
-                VStack {
-                    Spacer()
-
-                    Text("Reset Password")
-                        .font(.system(size: 15))
-
-                    if let message = newPasswordSuccessMessage.message {
-                        Text("\(message)")
-                            .font(.system(size: 11))
-                            .foregroundStyle(Color.secondary)
-                    }
-
-                    Text("\(newPasswordValidationErrors)\n")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.gray)
-
-                    TextField(text: $emailAddressPasswordForm, prompt: Text("johnatan@apple.com")) {
-                        Text("Email")
-                    }
-                    .disableAutocorrection(true)
-                    .disabled(self.newPasswordComplete)
-
-                    Button(action: submitNewPasswordForm) {
-                        Text("Submit")
-                    }
-//                            .buttonStyle(PlainButtonStyle())
-                    .disabled(self.newPasswordComplete)
-                    .font(.system(size: 11))
-                    .padding(5)
-                    .opacity(0.9)
-                    .glassEffect(.regular.tint(.clear).interactive(), in: .capsule)
-                    .buttonStyle(.glassProminent)
-
-                    Spacer()
-
-                    Divider()
-
-                    /* Signin */
-                    Button(action: clickSigninLink) {
-                        Image(systemName: "person.text.rectangle")
-                            .font(.system(size: 20))
-                        Text("Back to Sign-In")
-                            .foregroundStyle(.blue.gradient)
-                    }.buttonStyle(PlainButtonStyle())
-                }
-                .textFieldStyle(.roundedBorder)
-            }.padding(20)
-
-        } else if self.newSession {
-            /*
-                Account: Sign-In
-            */
-            Form {
-                VStack {
-                    Spacer()
-
-                    Text("New Session")
-                        .font(.system(size: 15))
-
-                    Text("\(newSessionValidationErrors)\n")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.gray)
-
-                    TextField(text: $emailAddressSessionForm, prompt: Text("johnatan@apple.com")) {
-                        Text("Email")
-                    }
-                    // AutoFill: offers the passwords saved for appshare.site in the
-                    // Passwords app (webcredentials in DemoApp.entitlements and the
-                    // site's apple-app-site-association)
-                    .textContentType(.username)
-                    .disableAutocorrection(true)
-                    .disabled(self.newSessionComplete)
-
-                    SecureField(text: $passwordSessionForm, prompt: Text("Required")) {
-                        Text("Password")
-                    }
-                    .textContentType(.password)
-                    .disableAutocorrection(true)
-                    .disabled(self.newSessionComplete)
-
-                    Button(action: submitNewSessionForm) {
-                        Text("Submit")
-                    }
-//                            .buttonStyle(PlainButtonStyle())
-                    .disabled(self.newSessionComplete)
-                    .font(.system(size: 11))
-                    .padding(5)
-                    .opacity(0.9)
-                    .glassEffect(.regular.tint(.clear).interactive(), in: .capsule)
-                    .buttonStyle(.glassProminent)
-                    .keyboardShortcut(KeyboardShortcut(.return, modifiers: []))
-
-                    /* Register */
-                    Button(action: clickRegisterLink) {
-                        if #available(macOS 15.0, *) {
-                            Image(systemName: "person.crop.circle.badge.plus")
-                                .font(.system(size: 20))
-                                .symbolEffect(.bounce, options: .repeat(1))
-                                .padding(10)
-                        } else {
-                            Image(systemName: "person.crop.circle.badge.plus")
-                                .font(.system(size: 20))
-                                .padding(10)
-                        }
-                        Text("Register for a new account")
-                            .foregroundStyle(.blue.gradient)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    .padding(.top, 30)
-
-                    Text("Invited to an account? Use the link in your invitation email.")
-                        .font(.system(size: 11))
-                        .foregroundStyle(Color.secondary)
-                        .padding(.bottom, 30)
-
-                    Spacer()
-
-                    Divider()
-
-                    /* Forgot Password */
-                    Button(action: clickPasswordLink) {
-                        Image(systemName: "mail")
-                            .font(.system(size: 20))
-                        Text("Forgot my password")
-                            .foregroundStyle(.blue.gradient)
-                    }.buttonStyle(PlainButtonStyle())
-                }
-                .textFieldStyle(.roundedBorder)
-
-            }.padding(20)
+            }
         }
-
     }
 
     // Account, middle column, under the panel: the sign-out button
@@ -560,7 +569,7 @@ extension ContentView {
         /*
           Account: Sign-Out
         */
-        if self.identified && self.myAccount && (!self.newPassword && !self.editPassword && !self.inviteUsers && !self.editEmailAddress && !self.editAccount) {
+        if self.identified && self.myAccount {
             Button(action: submitDestroySessionForm) {
                 Image(systemName: "xmark")
                     .font(.system(size: 10))

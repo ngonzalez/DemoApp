@@ -607,7 +607,8 @@ extension ContentView {
         }
     }
 
-    // Detail column: the selected folders' actions and files (Upload)
+    // Detail column: the selected folders' actions and files (Upload), or
+    // the form opened from My Account (Account)
     @ViewBuilder
     var detailColumn: some View {
         if self.identified {
@@ -1386,7 +1387,11 @@ extension ContentView {
                     max: .infinity
                 )
             } else {
-                // default login panel
+                // Account: the form opened from My Account, at a readable width
+                accountFormPanel
+                    .frame(maxWidth: 520)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .navigationSplitViewColumnWidth(min: 350, ideal: 350, max: .infinity)
             }
         } else {
             // not identified

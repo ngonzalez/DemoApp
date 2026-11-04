@@ -745,7 +745,15 @@ extension ContentView {
         self.newSessionComplete = false
     }
 
+    // My Account stays shown next to the form its buttons open: close the
+    // form already open (emptied, as Back to my account does) so that only
+    // the new one shows
+    func openAccountForm() {
+        backToMyAccount()
+    }
+
     func clickEditAccount() {
+        openAccountForm()
         self.editAccount = true
         getAvatarPresets()
 
@@ -788,6 +796,7 @@ extension ContentView {
     }
 
     func clickEditPassword() {
+        openAccountForm()
         self.editPassword = true
 
         let password = self.signedInUser?.password
@@ -799,10 +808,12 @@ extension ContentView {
     }
 
     func clickInviteUsers() {
+        openAccountForm()
         self.inviteUsers = true
     }
 
     func clickEditEmailAddress() {
+        openAccountForm()
         self.editEmailAddress = true
 
         let emailAddress = self.signedInUser?.emailAddress

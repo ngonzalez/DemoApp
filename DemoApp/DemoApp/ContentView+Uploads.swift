@@ -572,6 +572,16 @@ extension ContentView {
         }
     }
 
+    // After an action on the selected folders: reload them, clear the
+    // selection, and put the actions picker back on its blank option
+    func folderActionCompleted() {
+        self.loadedFolders = []
+        self.selectedFolderAction = .none
+        clearSelectedFolders()
+        clearSelectedFiles()
+        getAllUploads()
+    }
+
     func publishSelectedFolders() {
         do {
             let item = FolderIds(id: self.selectedFolders.map { $0 })
@@ -584,10 +594,7 @@ extension ContentView {
             let request = newPostRequestWithContent(url: url, data: optimizedData, postLength: postLength)
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 DispatchQueue.main.async {
-                    self.loadedFolders = []
-                    clearSelectedFolders()
-                    clearSelectedFiles()
-                    getAllUploads()
+                    folderActionCompleted()
                 }
             }
 
@@ -610,10 +617,7 @@ extension ContentView {
             let request = newPostRequest(url: url, data: optimizedData, postLength: postLength)
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 DispatchQueue.main.async {
-                    self.loadedFolders = []
-                    clearSelectedFolders()
-                    clearSelectedFiles()
-                    getAllUploads()
+                    folderActionCompleted()
                 }
             }
 
@@ -636,10 +640,7 @@ extension ContentView {
             let request = newPostRequest(url: url, data: optimizedData, postLength: postLength)
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 DispatchQueue.main.async {
-                    self.loadedFolders = []
-                    clearSelectedFolders()
-                    clearSelectedFiles()
-                    getAllUploads()
+                    folderActionCompleted()
                 }
             }
 
@@ -662,10 +663,7 @@ extension ContentView {
             let request = newPostRequest(url: url, data: optimizedData, postLength: postLength)
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 DispatchQueue.main.async {
-                    self.loadedFolders = []
-                    clearSelectedFolders()
-                    clearSelectedFiles()
-                    getAllUploads()
+                    folderActionCompleted()
                 }
             }
 
@@ -688,10 +686,7 @@ extension ContentView {
             let request = newPostRequestWithContent(url: url, data: optimizedData, postLength: postLength)
             let task = delegateSession.dataTask(with: request) { data, response, error in
                 DispatchQueue.main.async {
-                    self.loadedFolders = []
-                    clearSelectedFolders()
-                    clearSelectedFiles()
-                    getAllUploads()
+                    folderActionCompleted()
                 }
             }
 

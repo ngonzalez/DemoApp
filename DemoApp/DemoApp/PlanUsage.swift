@@ -37,12 +37,25 @@ struct PlanUsage: Decodable, Equatable {
 
     /// Pro or Business; empty without a plan
     let name: String
+    /// How the plan is billed: monthly or yearly; nil without a plan, or
+    /// from a backend that doesn't send it
+    var interval: String? = nil
     let storage: Storage
     let users: Users
 
     /// False without a plan: no subscription, or it ended
     var hasPlan: Bool {
         !name.isEmpty
+    }
+
+    /// "Pro plan, yearly", "Pro plan, monthly", or "Pro plan" when the
+    /// backend doesn't send the period (localized)
+    var title: String {
+        switch interval {
+        case "yearly": String(localized: "\(name) plan, yearly")
+        case "monthly": String(localized: "\(name) plan, monthly")
+        default: String(localized: "\(name) plan")
+        }
     }
 
     /// How much of the storage the files take, from 0 to 1

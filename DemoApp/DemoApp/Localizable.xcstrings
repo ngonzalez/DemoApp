@@ -126,6 +126,72 @@
         }
       }
     },
+    "Edit your account." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bearbeiten Sie Ihr Konto."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modifique su cuenta."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modifiez votre compte."
+          }
+        }
+      }
+    },
+    "Edit your password. Use at least 12 characters with letters and digits, and nothing from your email address. A short phrase of a few unrelated words is strong and easy to remember." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändern Sie Ihr Passwort. Verwenden Sie mindestens 12 Zeichen mit Buchstaben und Ziffern und nichts aus Ihrer E-Mail-Adresse. Ein kurzer Satz aus einigen zusammenhanglosen Wörtern ist sicher und leicht zu merken."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modifique su contraseña. Use al menos 12 caracteres con letras y números, sin nada de su dirección de correo electrónico. Una frase corta de varias palabras sin relación es segura y fácil de recordar."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modifiez votre mot de passe. Utilisez au moins 12 caractères avec des lettres et des chiffres, sans rien de votre adresse email. Une courte phrase de quelques mots sans rapport est solide et facile à retenir."
+          }
+        }
+      }
+    },
+    "Please provide the new email address." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bitte geben Sie die neue E-Mail-Adresse an."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Indique la nueva dirección de correo electrónico."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Veuillez indiquer la nouvelle adresse email."
+          }
+        }
+      }
+    },
     "Storage: %@ of %@" : {
       "localizations" : {
         "de" : {

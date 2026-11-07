@@ -233,6 +233,10 @@ extension ContentView {
                         Text("Change Password")
                             .font(.system(size: 15))
 
+                        Text("Edit your password. Use at least 12 characters with letters and digits, and nothing from your email address. A short phrase of a few unrelated words is strong and easy to remember.")
+                            .font(.system(size: 11))
+                            .foregroundStyle(Color.secondary)
+
                         if let message = editPasswordSuccessMessage.message {
                             Text("\(message)")
                                 .font(.system(size: 11))
@@ -349,6 +353,10 @@ extension ContentView {
                         Text("Change email address")
                             .font(.system(size: 15))
 
+                        Text("Please provide the new email address.")
+                            .font(.system(size: 11))
+                            .foregroundStyle(Color.secondary)
+
                         if let message = editEmailAddressSuccessMessage.message {
                             Text("\(message)")
                                 .font(.system(size: 11))
@@ -410,6 +418,10 @@ extension ContentView {
 
                         Text("Edit User Account")
                             .font(.system(size: 15))
+
+                        Text("Edit your account.")
+                            .font(.system(size: 11))
+                            .foregroundStyle(Color.secondary)
 
                         /* Picture: sent as soon as it's chosen */
                         avatarAccountForm

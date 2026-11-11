@@ -214,7 +214,7 @@ extension ContentView {
                                             .labelStyle(.titleAndIcon)
                                             .font(.system(size: 11))
                                     }
-                                    TableColumn("mimeType") { imageFile in
+                                    TableColumn("mimeType", value: \.mimeTypeName) { imageFile in
                                         let mimeType = imageFile.mimeType
                                         let mimeTypeUnwrapped = mimeType!
                                         Text(mimeTypeUnwrapped)
@@ -296,7 +296,7 @@ extension ContentView {
                                             .labelStyle(.titleAndIcon)
                                             .font(.system(size: 11))
                                     }
-                                    TableColumn("mimeType") { audioFile in
+                                    TableColumn("mimeType", value: \.mimeTypeName) { audioFile in
                                         let mimeType = audioFile.mimeType
                                         let mimeTypeUnwrapped = mimeType!
                                         Text(mimeTypeUnwrapped)
@@ -393,7 +393,7 @@ extension ContentView {
                                             .labelStyle(.titleAndIcon)
                                             .font(.system(size: 11))
                                     }
-                                    TableColumn("mimeType") { videoFile in
+                                    TableColumn("mimeType", value: \.mimeTypeName) { videoFile in
                                         let mimeType = videoFile.mimeType
                                         let mimeTypeUnwrapped = mimeType!
                                         Text(mimeTypeUnwrapped)
@@ -475,7 +475,7 @@ extension ContentView {
                                             .labelStyle(.titleAndIcon)
                                             .font(.system(size: 11))
                                     }
-                                    TableColumn("mimeType") { pdfFile in
+                                    TableColumn("mimeType", value: \.mimeTypeName) { pdfFile in
                                         let mimeType = pdfFile.mimeType
                                         let mimeTypeUnwrapped = mimeType!
                                         Text(mimeTypeUnwrapped)
@@ -555,7 +555,7 @@ extension ContentView {
                                             .labelStyle(.titleAndIcon)
                                             .font(.system(size: 11))
                                     }
-                                    TableColumn("mimeType") { textFile in
+                                    TableColumn("mimeType", value: \.mimeTypeName) { textFile in
                                         let mimeType = textFile.mimeType
                                         let mimeTypeUnwrapped = mimeType!
                                         Text(mimeTypeUnwrapped)

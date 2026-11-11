@@ -209,7 +209,7 @@ extension ContentView {
                                       selection: $imageFileSelection,
                                       sortOrder: $imageFileSortOrder) {
 
-                                    TableColumn("fileName") { imageFile in
+                                    TableColumn("fileName", value: \.fileName) { imageFile in
                                         Label(imageFile.fileName, systemImage: "doc")
                                             .labelStyle(.titleAndIcon)
                                             .font(.system(size: 11))
@@ -228,10 +228,7 @@ extension ContentView {
                                 }
                             } header: {
                                 HStack {
-                                    VStack {
-                                        Text("Image Files")
-                                    }
-                                    VStack {
+                                    HStack {
                                         if (selectedImageFiles.count > 0) {
                                             Button(action: deleteSelectedImages) {
                                                 Image(systemName: "minus.circle")
@@ -240,7 +237,15 @@ extension ContentView {
                                                     .font(.system(size: 11))
                                             }
                                             .buttonStyle(.borderedProminent)
-                                            .tint(.black)
+                                            .tint(.red)
+                                            // clears the table's selection (onChange empties the selected files)
+                                            Button(action: { imageFileSelection = [] }) {
+                                                Image(systemName: "xmark.circle")
+                                                    .font(.system(size: 11))
+                                                Text("Unselect items")
+                                                    .font(.system(size: 11))
+                                            }
+                                            .buttonStyle(.bordered)
                                         }
                                     }
                                 }
@@ -287,7 +292,7 @@ extension ContentView {
                                       selection: $audioFileSelection,
                                       sortOrder: $audioFileSortOrder) {
 
-                                    TableColumn("fileName") { audioFile in
+                                    TableColumn("fileName", value: \.fileName) { audioFile in
                                         Label(audioFile.fileName, systemImage: "doc")
                                             .labelStyle(.titleAndIcon)
                                             .font(.system(size: 11))
@@ -306,10 +311,7 @@ extension ContentView {
                                 }
                             } header: {
                                 HStack {
-                                    VStack {
-                                        Text("Audio Files")
-                                    }
-                                    VStack {
+                                    HStack {
                                         if (selectedAudioFiles.count > 0) {
                                             Button(action: deleteSelectedAudioFiles) {
                                                 Image(systemName: "minus.circle")
@@ -318,7 +320,15 @@ extension ContentView {
                                                     .font(.system(size: 11))
                                             }
                                             .buttonStyle(.borderedProminent)
-                                            .tint(.black)
+                                            .tint(.red)
+                                            // clears the table's selection (onChange empties the selected files)
+                                            Button(action: { audioFileSelection = [] }) {
+                                                Image(systemName: "xmark.circle")
+                                                    .font(.system(size: 11))
+                                                Text("Unselect items")
+                                                    .font(.system(size: 11))
+                                            }
+                                            .buttonStyle(.bordered)
                                         }
                                     }
                                 }
@@ -380,7 +390,7 @@ extension ContentView {
                                       selection: $videoFileSelection,
                                       sortOrder: $videoFileSortOrder) {
 
-                                    TableColumn("fileName") { videoFile in
+                                    TableColumn("fileName", value: \.fileName) { videoFile in
                                         Label(videoFile.fileName, systemImage: "doc")
                                             .labelStyle(.titleAndIcon)
                                             .font(.system(size: 11))
@@ -399,10 +409,7 @@ extension ContentView {
                                 }
                             } header: {
                                 HStack {
-                                    VStack {
-                                        Text("Video Files")
-                                    }
-                                    VStack {
+                                    HStack {
                                         if (selectedVideoFiles.count > 0) {
                                             Button(action: deleteSelectedVideoFiles) {
                                                 Image(systemName: "minus.circle")
@@ -411,7 +418,15 @@ extension ContentView {
                                                     .font(.system(size: 11))
                                             }
                                             .buttonStyle(.borderedProminent)
-                                            .tint(.black)
+                                            .tint(.red)
+                                            // clears the table's selection (onChange empties the selected files)
+                                            Button(action: { videoFileSelection = [] }) {
+                                                Image(systemName: "xmark.circle")
+                                                    .font(.system(size: 11))
+                                                Text("Unselect items")
+                                                    .font(.system(size: 11))
+                                            }
+                                            .buttonStyle(.bordered)
                                         }
                                     }
                                 }
@@ -458,7 +473,7 @@ extension ContentView {
                                       selection: $pdfFileSelection,
                                       sortOrder: $pdfFileSortOrder) {
 
-                                    TableColumn("fileName") { pdfFile in
+                                    TableColumn("fileName", value: \.fileName) { pdfFile in
                                         Label(pdfFile.fileName, systemImage: "doc")
                                             .labelStyle(.titleAndIcon)
                                             .font(.system(size: 11))
@@ -477,19 +492,24 @@ extension ContentView {
                                 }
                             } header: {
                                 HStack {
-                                    VStack {
-                                        Text("Pdf Files")
-                                    }
-                                    VStack {
+                                    HStack {
                                         if (selectedPdfFiles.count > 0) {
                                             Button(action: deleteSelectedPdfs) {
                                                 Image(systemName: "minus.circle")
                                                     .font(.system(size: 11))
-                                                (self.selectedPdfFiles.count > 1 ? Text("Delete selected Pdf Files") : Text("Delete selected Pdf File"))
+                                                (self.selectedPdfFiles.count > 1 ? Text("Delete selected PDF Files") : Text("Delete selected PDF File"))
                                                     .font(.system(size: 11))
                                             }
                                             .buttonStyle(.borderedProminent)
-                                            .tint(.black)
+                                            .tint(.red)
+                                            // clears the table's selection (onChange empties the selected files)
+                                            Button(action: { pdfFileSelection = [] }) {
+                                                Image(systemName: "xmark.circle")
+                                                    .font(.system(size: 11))
+                                                Text("Unselect items")
+                                                    .font(.system(size: 11))
+                                            }
+                                            .buttonStyle(.bordered)
                                         }
                                     }
                                 }
@@ -522,7 +542,7 @@ extension ContentView {
                             uploadPdfFiles.sort(using: pdfFileSortOrder)
                         }
                         .tabItem {
-                            Text("Pdf Files (\(uploadPdfFiles.count))")
+                            Text("PDF Files (\(uploadPdfFiles.count))")
                         }
                     }
 
@@ -534,7 +554,7 @@ extension ContentView {
                                       selection: $textFileSelection,
                                       sortOrder: $textFileSortOrder) {
 
-                                    TableColumn("fileName") { textFile in
+                                    TableColumn("fileName", value: \.fileName) { textFile in
                                         Label(textFile.fileName, systemImage: "doc")
                                             .labelStyle(.titleAndIcon)
                                             .font(.system(size: 11))
@@ -553,10 +573,7 @@ extension ContentView {
                                 }
                             } header: {
                                 HStack {
-                                    VStack {
-                                        Text("Text Files")
-                                    }
-                                    VStack {
+                                    HStack {
                                         if (selectedTextFiles.count > 0) {
                                             Button(action: deleteSelectedTextFiles) {
                                                 Image(systemName: "minus.circle")
@@ -565,7 +582,15 @@ extension ContentView {
                                                     .font(.system(size: 11))
                                             }
                                             .buttonStyle(.borderedProminent)
-                                            .tint(.black)
+                                            .tint(.red)
+                                            // clears the table's selection (onChange empties the selected files)
+                                            Button(action: { textFileSelection = [] }) {
+                                                Image(systemName: "xmark.circle")
+                                                    .font(.system(size: 11))
+                                                Text("Unselect items")
+                                                    .font(.system(size: 11))
+                                            }
+                                            .buttonStyle(.bordered)
                                         }
                                     }
                                 }
@@ -603,6 +628,21 @@ extension ContentView {
                     }
                 }
                 .padding(10)
+                .confirmationDialog(
+                    Text("Delete the selected files?"),
+                    isPresented: Binding(get: { pendingDeletion != nil }, set: { if !$0 { pendingDeletion = nil } }),
+                    titleVisibility: .visible
+                ) {
+                    Button("Delete", role: .destructive) { confirmDeletion() }
+                    Button("Cancel", role: .cancel) { pendingDeletion = nil }
+                } message: {
+                    Text("They will be removed from your folders and your site.")
+                }
+                .alert(Text("The files could not be deleted"), isPresented: $deletionFailed) {
+                    Button("OK", role: .cancel) {}
+                } message: {
+                    Text("Please try again.")
+                }
             }
         }
     }

@@ -104,6 +104,28 @@
         }
       }
     },
+    "Cancel" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abbrechen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancelar"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annuler"
+          }
+        }
+      }
+    },
     "Close" : {
       "localizations" : {
         "de" : {
@@ -122,6 +144,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fermer"
+          }
+        }
+      }
+    },
+    "Delete the selected files?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ausgewählte Dateien löschen?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Eliminar los archivos seleccionados?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supprimer les fichiers sélectionnés ?"
           }
         }
       }
@@ -170,6 +214,28 @@
         }
       }
     },
+    "OK" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
+          }
+        }
+      }
+    },
     "Please provide the new email address." : {
       "localizations" : {
         "de" : {
@@ -192,6 +258,28 @@
         }
       }
     },
+    "Please try again." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bitte versuchen Sie es erneut."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inténtelo de nuevo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Veuillez réessayer."
+          }
+        }
+      }
+    },
     "Storage: %@ of %@" : {
       "localizations" : {
         "de" : {
@@ -210,6 +298,72 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Stockage : %1$@ sur %2$@"
+          }
+        }
+      }
+    },
+    "The files could not be deleted" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Dateien konnten nicht gelöscht werden"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudieron eliminar los archivos"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les fichiers n’ont pas pu être supprimés"
+          }
+        }
+      }
+    },
+    "They will be removed from your folders and your site." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sie werden aus Ihren Ordnern und von Ihrer Website entfernt."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se quitarán de sus carpetas y de su sitio."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ils seront retirés de vos dossiers et de votre site."
+          }
+        }
+      }
+    },
+    "Unselect items" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auswahl aufheben"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deseleccionar"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Désélectionner"
           }
         }
       }
@@ -487,28 +641,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Format d'image : %lld"
-          }
-        }
-      }
-    },
-    "Audio Files" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Audiodateien"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Archivos de audio"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fichiers audio"
           }
         }
       }
@@ -887,7 +1019,7 @@
         }
       }
     },
-    "Delete selected Pdf File" : {
+    "Delete selected PDF File" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -909,7 +1041,7 @@
         }
       }
     },
-    "Delete selected Pdf Files" : {
+    "Delete selected PDF Files" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1421,28 +1553,6 @@
         }
       }
     },
-    "Image Files" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bilder"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Imágenes"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Images"
-          }
-        }
-      }
-    },
     "Image Files (%lld)" : {
       "localizations" : {
         "de" : {
@@ -1920,29 +2030,7 @@
         }
       }
     },
-    "Pdf Files" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "PDF-Dateien"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Archivos PDF"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fichiers PDF"
-          }
-        }
-      }
-    },
-    "Pdf Files (%lld)" : {
+    "PDF Files (%lld)" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2272,28 +2360,6 @@
         }
       }
     },
-    "Text Files" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Textdateien"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Archivos de texto"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fichiers texte"
-          }
-        }
-      }
-    },
     "Text Files (%lld)" : {
       "localizations" : {
         "de" : {
@@ -2532,28 +2598,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Envoi"
-          }
-        }
-      }
-    },
-    "Video Files" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Videos"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vídeos"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vidéos"
           }
         }
       }

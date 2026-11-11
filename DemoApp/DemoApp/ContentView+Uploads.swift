@@ -290,6 +290,13 @@ extension ContentView {
         if (loadedFolders.count > 0) {
             searchableFolders = loadedFolders.map { $0 }
         }
+        // in the order chosen in each table's header (file name by default)
+        uploadImageFiles.sort(using: imageFileSortOrder)
+        uploadPdfFiles.sort(using: pdfFileSortOrder)
+        uploadTextFiles.sort(using: textFileSortOrder)
+        uploadAudioFiles.sort(using: audioFileSortOrder)
+        uploadVideoFiles.sort(using: videoFileSortOrder)
+
         if (uploadImageFiles.count > 0) {
             searchableImageFiles = uploadImageFiles.map { $0 }
         }
@@ -463,6 +470,15 @@ extension ContentView {
         clearSelection()
     }
 
+    // The files a delete button asks to delete (type: the backend's
+    // Attachment subclass), shown in a confirmation first
+    struct PendingDeletion {
+        let ids: [Int]
+        let type: String
+    }
+
+    // Delete the attachments (soft delete on the backend), then read the
+    // folders' files again; a refused or failed request shows an alert
     func submitDestroyAttachments(ids: Array<Int>, type: String) {
         do {
             let ids = AttachmentIds(id: ids, type: type)
@@ -474,8 +490,16 @@ extension ContentView {
             let postLength = String(format: "%lu", UInt(optimizedData.count))
             let request = newPostRequestWithContent(url: url, data: optimizedData, postLength: postLength)
             let task = delegateSession.dataTask(with: request) { data, response, error in
+                let statusCode = (response as? HTTPURLResponse)?.statusCode
+                if let error {
+                    logger.error("[submitDestroyAttachments] Request: \(error)")
+                } else if statusCode != 200 {
+                    logger.error("[submitDestroyAttachments] Status: \(statusCode ?? 0)")
+                }
                 DispatchQueue.main.async {
+                    self.deletionFailed = error != nil || statusCode != 200
                     self.loadedFolders = []
+                    clearSelection()
                     clearSelectedFolders()
                     clearSelectedFiles()
                     getAllUploads()
@@ -486,47 +510,36 @@ extension ContentView {
 
         } catch let error {
             logger.error("[submitDestroyAttachments] Request: \(error)")
+            self.deletionFailed = true
         }
     }
 
+    // The delete buttons: ask before deleting the selected files
     func deleteSelectedImages() {
-        submitDestroyAttachments(
-            ids: self.selectedImageFiles.map { $0.id },
-            type: "ImageFile"
-        )
-        refreshUploads()
+        pendingDeletion = PendingDeletion(ids: selectedImageFiles.map { $0.id }, type: "ImageFile")
     }
 
     func deleteSelectedAudioFiles() {
-        submitDestroyAttachments(
-            ids: self.selectedAudioFiles.map { $0.id },
-            type: "AudioFile"
-        )
-        refreshUploads()
+        pendingDeletion = PendingDeletion(ids: selectedAudioFiles.map { $0.id }, type: "AudioFile")
     }
 
     func deleteSelectedVideoFiles() {
-        submitDestroyAttachments(
-            ids: self.selectedVideoFiles.map { $0.id },
-            type: "VideoFile"
-        )
-        refreshUploads()
+        pendingDeletion = PendingDeletion(ids: selectedVideoFiles.map { $0.id }, type: "VideoFile")
     }
 
     func deleteSelectedPdfs() {
-        submitDestroyAttachments(
-            ids: self.selectedPdfFiles.map { $0.id },
-            type: "PdfFile"
-        )
-        refreshUploads()
+        pendingDeletion = PendingDeletion(ids: selectedPdfFiles.map { $0.id }, type: "PdfFile")
     }
 
     func deleteSelectedTextFiles() {
-        submitDestroyAttachments(
-            ids: self.selectedTextFiles.map { $0.id },
-            type: "TextFile"
-        )
-        refreshUploads()
+        pendingDeletion = PendingDeletion(ids: selectedTextFiles.map { $0.id }, type: "TextFile")
+    }
+
+    // Confirmed: delete the pending files
+    func confirmDeletion() {
+        guard let deletion = pendingDeletion else { return }
+        pendingDeletion = nil
+        submitDestroyAttachments(ids: deletion.ids, type: deletion.type)
     }
 
     func getFolderName(folder: Folder) -> String {

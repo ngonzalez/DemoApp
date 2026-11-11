@@ -1466,7 +1466,10 @@ extension ContentView {
 // a light red background
 struct DeleteButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
+        // the icon and the text together, in one frame
+        HStack(spacing: 4) {
+            configuration.label
+        }
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
             .background(

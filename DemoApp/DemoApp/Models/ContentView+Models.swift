@@ -39,6 +39,8 @@ extension ContentView {
         let webUrl: String
         let dataUrl: String?
         let mimeType: String?
+        // the MIME type column's sort key (no type: first)
+        var mimeTypeName: String { mimeType ?? "" }
         let formatInfo: String?
         let fileSize: String?
         let width: Int?
@@ -56,6 +58,8 @@ extension ContentView {
         let webViewUrl: String
         let dataUrl: String?
         let mimeType: String?
+        // the MIME type column's sort key (no type: first)
+        var mimeTypeName: String { mimeType ?? "" }
         let formatInfo: String?
         let fileSize: String?
     }
@@ -69,6 +73,8 @@ extension ContentView {
         let webViewUrl: String
         let dataUrl: String?
         let mimeType: String?
+        // the MIME type column's sort key (no type: first)
+        var mimeTypeName: String { mimeType ?? "" }
         let formatInfo: String?
         let fileSize: String?
     }
@@ -83,6 +89,8 @@ extension ContentView {
         let playlistUrl: String?
         let dataUrl: String?
         let mimeType: String?
+        // the MIME type column's sort key (no type: first)
+        var mimeTypeName: String { mimeType ?? "" }
         let formatInfo: String?
         let fileSize: Int?
         let title: String?
@@ -102,6 +110,8 @@ extension ContentView {
         let playlistUrl: String?
         let dataUrl: String?
         let mimeType: String?
+        // the MIME type column's sort key (no type: first)
+        var mimeTypeName: String { mimeType ?? "" }
         let formatInfo: String?
         let fileSize: Int?
         let title: String?

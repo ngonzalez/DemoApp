@@ -106,6 +106,12 @@ struct ContentView: View {
 
     @State var textFileSelection = Set<TextFile.ID>()
 
+    // The files a delete button asks to delete, until confirmed or cancelled
+    @State var pendingDeletion: PendingDeletion? = nil
+
+    // The backend refused or didn't answer a deletion: an alert says so
+    @State var deletionFailed = false
+
     @State var folderSortOrder = [KeyPathComparator(\Folder.name)]
 
     @State var folderSelection = Set<Folder.ID>()

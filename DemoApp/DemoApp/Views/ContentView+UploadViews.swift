@@ -236,8 +236,7 @@ extension ContentView {
                                                 (self.selectedImageFiles.count > 1 ? Text("Delete selected Image Files") : Text("Delete selected Image File"))
                                                     .font(.system(size: 11))
                                             }
-                                            .buttonStyle(.borderedProminent)
-                                            .tint(.red)
+                                            .buttonStyle(DeleteButtonStyle())
                                             // clears the table's selection (onChange empties the selected files)
                                             Button(action: { imageFileSelection = [] }) {
                                                 Image(systemName: "xmark.circle")
@@ -319,8 +318,7 @@ extension ContentView {
                                                 (self.selectedAudioFiles.count > 1 ? Text("Delete selected Audio Files") : Text("Delete selected Audio File"))
                                                     .font(.system(size: 11))
                                             }
-                                            .buttonStyle(.borderedProminent)
-                                            .tint(.red)
+                                            .buttonStyle(DeleteButtonStyle())
                                             // clears the table's selection (onChange empties the selected files)
                                             Button(action: { audioFileSelection = [] }) {
                                                 Image(systemName: "xmark.circle")
@@ -417,8 +415,7 @@ extension ContentView {
                                                 (self.selectedVideoFiles.count > 1 ? Text("Delete selected Video Files") : Text("Delete selected Video File"))
                                                     .font(.system(size: 11))
                                             }
-                                            .buttonStyle(.borderedProminent)
-                                            .tint(.red)
+                                            .buttonStyle(DeleteButtonStyle())
                                             // clears the table's selection (onChange empties the selected files)
                                             Button(action: { videoFileSelection = [] }) {
                                                 Image(systemName: "xmark.circle")
@@ -500,8 +497,7 @@ extension ContentView {
                                                 (self.selectedPdfFiles.count > 1 ? Text("Delete selected PDF Files") : Text("Delete selected PDF File"))
                                                     .font(.system(size: 11))
                                             }
-                                            .buttonStyle(.borderedProminent)
-                                            .tint(.red)
+                                            .buttonStyle(DeleteButtonStyle())
                                             // clears the table's selection (onChange empties the selected files)
                                             Button(action: { pdfFileSelection = [] }) {
                                                 Image(systemName: "xmark.circle")
@@ -581,8 +577,7 @@ extension ContentView {
                                                 (self.selectedTextFiles.count > 1 ? Text("Delete selected Text Files") : Text("Delete selected Text File"))
                                                     .font(.system(size: 11))
                                             }
-                                            .buttonStyle(.borderedProminent)
-                                            .tint(.red)
+                                            .buttonStyle(DeleteButtonStyle())
                                             // clears the table's selection (onChange empties the selected files)
                                             Button(action: { textFileSelection = [] }) {
                                                 Image(systemName: "xmark.circle")
@@ -1467,3 +1462,21 @@ extension ContentView {
     }
 }
 
+// The delete buttons: a red border, the text in the usual color; pressed,
+// a light red background
+struct DeleteButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(
+                RoundedRectangle(cornerRadius: 5)
+                    .fill(Color.red.opacity(configuration.isPressed ? 0.15 : 0))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 5)
+                    .stroke(Color.red, lineWidth: 1)
+            )
+            .contentShape(RoundedRectangle(cornerRadius: 5))
+    }
+}

@@ -202,14 +202,8 @@ extension ContentView {
 
         for upload in self.uploadsWithFiles {
             // ImageFile
-            var i = 0
-            var imageFiles = upload.imageFiles
-            for imageFileItem in imageFiles {
-                if (imageFileItem.folder.state == "archived") {
-                    imageFiles.remove(at: i)
-                }
-                i += 1
-            }
+            // without the files of archived folders
+            let imageFiles = upload.imageFiles.filter { $0.folder.state != "archived" }
             self.uploadImageFiles += imageFiles
             for imageFile in upload.imageFiles {
                 if !self.loadedFolders.map({ $0.id }).contains(imageFile.folder.id) {
@@ -218,14 +212,8 @@ extension ContentView {
             }
 
             // PdfFile
-            i = 0
-            var pdfFiles = upload.pdfFiles
-            for pdfFileItem in pdfFiles {
-                if (pdfFileItem.folder.state == "archived") {
-                    pdfFiles.remove(at: i)
-                }
-                i += 1
-            }
+            // without the files of archived folders
+            let pdfFiles = upload.pdfFiles.filter { $0.folder.state != "archived" }
             self.uploadPdfFiles += pdfFiles
             for pdfFile in upload.pdfFiles {
                 if !self.loadedFolders.map({ $0.id }).contains(pdfFile.folder.id) {
@@ -234,14 +222,8 @@ extension ContentView {
             }
 
             // TextFile
-            i = 0
-            var textFiles = upload.textFiles
-            for textFileItem in textFiles {
-                if (textFileItem.folder.state == "archived") {
-                    textFiles.remove(at: i)
-                }
-                i += 1
-            }
+            // without the files of archived folders
+            let textFiles = upload.textFiles.filter { $0.folder.state != "archived" }
             self.uploadTextFiles += textFiles
             for textFile in upload.textFiles {
                 if !self.loadedFolders.map({ $0.id }).contains(textFile.folder.id) {
@@ -250,14 +232,8 @@ extension ContentView {
             }
 
             // AudioFile
-            i = 0
-            var audioFiles = upload.audioFiles
-            for audioFileItem in audioFiles {
-                if (audioFileItem.folder.state == "archived") {
-                    audioFiles.remove(at: i)
-                }
-                i += 1
-            }
+            // without the files of archived folders
+            let audioFiles = upload.audioFiles.filter { $0.folder.state != "archived" }
             self.uploadAudioFiles += audioFiles
             for audioFile in upload.audioFiles {
                 if !self.loadedFolders.map({ $0.id }).contains(audioFile.folder.id) {
@@ -269,14 +245,8 @@ extension ContentView {
             }
 
             // VideoFile
-            i = 0
-            var videoFiles = upload.videoFiles
-            for videoFileItem in videoFiles {
-                if (videoFileItem.folder.state == "archived") {
-                    videoFiles.remove(at: i)
-                }
-                i += 1
-            }
+            // without the files of archived folders
+            let videoFiles = upload.videoFiles.filter { $0.folder.state != "archived" }
             self.uploadVideoFiles += videoFiles
             for videoFile in upload.videoFiles {
                 if !self.loadedFolders.map({ $0.id }).contains(videoFile.folder.id) {
